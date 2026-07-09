@@ -13,21 +13,21 @@ interface RoomScope {
   room: string;
 }
 
-interface MoltnetMessageActor {
+export interface MoltnetMessageActor {
   type: "agent";
   id: string;
   name?: string;
   network_id?: string;
 }
 
-interface MoltnetMessageTarget {
+export interface MoltnetMessageTarget {
   kind: "room" | "dm";
   room_id?: string;
   dm_id?: string;
   participant_ids?: string[];
 }
 
-interface MoltnetMessagePart {
+export interface MoltnetMessagePart {
   kind: "text";
   text: string;
   data?: Record<string, unknown>;

@@ -7,3 +7,5 @@ All logic is pure and testable:
 - apply `expect` assertions (`at_least`, `at_most`, `always`, `at_end`);
 - optional `after` + `within` windows are supported with deterministic timing via
   the kernel duration parser.
+- evaluate social transcript acceptance; live runs require Moltnet-exported
+  transcripts, while harness-derived artifacts are diagnostics only.

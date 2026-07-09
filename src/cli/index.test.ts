@@ -4,6 +4,9 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, it } from "node:test";
 
+import { scanMarkers } from "../ledger/markers.js";
+import { parseCanonicalLedgerJsonl } from "../ledger/validation.js";
+import { parseSimfileSource } from "../schema/parse.js";
 import { runCli } from "./index.js";
 
 const captureStdout = async <T>(operation: () => Promise<T>): Promise<{ output: string; result: T }> => {
@@ -20,6 +23,66 @@ const captureStdout = async <T>(operation: () => Promise<T>): Promise<{ output: 
   } finally {
     process.stdout.write = original;
   }
+};
+
+const cliTranscriptSimfileSource = `
+simfile_version: "0.1"
+name: cli-run-world
+clock:
+  seed: cli-test
+  tick: 1m
+variables:
+  pressure:
+    scope: room:office-floor:case-warroom
+    initial: 0.8
+    range: 0..1
+generators:
+  ramp:
+    kind: deterministic
+    variable: pressure
+    delta: 0.1
+rules:
+  deadline:
+    when:
+      variable: pressure
+      above: 0.85
+    do:
+      - action: moltnet:message
+        to: room:office-floor:case-warroom
+        content: "Rosa Delgado belongs here."
+      - action: moltnet:dm
+        to: agent:eleanor
+        content: "Private follow-up."
+      - action: wake:recommend
+        to: room:office-floor:case-warroom
+markers:
+  tenant_name:
+    text:
+      - "Rosa Delgado"
+    mode: containment
+    scopes:
+      - room:office-floor:case-warroom
+`;
+const parsedCliTranscriptSimfile = parseSimfileSource(cliTranscriptSimfileSource, { path: "Simfile.yaml" }).simfile;
+
+const markerIdsByEvent = (ledgerSource: string) => {
+  const events = parseCanonicalLedgerJsonl(ledgerSource, { runId: "smoke" });
+  const hits = scanMarkers(events, parsedCliTranscriptSimfile.markers);
+  const markerIds = new Map<string, string[]>();
+
+  for (const markerHits of Object.values(hits)) {
+    for (const hit of markerHits) {
+      const existing = markerIds.get(hit.eventId) ?? [];
+      existing.push(hit.markerId);
+      markerIds.set(hit.eventId, existing);
+    }
+  }
+
+  for (const entry of markerIds.values()) {
+    entry.sort();
+  }
+
+  return markerIds;
 };
 
 describe("runCli", () => {
@@ -193,44 +256,7 @@ probes:
     const dir = await mkdtemp(path.join(tmpdir(), "simfile-run-cli-moltnet-"));
     const file = path.join(dir, "Simfile.yaml");
     const out = path.join(dir, "runs", "smoke");
-    await writeFile(file, `
-simfile_version: "0.1"
-name: cli-run-world
-clock:
-  seed: cli-test
-  tick: 1m
-variables:
-  pressure:
-    scope: room:office-floor:case-warroom
-    initial: 0.8
-    range: 0..1
-generators:
-  ramp:
-    kind: deterministic
-    variable: pressure
-    delta: 0.1
-rules:
-  deadline:
-    when:
-      variable: pressure
-      above: 0.85
-    do:
-      - action: moltnet:message
-        to: room:office-floor:case-warroom
-        content: "Rosa Delgado belongs here."
-      - action: moltnet:dm
-        to: agent:eleanor
-        content: "Private follow-up."
-      - action: wake:recommend
-        to: room:office-floor:case-warroom
-markers:
-  tenant_name:
-    text:
-      - "Rosa Delgado"
-    mode: containment
-    scopes:
-      - room:office-floor:case-warroom
-`, "utf8");
+    await writeFile(file, cliTranscriptSimfileSource, "utf8");
 
     const code = await runCli([
       "run",
@@ -248,12 +274,26 @@ markers:
 
     const manifest = await readFile(path.join(out, "manifest.yaml"), "utf8");
     assert.match(manifest, /moltnet: moltnet-transcript\.json/);
+    const report = JSON.parse(await readFile(path.join(out, "report.json"), "utf8")) as {
+      moltnet?: { transcript?: { accepted: boolean; required_source: string; source: string } };
+    };
+    assert.deepEqual(report.moltnet?.transcript, {
+      accepted: false,
+      reason: "live simulation acceptance requires a moltnet-exported transcript",
+      required_source: "moltnet-exported",
+      source: "harness-derived"
+    });
 
+    const ledgerSource = await readFile(path.join(out, "ledger.jsonl"), "utf8");
+    const markerIds = markerIdsByEvent(ledgerSource);
+    const ledgerEventIds = new Set(parseCanonicalLedgerJsonl(ledgerSource, { runId: "smoke" }).map((event) => event.event_id));
     const transcript = JSON.parse(await readFile(path.join(out, "moltnet-transcript.json"), "utf8")) as {
       entries: Array<{ event_id: string; kind: string; marker_ids: string[]; text?: string }>;
+      source: string;
       version: string;
     };
     assert.equal(transcript.version, "simfile.moltnet.transcript.v1");
+    assert.equal(transcript.source, "harness-derived");
     assert.deepEqual(
       transcript.entries.map((entry) => entry.kind),
       ["world.message", "world.dm", "wake.recommended"]
@@ -268,6 +308,11 @@ markers:
         text: "Rosa Delgado belongs here."
       }
     );
+
+    for (const entry of transcript.entries) {
+      assert.equal(ledgerEventIds.has(entry.event_id), true);
+      assert.deepEqual(entry.marker_ids, markerIds.get(entry.event_id) ?? []);
+    }
   });
 
   it("rejects invalid Moltnet artifact selections", async () => {

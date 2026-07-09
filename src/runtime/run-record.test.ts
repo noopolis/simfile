@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, it } from "node:test";
 
+import { scanMarkers, type LedgerEvent } from "../ledger/markers.js";
 import { parseCanonicalLedgerJsonl } from "../ledger/validation.js";
 import { parseSimfileSource } from "../schema/parse.js";
 import { writeRunRecord } from "./run-record.js";
@@ -52,9 +53,10 @@ probes:
     expect:
       at_least: 1
 `;
+const parsedSimfile = parseSimfileSource(sourceText, { path: "Simfile.yaml" });
 
 const writeFixtureRun = async (outDir: string) => {
-  const simfile = parseSimfileSource(sourceText, { path: "Simfile.yaml" }).simfile;
+  const simfile = parsedSimfile.simfile;
   return writeRunRecord({
     outDir,
     runId: "record-run",
@@ -64,6 +66,25 @@ const writeFixtureRun = async (outDir: string) => {
     sourceText,
     ticks: 4
   });
+};
+
+const markerIdsByEvent = (events: LedgerEvent[]): Map<string, string[]> => {
+  const hits = scanMarkers(events, parsedSimfile.simfile.markers);
+  const result = new Map<string, string[]>();
+
+  for (const [, markerHits] of Object.entries(hits)) {
+    for (const hit of markerHits) {
+      const existing = result.get(hit.eventId) ?? [];
+      existing.push(hit.markerId);
+      result.set(hit.eventId, existing);
+    }
+  }
+
+  for (const markerIds of result.values()) {
+    markerIds.sort();
+  }
+
+  return result;
 };
 
 const readContractArtifacts = async (outDir: string): Promise<Record<string, string>> => {
@@ -107,7 +128,7 @@ describe("writeRunRecord", () => {
       outDir: dir,
       runId: "record-run",
       seed: "record-seed",
-      simfile: parseSimfileSource(sourceText, { path: "Simfile.yaml" }).simfile,
+      simfile: parsedSimfile.simfile,
       sourcePath: "Simfile.yaml",
       sourceText,
       ticks: 4
@@ -124,10 +145,16 @@ describe("writeRunRecord", () => {
         rule_id?: string;
         text?: string;
       }>;
+      source: string;
       version: string;
     };
+    const ledger = await readFile(join(dir, "ledger.jsonl"), "utf8");
+    const events = parseCanonicalLedgerJsonl(ledger, { runId: "record-run" });
+    const markerMap = markerIdsByEvent(events);
+    const ledgerEventIds = new Set(events.map((event) => event.event_id));
 
     assert.equal(artifact.version, "simfile.moltnet.delivery.v1");
+    assert.equal(artifact.source, "harness-derived");
     assert.deepEqual(
       artifact.deliveries.map((entry) => entry.kind),
       ["world.message", "wake.recommended"]
@@ -154,5 +181,10 @@ describe("writeRunRecord", () => {
         text: "deadline"
       }
     );
+
+    for (const entry of artifact.deliveries) {
+      assert.equal(ledgerEventIds.has(entry.event_id), true);
+      assert.deepEqual(entry.marker_ids, markerMap.get(entry.event_id) ?? []);
+    }
   });
 });

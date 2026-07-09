@@ -12,6 +12,7 @@ import {
 } from "../ledger/markers.js";
 import { parseCanonicalLedgerJsonl } from "../ledger/validation.js";
 import { evaluateProbe, type ProbeDefinition, type ProbeEvaluationResult } from "../report/probes.js";
+import { evaluateTranscriptAcceptance, type TranscriptAcceptanceResult } from "../report/transcripts.js";
 import type { Simfile } from "../schema/model.js";
 import { serializeCanonicalEvents } from "./trace-export.js";
 import { runSimfileTrace } from "./trace-run.js";
@@ -32,6 +33,9 @@ export interface RunRecordOptions {
 
 export interface RunReport {
   markers: MarkerCoverageResult[];
+  moltnet?: {
+    transcript?: TranscriptAcceptanceResult;
+  };
   probes: ProbeEvaluationResult[];
   run_id: string;
   seed: string;
@@ -59,12 +63,14 @@ export interface MoltnetArtifactEntry {
 }
 
 export interface MoltnetTranscriptArtifact {
+  source: "harness-derived";
   entries: MoltnetArtifactEntry[];
   run_id: string;
   version: "simfile.moltnet.transcript.v1";
 }
 
 export interface MoltnetDeliveryArtifact {
+  source: "harness-derived";
   deliveries: MoltnetArtifactEntry[];
   run_id: string;
   version: "simfile.moltnet.delivery.v1";
@@ -198,15 +204,26 @@ const buildMoltnetArtifact = (
 
   return kind === "delivery"
     ? {
+      source: "harness-derived",
       deliveries: entries,
       run_id: trace.runId,
       version: "simfile.moltnet.delivery.v1"
     }
     : {
+      source: "harness-derived",
       entries,
       run_id: trace.runId,
       version: "simfile.moltnet.transcript.v1"
     };
+};
+
+const reportMoltnetSection = (options: RunRecordOptions): RunReport["moltnet"] | undefined => {
+  if (options.moltnetArtifact !== "transcript") {
+    return undefined;
+  }
+  return {
+    transcript: evaluateTranscriptAcceptance({ source: "harness-derived" })
+  };
 };
 
 export const writeRunRecord = async (options: RunRecordOptions): Promise<RunRecordResult> => {
@@ -218,8 +235,10 @@ export const writeRunRecord = async (options: RunRecordOptions): Promise<RunReco
   });
   const markers = evaluateMarkers(options.simfile, trace);
   const probes = evaluateProbes(options.simfile, trace);
+  const moltnet = reportMoltnetSection(options);
   const report: RunReport = {
     markers,
+    ...(moltnet ? { moltnet } : {}),
     probes,
     run_id: options.runId,
     seed: options.seed,
