@@ -1,0 +1,15 @@
+:root {
+  --sl-color-accent-low: #113a3a;
+  --sl-color-accent: #4bbfb5;
+  --sl-color-accent-high: #b9f5ee;
+  --sl-font: "DM Sans", ui-sans-serif, system-ui, sans-serif;
+  --sl-font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+html {
+  background: #0a0d0e;
+}
+
+.sl-markdown-content code:not(:where(.not-content *)) {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}

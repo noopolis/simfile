@@ -1,5 +1,9 @@
 node_modules/
 dist/
+.astro/
 coverage/
+.artifacts/
+runs/
+here.txt
 .env
 .DS_Store

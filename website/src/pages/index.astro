@@ -1,0 +1,160 @@
+---
+import '../styles/landing.css';
+---
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Simfile — deterministic worlds for agentic organizations</title>
+    <meta name="description" content="Simfile declares deterministic simulation worlds around Spawnfile organizations, then renders them live through an inspectable viewer." />
+    <link rel="canonical" href="https://simfile.dev/" />
+    <link rel="sitemap" href="/sitemap-0.xml" />
+    <meta name="theme-color" content="#090d0e" />
+    <meta name="author" content="Noopolis" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Simfile" />
+    <meta property="og:title" content="Simfile — deterministic worlds for agentic organizations" />
+    <meta property="og:description" content="Declare the world, run the minds, watch the loop." />
+    <meta property="og:url" content="https://simfile.dev/" />
+    <meta property="og:locale" content="en_US" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..650&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=JetBrains+Mono:wght@400;600;800&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <header class="nav">
+      <div class="nav-in">
+        <a class="mark" href="/">sim<span>file</span></a>
+        <nav class="nav-links" aria-label="Primary">
+          <a href="#kernel">Kernel</a>
+          <a href="#viewer">Viewer</a>
+          <a href="/introduction/">Docs</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div>
+          <p class="eyebrow">World harness for agent societies</p>
+          <h1>Declare the world. Watch the minds move through it.</h1>
+          <p class="hero-sub">
+            Simfile is the simulation layer beside Spawnfile. It supplies deterministic clocks,
+            pressure gauges, events, probes, and a live map so agentic organizations can be
+            steered, measured, and replayed without scripting their thoughts.
+          </p>
+          <div class="actions">
+            <a class="btn" href="/quickstart/">Read the quickstart</a>
+            <a class="btn secondary" href="/guides/live-viewer/">Open the viewer guide</a>
+          </div>
+        </div>
+
+        <div class="console" aria-label="Live Simfile viewer preview">
+          <div class="console-head"><span class="dot"></span><span class="dot"></span><span class="dot"></span>simfile view --state .sim</div>
+          <div class="glyph-map">
+            <div class="map">
+              <div class="room office">office hall<br/>filing_pressure 0.71</div>
+              <div class="room warroom">case warroom<br/>wake.recommended</div>
+              <div class="room home">eleanor home<br/>evening pull</div>
+              <div class="room street">street</div>
+              <div class="agent eleanor" title="Eleanor"></div>
+              <div class="agent sam" title="Sam"></div>
+              <div class="agent maya" title="Maya"></div>
+            </div>
+            <div class="portal">
+              <strong>portal: case-warroom</strong><br/>
+              16:40 · world says: contractor texts found<br/>
+              16:42 · eleanor replies in room<br/>
+              16:44 · marker tenant_name contained<br/>
+              <span class="wake">16:50 · wake.recommended deadline_bites</span><br/>
+              17:00 · probe pressure_peaked PASS
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="band" id="kernel">
+        <div class="inner">
+          <div class="section-title">
+            <h2>A tiny kernel, not a game engine.</h2>
+            <p>
+              The schema is deliberately narrow: clock, variables, generators, rules,
+              events and ledger, probes, and entity lifecycle. Everything domain-flavored
+              lives in authored values, Spawnfile docs, Moltnet rooms, and Mneme memories.
+            </p>
+          </div>
+          <div class="grid">
+            <div class="panel">
+              <h3>Deterministic world</h3>
+              <p>Same source, seed, ledger inputs, and patches produce the same mechanical stream.</p>
+            </div>
+            <div class="panel">
+              <h3>Agent-owned behavior</h3>
+              <p>The world can nudge a room, but agents decide what to say, remember, and do.</p>
+            </div>
+            <div class="panel">
+              <h3>Falsifiable probes</h3>
+              <p>Markers, containment checks, and threshold probes turn simulations into inspectable experiments.</p>
+            </div>
+          </div>
+          <div class="code">
+            <pre>simfile_version: "0.1"
+name: office-world
+spawnfile: ./Spawnfile
+
+clock:
+  seed: office-run-014
+  tick: 20s
+  sim_per_tick: 10m
+  phases:
+    morning: "07:00"
+    workday: "09:00"
+    evening: "18:00"
+
+rules:
+  deadline_bites:
+    when:
+      variable: filing_pressure
+      above: 0.85
+    do:
+      - action: wake:recommend
+        to: room:office-floor:case-warroom</pre>
+          </div>
+        </div>
+      </section>
+
+      <section class="band" id="viewer">
+        <div class="inner">
+          <div class="section-title">
+            <h2>A live lab instrument.</h2>
+            <p>
+              `simfile view` currently serves a GlyphCSS map shell, focus portal,
+              state metadata, and live event stream. The fuller portal stack will
+              attach transcripts, probes, memory, and ledger evidence as those
+              runtime exports land.
+            </p>
+          </div>
+          <div class="grid">
+            <div class="panel">
+              <h3>Map first</h3>
+              <p>Rooms and places are spatial anchors. The current map opens a focus portal for the selected scope.</p>
+            </div>
+            <div class="panel">
+              <h3>Skinnable</h3>
+              <p>Floorplans, city packs, glyph maps, and later 3D assets are presentation packs, not schema.</p>
+            </div>
+            <div class="panel">
+              <h3>Traceable</h3>
+              <p>The design target is accountable pixels: every pressure, marker trail, and wake line backed by ledger evidence.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="inner">Noopolis · Simfile · deterministic worlds for agentic organizations</div>
+    </footer>
+  </body>
+</html>

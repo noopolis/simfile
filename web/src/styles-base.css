@@ -1,0 +1,184 @@
+:root {
+  color-scheme: dark;
+  --bg: #0b0b0b;
+  --ink: #f3eee7;
+  --sub: #d1c7b8;
+  --mute: #a59d94;
+  --faint: #6b6560;
+  --green: #3ddc84;
+  --green-hi: #6ef5a7;
+  --coral: #d4604a;
+  --cyan: #00e5cc;
+  --line: rgba(61, 220, 132, 0.55);
+  --line-soft: rgba(61, 220, 132, 0.18);
+  --line-bright: rgba(61, 220, 132, 0.45);
+  --tint: rgba(61, 220, 132, 0.06);
+  --border: rgba(255, 255, 255, 0.07);
+  --dashed: rgba(255, 255, 255, 0.05);
+  --accent: var(--green);
+  --accent-hi: var(--green-hi);
+  font-family: "JetBrains Mono", "SF Mono", "Menlo", "Cascadia Code", "Consolas", ui-monospace, monospace;
+  background: var(--bg);
+  color: var(--ink);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.5;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+select {
+  color: inherit;
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--line-soft);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--line);
+}
+
+.viewer-shell {
+  height: 100%;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  background: var(--bg);
+}
+
+.viewer-shell.skin-office {
+  --accent: #69d2c7;
+  --accent-hi: #bff7ef;
+  --line: rgba(105, 210, 199, 0.55);
+  --line-soft: rgba(105, 210, 199, 0.18);
+  --line-bright: rgba(105, 210, 199, 0.48);
+  --tint: rgba(105, 210, 199, 0.07);
+}
+
+.viewer-shell.skin-night {
+  --accent: #bd93f9;
+  --accent-hi: #e0c7ff;
+  --line: rgba(189, 147, 249, 0.55);
+  --line-soft: rgba(189, 147, 249, 0.18);
+  --line-bright: rgba(189, 147, 249, 0.48);
+  --tint: rgba(189, 147, 249, 0.08);
+}
+
+.topbar {
+  min-height: 54px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 24px;
+  align-items: center;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+}
+
+.topbar-title,
+.topbar-actions {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sigil,
+.brand,
+.run-name {
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+}
+
+.sigil {
+  font-size: 15px;
+  letter-spacing: 0;
+}
+
+.version {
+  color: var(--mute);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+
+.run-name {
+  color: var(--ink);
+}
+
+.subtitle {
+  min-width: 0;
+  color: var(--mute);
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.skin-select {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--mute);
+  font-size: 11px;
+}
+
+.skin-select select {
+  min-width: 160px;
+  border: 1px solid var(--line-soft);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--ink);
+  padding: 5px 8px;
+}
+
+.stream-status {
+  color: var(--accent);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+}
+
+.stream-status span {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--accent);
+  animation: breathe 2.4s ease-in-out infinite;
+}
+
+@keyframes breathe {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.45; transform: scale(0.78); }
+}
