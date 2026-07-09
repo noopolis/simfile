@@ -1,0 +1,20 @@
+spawnfile_version: "0.1"
+kind: team
+name: eleanor-family
+description: "Eleanor's family context."
+
+shared:
+  workspace:
+    docs:
+      system: TEAM.md
+
+members:
+  - id: eleanor
+    ref: ../../agents/eleanor
+  - id: sam
+    ref: ../../agents/sam
+  - id: jules
+    ref: ../../agents/jules
+
+mode: swarm
+external: [eleanor, sam, jules]

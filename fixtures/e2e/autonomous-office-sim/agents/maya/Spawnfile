@@ -1,0 +1,51 @@
+spawnfile_version: "0.1"
+kind: agent
+name: maya
+description: "Maya is a Jungian self-like senior associate reviewing case posture and mentoring direction."
+
+runtime:
+  name: pi
+  options:
+    engine: claude
+
+execution:
+  model:
+    primary:
+      provider: local
+      name: claude-cli
+      auth:
+        method: none
+      endpoint:
+        compatibility: openai
+        base_url: http://127.0.0.1:11434/v1
+  sandbox:
+    mode: workspace
+
+schedule:
+  kind: every
+  every: 4m
+  prompt: "Check the clock, keep legal reasoning tight, and reply where you were addressed."
+
+memory:
+  - id: self
+    consolidation:
+      mode: scheduled
+      schedule: 36m
+    store:
+      kind: json
+      path: /var/lib/spawnfile/memory/maya/self.jsonl
+      persistence:
+        mode: durable
+    index:
+      lexical:
+        enabled: true
+        engine: sqlite_fts
+      vector:
+        enabled: true
+        provider: ollama
+        model: nomic-embed-text
+        dimensions: 768
+
+workspace:
+  docs:
+    system: AGENTS.md

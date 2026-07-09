@@ -1,0 +1,20 @@
+spawnfile_version: "0.1"
+kind: team
+name: friends-group
+description: "After-work friends who know each other outside formal office roles."
+
+shared:
+  workspace:
+    docs:
+      system: TEAM.md
+
+members:
+  - id: eleanor
+    ref: ../../agents/eleanor
+  - id: maya
+    ref: ../../agents/maya
+  - id: sam
+    ref: ../../agents/sam
+
+mode: swarm
+external: [eleanor, maya, sam]

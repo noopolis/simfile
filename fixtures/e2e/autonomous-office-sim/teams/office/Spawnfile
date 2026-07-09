@@ -1,0 +1,31 @@
+spawnfile_version: "0.1"
+kind: team
+name: office
+description: "The full law office work team."
+
+shared:
+  workspace:
+    docs:
+      system: TEAM.md
+      extras:
+        case_warroom: case-warroom.md
+    resources:
+      - id: office-case
+        kind: volume
+        mount: ./office-case
+        mode: mutable
+        sharing: team
+
+members:
+  - id: eleanor
+    ref: ../../agents/eleanor
+  - id: maya
+    ref: ../../agents/maya
+  - id: theo
+    ref: ../../agents/theo
+  - id: priya
+    ref: ../../agents/priya
+
+mode: hierarchical
+lead: eleanor
+external: [eleanor, maya, theo, priya]

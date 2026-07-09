@@ -90,7 +90,7 @@ reports, and optional patches to the authored world.
    error taxonomy (`validation_error`, `compile_error`, and related kinds), and
    the same CLI philosophy: thin commands, logic in modules, one primary happy
    path. Since `simfile/` lives inside this workspace, the repository rules
-   apply unchanged: nested `CLAUDE.md`, named exports, source files under 400
+   apply unchanged: nested `AGENTS.md` with `CLAUDE.md` compatibility symlinks, named exports, source files under 400
    lines, and tests beside files.
 
 10. Every closed vocabulary is versioned and frozen: eq functions, condition

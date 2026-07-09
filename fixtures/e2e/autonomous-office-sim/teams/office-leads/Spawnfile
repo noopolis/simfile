@@ -1,0 +1,19 @@
+spawnfile_version: "0.1"
+kind: team
+name: office-leads
+description: "Partner and senior associate private review team."
+
+shared:
+  workspace:
+    docs:
+      system: TEAM.md
+
+members:
+  - id: eleanor
+    ref: ../../agents/eleanor
+  - id: maya
+    ref: ../../agents/maya
+
+mode: hierarchical
+lead: eleanor
+external: [eleanor, maya]

@@ -1,0 +1,20 @@
+spawnfile_version: "0.1"
+kind: team
+name: theo-family
+description: "Theo's family and roommate context."
+
+shared:
+  workspace:
+    docs:
+      system: TEAM.md
+
+members:
+  - id: theo
+    ref: ../../agents/theo
+  - id: cam
+    ref: ../../agents/cam
+  - id: leo
+    ref: ../../agents/leo
+
+mode: swarm
+external: [theo, cam, leo]

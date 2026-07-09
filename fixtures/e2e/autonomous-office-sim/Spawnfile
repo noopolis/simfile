@@ -1,0 +1,88 @@
+spawnfile_version: "0.1"
+kind: team
+name: autonomous-office-sim
+description: "Autonomous law office simulation with office, family, and friends teams importing canonical agents."
+
+shared:
+  workspace:
+    docs:
+      system: TEAM.md
+    resources:
+      - id: office-world
+        kind: volume
+        mount: ./office-world
+        mode: mutable
+        sharing: team
+
+members:
+  - id: office
+    ref: ./teams/office
+  - id: office-leads
+    ref: ./teams/office-leads
+  - id: eleanor-family
+    ref: ./teams/eleanor-family
+  - id: maya-family
+    ref: ./teams/maya-family
+  - id: theo-family
+    ref: ./teams/theo-family
+  - id: priya-family
+    ref: ./teams/priya-family
+  - id: friends-group
+    ref: ./teams/friends-group
+
+mode: swarm
+
+networks:
+  - id: office-floor
+    name: Office Floor
+    provider: moltnet
+    server:
+      mode: managed
+      listen:
+        bind: 0.0.0.0
+        port: 19910
+      store:
+        kind: sqlite
+        path: /var/lib/spawnfile/moltnet/networks/office-floor/moltnet.sqlite
+      auth:
+        mode: open
+        public_read: true
+      human_ingress: true
+      direct_messages: true
+    rooms:
+      - id: office-hall
+        name: Office Hall
+        members: [office]
+        visibility: public
+        write_policy: registered_agents
+      - id: case-warroom
+        name: Case Warroom
+        members: [office]
+      - id: boss-office
+        name: Boss Office
+        members: [office-leads]
+        visibility: private
+        write_policy: members
+      - id: break-room
+        name: Break Room
+        members: [office]
+        visibility: public
+        write_policy: registered_agents
+      - id: eleanor-home
+        name: Eleanor Home
+        members: [eleanor-family]
+      - id: maya-home
+        name: Maya Home
+        members: [maya-family]
+      - id: theo-home
+        name: Theo Home
+        members: [theo-family]
+      - id: priya-home
+        name: Priya Home
+        members: [priya-family]
+      - id: after-work-chat
+        name: After Work Chat
+        members: [friends-group]
+      - id: neighborhood
+        name: Neighborhood
+        members: [office, friends-group]

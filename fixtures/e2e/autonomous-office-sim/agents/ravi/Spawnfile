@@ -1,0 +1,51 @@
+spawnfile_version: "0.1"
+kind: agent
+name: ravi
+description: "Ravi is Maya's partner and appears in home conversations."
+
+runtime:
+  name: pi
+  options:
+    engine: grok
+
+execution:
+  model:
+    primary:
+      provider: local
+      name: grok-cli
+      auth:
+        method: none
+      endpoint:
+        compatibility: openai
+        base_url: http://127.0.0.1:11434/v1
+  sandbox:
+    mode: workspace
+
+schedule:
+  kind: every
+  every: 10m
+  prompt: "Check the clock, hold space for Maya's load, and reply where you were addressed."
+
+memory:
+  - id: self
+    consolidation:
+      mode: scheduled
+      schedule: 45m
+    store:
+      kind: json
+      path: /var/lib/spawnfile/memory/ravi/self.jsonl
+      persistence:
+        mode: durable
+    index:
+      lexical:
+        enabled: true
+        engine: sqlite_fts
+      vector:
+        enabled: true
+        provider: ollama
+        model: nomic-embed-text
+        dimensions: 768
+
+workspace:
+  docs:
+    system: AGENTS.md

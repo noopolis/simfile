@@ -1,0 +1,51 @@
+spawnfile_version: "0.1"
+kind: agent
+name: sam
+description: "Sam is Eleanor's partner and a friend outside the office."
+
+runtime:
+  name: pi
+  options:
+    engine: codex
+
+execution:
+  model:
+    primary:
+      provider: local
+      name: codex-cli
+      auth:
+        method: none
+      endpoint:
+        compatibility: openai
+        base_url: http://127.0.0.1:11434/v1
+  sandbox:
+    mode: workspace
+
+schedule:
+  kind: every
+  every: 9.8m
+  prompt: "Check the clock, keep this room human and practical, and reply where addressed."
+
+memory:
+  - id: self
+    consolidation:
+      mode: scheduled
+      schedule: 47m
+    store:
+      kind: json
+      path: /var/lib/spawnfile/memory/sam/self.jsonl
+      persistence:
+        mode: durable
+    index:
+      lexical:
+        enabled: true
+        engine: sqlite_fts
+      vector:
+        enabled: true
+        provider: ollama
+        model: nomic-embed-text
+        dimensions: 768
+
+workspace:
+  docs:
+    system: AGENTS.md

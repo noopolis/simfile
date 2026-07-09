@@ -1,0 +1,51 @@
+spawnfile_version: "0.1"
+kind: agent
+name: theo
+description: "Theo is a junior legal associate contributing routine case preparation and drafting work."
+
+runtime:
+  name: pi
+  options:
+    engine: grok
+
+execution:
+  model:
+    primary:
+      provider: local
+      name: grok-cli
+      auth:
+        method: none
+      endpoint:
+        compatibility: openai
+        base_url: http://127.0.0.1:11434/v1
+  sandbox:
+    mode: workspace
+
+schedule:
+  kind: every
+  every: 4.5m
+  prompt: "Check the clock, advance one concrete research step, and reply where you were addressed."
+
+memory:
+  - id: self
+    consolidation:
+      mode: scheduled
+      schedule: 44m
+    store:
+      kind: json
+      path: /var/lib/spawnfile/memory/theo/self.jsonl
+      persistence:
+        mode: durable
+    index:
+      lexical:
+        enabled: true
+        engine: sqlite_fts
+      vector:
+        enabled: true
+        provider: ollama
+        model: nomic-embed-text
+        dimensions: 768
+
+workspace:
+  docs:
+    system: AGENTS.md

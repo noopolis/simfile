@@ -1,0 +1,51 @@
+spawnfile_version: "0.1"
+kind: agent
+name: leo
+description: "Leo is Theo's brother and appears in home conversations."
+
+runtime:
+  name: pi
+  options:
+    engine: claude
+
+execution:
+  model:
+    primary:
+      provider: local
+      name: claude-cli
+      auth:
+        method: none
+      endpoint:
+        compatibility: openai
+        base_url: http://127.0.0.1:11434/v1
+  sandbox:
+    mode: workspace
+
+schedule:
+  kind: every
+  every: 8.5m
+  prompt: "Check the clock, help Theo stay grounded, and reply where you were addressed."
+
+memory:
+  - id: self
+    consolidation:
+      mode: scheduled
+      schedule: 39m
+    store:
+      kind: json
+      path: /var/lib/spawnfile/memory/leo/self.jsonl
+      persistence:
+        mode: durable
+    index:
+      lexical:
+        enabled: true
+        engine: sqlite_fts
+      vector:
+        enabled: true
+        provider: ollama
+        model: nomic-embed-text
+        dimensions: 768
+
+workspace:
+  docs:
+    system: AGENTS.md

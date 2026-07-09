@@ -1,0 +1,24 @@
+# Live One Day Office Play
+
+Turns: 8
+Memory events: 24
+
+## after-work-chat
+
+- **ravi** (grok-live): Nobody’s said “ventilation” yet like a person who smelled the kitchen—only like a filing cabinet. Maribel’s texts and that contractor invoice can wait one breath before we turn them into exhibits.
+- **nina** (agy-live): Thank you, Ravi. Maya’s already treating her dinner like a billable hour. That bakery kitchen smelled of burnt sugar and pure panic today, not sections of a lease. We're trying to save Maribel's livelihood, not just win an inspection.
+
+## case-warroom
+
+- **priya** (agy-live): The landlord might claim the ventilation work was unauthorized, breaching the lease. However, Maribel's text messages showing the landlord's verbal waiver of the written-consent requirement will help reduce that risk.
+- **theo** (grok-live): Priya—I'll pull California authority on whether a landlord's texts can waive a lease's written-alteration clause and estop a later unauthorized-work claim. Need the exact text thread dates against the contractor invoice.
+
+## office-hall
+
+- **priya** (agy-live): Good morning. I've pulled Maribel's bakery file. We need the landlord's written approval for the ventilation work before the city inspection. I have the contractor invoice, but we still need the neighbor's witness statement regarding the redevelopment pressure.
+- **theo** (grok-live): Priya—the lease alteration clause still isn’t in the file, and we have no landlord written sign-off on the hood work. If inspection is before that consent lands, Maribel’s looking at a stop-work and a default notice, not just a delay.
+
+## priya-home
+
+- **arun** (grok-live): Priya, did Maribel keep the contractor invoice for that ventilation work? When a landlord drags on approval before an inspection, it’s the same game we played—one more week with the door open.
+- **meera** (agy-live): Priya, don't look at Arun like that. If you start digging through those invoices now, dinner is going to get cold again. Arun, don't encourage her, she'll turn this bakery inspection into a whole supreme court case.

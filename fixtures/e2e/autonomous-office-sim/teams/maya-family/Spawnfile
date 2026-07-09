@@ -1,0 +1,20 @@
+spawnfile_version: "0.1"
+kind: team
+name: maya-family
+description: "Maya's family context."
+
+shared:
+  workspace:
+    docs:
+      system: TEAM.md
+
+members:
+  - id: maya
+    ref: ../../agents/maya
+  - id: ravi
+    ref: ../../agents/ravi
+  - id: nina
+    ref: ../../agents/nina
+
+mode: swarm
+external: [maya, ravi, nina]

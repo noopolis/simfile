@@ -750,7 +750,8 @@ simfile/
 ├── src/
 │   └── cli/            # `simfile view` command: static server + read API
 └── web/
-    ├── CLAUDE.md       # local guide, per repository rules
+    ├── AGENTS.md       # canonical local guide, per repository rules
+    ├── CLAUDE.md       # compatibility symlink to AGENTS.md
     ├── index.html      # Vite entry
     ├── src/
     │   ├── store/      # ledger feed, report graph, time cursor, selection
@@ -771,7 +772,7 @@ Rules, inherited and local:
 - The CLI handler stays thin: it serves files, tails stores read-only, and
   proxies Moltnet; all viewer logic lives in `web/`.
 - Named exports, files under 400 lines, tests beside files, nested
-  `CLAUDE.md` — repository rules apply unchanged.
+  `AGENTS.md` with a `CLAUDE.md` compatibility symlink — repository rules apply unchanged.
 - Build ships via `prepublishOnly`; `dist/` is not committed.
 
 ## Testing Strategy

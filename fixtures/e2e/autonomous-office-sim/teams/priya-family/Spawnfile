@@ -1,0 +1,20 @@
+spawnfile_version: "0.1"
+kind: team
+name: priya-family
+description: "Priya's family context."
+
+shared:
+  workspace:
+    docs:
+      system: TEAM.md
+
+members:
+  - id: priya
+    ref: ../../agents/priya
+  - id: arun
+    ref: ../../agents/arun
+  - id: meera
+    ref: ../../agents/meera
+
+mode: swarm
+external: [priya, arun, meera]
