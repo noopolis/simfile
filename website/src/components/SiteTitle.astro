@@ -1,16 +1,31 @@
 ---
+// Simple branded site title used in the docs nav.
 ---
-<a class="site-title" href="/">sim<span>file</span></a>
+<a href="/" class="site-title">
+  <span class="mark">
+    <span class="base">sim</span><span class="accent">file</span>
+  </span>
+</a>
 
 <style>
   .site-title {
-    color: var(--sl-color-white);
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-    font-weight: 800;
     text-decoration: none;
+    display: inline-flex;
+    align-items: center;
   }
 
-  .site-title span {
-    color: #69d2c7;
+  .mark {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 0.92rem;
+    line-height: 1;
+  }
+
+  .base {
+    color: #f3eee7;
+  }
+
+  .accent {
+    color: #8b7cf6;
   }
 </style>

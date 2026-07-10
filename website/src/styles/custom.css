@@ -1,15 +1,58 @@
+/* Force dark mode — no theme toggle */
 :root {
-  --sl-color-accent-low: #113a3a;
-  --sl-color-accent: #4bbfb5;
-  --sl-color-accent-high: #b9f5ee;
-  --sl-font: "DM Sans", ui-sans-serif, system-ui, sans-serif;
-  --sl-font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  color-scheme: dark;
 }
 
-html {
-  background: #0a0d0e;
+::selection {
+  background: #8b7cf6;
+  color: #0b0b0b;
+}
+::-moz-selection {
+  background: #8b7cf6;
+  color: #0b0b0b;
 }
 
-.sl-markdown-content code:not(:where(.not-content *)) {
-  border: 1px solid rgba(255, 255, 255, 0.08);
+/* Canonical Simfile docs theme */
+:root {
+  --sl-color-accent-low: #221a3a;
+  --sl-color-accent: #8b7cf6;
+  --sl-color-accent-high: #a78bfa;
+  --sl-color-white: #f3eee7;
+  --sl-color-gray-1: #d1c7b8;
+  --sl-color-gray-2: #a59d94;
+  --sl-color-gray-3: #6b6560;
+  --sl-color-gray-4: #3a3632;
+  --sl-color-gray-5: #1a1a1a;
+  --sl-color-gray-6: #111;
+  --sl-color-black: #0b0b0b;
+}
+
+:root {
+  --sl-font: 'DM Sans', system-ui, sans-serif;
+  --sl-font-mono: 'JetBrains Mono', monospace;
+}
+
+/* Mermaid diagrams */
+pre.mermaid {
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin: 1.75rem 0;
+  overflow: visible;
+  text-align: center;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  color: var(--sl-color-gray-3);
+}
+
+pre.mermaid svg {
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto;
+}
+
+pre.mermaid svg text,
+pre.mermaid svg .label text,
+pre.mermaid svg .nodeLabel,
+pre.mermaid svg .edgeLabel {
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif !important;
 }
