@@ -50,6 +50,7 @@ export const simfileEventKinds = [
   "rule.fired",
   "world.message",
   "world.dm",
+  "world.act",
   "wake.recommended",
   "marker.seen"
 ] as const;

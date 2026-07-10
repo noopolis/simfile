@@ -1,50 +1,26 @@
 import { drawUniform } from "../kernel/stochastic.js";
-import { createCanonicalEventEnvelope, type LedgerEventEnvelopeInput } from "../ledger/stable.js";
+import { createCanonicalEventEnvelope, DEFAULT_EMITTER_STREAM_ID, DEFAULT_PRINCIPAL_ID, type LedgerEventEnvelopeInput } from "../ledger/stable.js";
 import { scanMarkers } from "../ledger/markers.js";
-import type { Simfile, SimfileRuleAction } from "../schema/model.js";
+import type { Simfile } from "../schema/model.js";
 import { parseClockSpec, resolveClockState } from "./clock.js";
+import { clampAndRound, type RangeSpec } from "./numeric.js";
+import { runRuleActions } from "./rule-actions.js";
 import type { RuntimeOptions, RuntimeTrace, RuntimeTraceEvent, RuntimeVariableSample } from "./types.js";
 import { compileRuntime, variableTargetFromActions, type GeneratorRuntime, type RuleRuntime } from "./trace-compile.js";
+import { applyWorldActsAtTick, ingestWorldActs } from "./world-act.js";
 import type { ConditionEventMatch } from "./condition.js";
 
-type EventKind = "clock.sync" | "rule.fired" | "world.message" | "world.dm" | "wake.recommended" | "marker.seen";
-
-interface RangeSpec { min: number; max: number }
+type EventKind = "clock.sync" | "rule.fired" | "world.message" | "world.dm" | "world.act" | "wake.recommended" | "marker.seen";
 
 const DEFAULT_PRECISION = 6;
 const EVENT_FUSE_LIMIT = 5_000;
 const WORLD_ACTOR = "@world";
-
-const finite = (value: number): number => (Number.isFinite(value) ? value : 0);
-
-const clampAndRound = (value: number, range: RangeSpec, precision: number): number => {
-  const rounded = Number(finite(value).toFixed(precision));
-  if (rounded < range.min) {
-    return range.min;
-  }
-  if (rounded > range.max) {
-    return range.max;
-  }
-  return rounded === -0 ? 0 : rounded;
-};
 
 const validateNonNegativeInteger = (value: number, name: string): void => {
   if (!Number.isInteger(value) || value < 0) {
     throw new Error(`${name} must be a non-negative integer`);
   }
 };
-
-const replaceTemplateValues = (
-  source: string,
-  variables: Readonly<Record<string, number>>,
-  precision: number
-): string => source.replace(
-  /\{([a-z][a-z0-9_-]*)\}/giu,
-  (match, variableId) => {
-    const value = variables[variableId as string];
-    return Number.isFinite(value) ? value.toFixed(precision) : match;
-  }
-);
 
 const createEvent = (
   runId: string,
@@ -54,7 +30,8 @@ const createEvent = (
   actor: string,
   target: string,
   scope: string,
-  payload: LedgerEventEnvelopeInput["payload"]
+  payload: LedgerEventEnvelopeInput["payload"],
+  causeEventIds: readonly string[] = []
 ): RuntimeTraceEvent => createCanonicalEventEnvelope({
   runId,
   seq,
@@ -64,7 +41,10 @@ const createEvent = (
   actor,
   target,
   scope,
-  payload
+  payload,
+  streamId: DEFAULT_EMITTER_STREAM_ID,
+  principalId: DEFAULT_PRINCIPAL_ID,
+  causeEventIds
 }) as RuntimeTraceEvent;
 
 const runGenerator = (
@@ -123,107 +103,6 @@ const runGenerator = (
   variables[generator.target] = (variables[generator.target] ?? 0) + delta;
 };
 
-const emitRuleActionEvents = (
-  runId: string,
-  seq: number,
-  ruleId: string,
-  tick: number,
-  simTime: number,
-  phase: string | undefined,
-  action: SimfileRuleAction,
-  templateVariables: Readonly<Record<string, number>>,
-  precision: number,
-  emit: (event: RuntimeTraceEvent) => void
-): number => {
-  if (action.action === "variable:set" || action.action === "variable:delta") {
-    return seq;
-  }
-
-  if (action.action === "moltnet:message") {
-    emit(createEvent(runId, seq, "world.message", simTime, WORLD_ACTOR, action.to, action.to, {
-      action: action.action,
-      rule: ruleId,
-      content: replaceTemplateValues(action.content, templateVariables, precision),
-      tick,
-      sim_time: simTime,
-      phase
-    }));
-    return seq + 1;
-  }
-
-  if (action.action === "moltnet:dm") {
-    emit(createEvent(runId, seq, "world.dm", simTime, WORLD_ACTOR, action.to, action.to, {
-      action: action.action,
-      rule: ruleId,
-      content: replaceTemplateValues(action.content, templateVariables, precision),
-      tick,
-      sim_time: simTime,
-      phase
-    }));
-    return seq + 1;
-  }
-
-  emit(createEvent(runId, seq, "wake.recommended", simTime, ruleId, action.to, action.to, {
-    action: action.action,
-    reason: ruleId,
-    target: action.to,
-    tick,
-    sim_time: simTime,
-    phase
-  }));
-  return seq + 1;
-};
-
-const runRuleActions = (
-  runId: string,
-  seq: number,
-  ruleId: string,
-  tick: number,
-  simTime: number,
-  phase: string | undefined,
-  actions: readonly SimfileRuleAction[],
-  templateVariables: Readonly<Record<string, number>>,
-  precision: number,
-  ranges: Map<string, RangeSpec>,
-  nextVariables: Record<string, number>,
-  emit: (event: RuntimeTraceEvent) => void
-): number => {
-  let nextSeq = seq;
-  for (const action of actions) {
-    if (action.action === "variable:set") {
-      const range = ranges.get(action.variable);
-      if (!range) {
-        throw new Error(`action variable:set references unknown variable ${action.variable}`);
-      }
-      nextVariables[action.variable] = clampAndRound(action.value, range, precision);
-      continue;
-    }
-
-    if (action.action === "variable:delta") {
-      const range = ranges.get(action.variable);
-      if (!range) {
-        throw new Error(`action variable:delta references unknown variable ${action.variable}`);
-      }
-      nextVariables[action.variable] = clampAndRound((nextVariables[action.variable] ?? 0) + action.value, range, precision);
-      continue;
-    }
-
-    nextSeq = emitRuleActionEvents(
-      runId,
-      nextSeq,
-      ruleId,
-      tick,
-      simTime,
-      phase,
-      action,
-      templateVariables,
-      precision,
-      emit
-    );
-  }
-  return nextSeq;
-};
-
 const runRule = (
   rule: RuleRuntime,
   tick: number,
@@ -236,7 +115,8 @@ const runRule = (
   runId: string,
   nextSeq: number,
   emitTickEvent: (event: RuntimeTraceEvent) => void,
-  nextVariables: Record<string, number>
+  nextVariables: Record<string, number>,
+  clockSyncEventId: string
 ): number => {
   const matches = rule.when.evaluator.evaluate(rule.when.node, {
     tick,
@@ -262,7 +142,7 @@ const runRule = (
     tick,
     sim_time: simTime,
     phase
-  });
+  }, [clockSyncEventId]);
   emitTickEvent(fired);
   candidates.push({ kind: fired.kind, actor: fired.actor, target: fired.target, scope: fired.scope });
 
@@ -278,6 +158,7 @@ const runRule = (
     precision,
     ranges,
     nextVariables,
+    [fired.event_id],
     emitTickEvent
   );
   return afterActionSeq;
@@ -299,6 +180,12 @@ export const runSimfileTrace = (simfile: Simfile, options: RuntimeOptions): Runt
     state[id] = clampAndRound(value, range, precision);
   }
 
+  const worldActIngestion = ingestWorldActs(options.worldActs ?? [], {
+    ticks: options.ticks,
+    ranges: runtime.ranges,
+    variableFedBy: runtime.variableFedBy
+  });
+
   const events: RuntimeTraceEvent[] = [];
   const samples: RuntimeVariableSample[] = [];
   let seq = 1;
@@ -318,14 +205,25 @@ export const runSimfileTrace = (simfile: Simfile, options: RuntimeOptions): Runt
       candidates.push({ kind: event.kind, actor: event.actor, target: event.target, scope: event.scope });
     };
 
-    emitTickEvent(createEvent(options.runId, seq, "clock.sync", simTime, WORLD_ACTOR, "global", "global", {
+    const clockSync = createEvent(options.runId, seq, "clock.sync", simTime, WORLD_ACTOR, "global", "global", {
       tick,
       sim_time: simTime,
       phase
-    }));
+    });
+    emitTickEvent(clockSync);
     seq += 1;
 
     const tickState: Record<string, number> = { ...state };
+    seq = applyWorldActsAtTick(tick, simTime, worldActIngestion.queueByTick.get(tick), tickState, {
+      runId: options.runId,
+      precision,
+      ranges: runtime.ranges,
+      variableScopes: runtime.variableScopes,
+      resultsByActId: worldActIngestion.resultsByActId,
+      nextSeq: seq,
+      emit: emitTickEvent
+    });
+
     for (const generator of runtime.generators) {
       runGenerator(generator, tickState, tick, simTime, phase, candidates, options.seed);
       const range = runtime.ranges.get(generator.target);
@@ -350,7 +248,7 @@ export const runSimfileTrace = (simfile: Simfile, options: RuntimeOptions): Runt
 
     const nextVariables = { ...tickState };
     for (const rule of runtime.rules) {
-      seq = runRule(rule, tick, simTime, phase, tickState, candidates, precision, runtime.ranges, options.runId, seq, emitTickEvent, nextVariables);
+      seq = runRule(rule, tick, simTime, phase, tickState, candidates, precision, runtime.ranges, options.runId, seq, emitTickEvent, nextVariables, clockSync.event_id);
     }
 
     for (const [id, value] of Object.entries(nextVariables)) {
@@ -380,7 +278,7 @@ export const runSimfileTrace = (simfile: Simfile, options: RuntimeOptions): Runt
         marker: markerId,
         source_event_id: hit.eventId,
         source_event_kind: hit.eventKind
-      }));
+      }, [hit.eventId]));
       seq += 1;
     }
   }
@@ -392,6 +290,7 @@ export const runSimfileTrace = (simfile: Simfile, options: RuntimeOptions): Runt
     variables: state,
     events,
     samples,
-    diagnostics: []
+    diagnostics: [],
+    actResults: worldActIngestion.results
   };
 };

@@ -302,7 +302,7 @@ probes:
       transcript.entries.find((entry) => entry.kind === "world.message")
         && (({ event_id, kind, marker_ids, text }) => ({ event_id, kind, marker_ids, text }))(transcript.entries.find((entry) => entry.kind === "world.message")!),
       {
-        event_id: "smoke:3",
+        event_id: "simfile:smoke:3",
         kind: "world.message",
         marker_ids: ["tenant_name"],
         text: "Rosa Delgado belongs here."

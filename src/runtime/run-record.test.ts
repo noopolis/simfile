@@ -163,7 +163,7 @@ describe("writeRunRecord", () => {
       artifact.deliveries.find((entry) => entry.kind === "world.message")
         && (({ event_id, kind, marker_ids, rule_id, text }) => ({ event_id, kind, marker_ids, rule_id, text }))(artifact.deliveries.find((entry) => entry.kind === "world.message")!),
       {
-        event_id: "record-run:3",
+        event_id: "simfile:record-run:3",
         kind: "world.message",
         marker_ids: ["tenant_name"],
         rule_id: "deadline",
@@ -174,7 +174,7 @@ describe("writeRunRecord", () => {
       artifact.deliveries.find((entry) => entry.kind === "wake.recommended")
         && (({ event_id, kind, marker_ids, rule_id, text }) => ({ event_id, kind, marker_ids, rule_id, text }))(artifact.deliveries.find((entry) => entry.kind === "wake.recommended")!),
       {
-        event_id: "record-run:4",
+        event_id: "simfile:record-run:4",
         kind: "wake.recommended",
         marker_ids: [],
         rule_id: undefined,

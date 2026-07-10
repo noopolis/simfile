@@ -317,8 +317,58 @@ rules:
     const leftLines = serializeCanonicalEvents(left.events);
     const rightLines = serializeCanonicalEvents(right.events);
     assert.deepEqual(leftLines, rightLines);
-    assert.equal(JSON.parse(leftLines[0] ?? "{}").event_id, "run-canon:1");
+    assert.equal(JSON.parse(leftLines[0] ?? "{}").event_id, "simfile:run-canon:1");
     assert.equal(leftLines.length, rightLines.length);
+  });
+
+  it("stamps every event with the simfile causal envelope and wires rule causation", () => {
+    const simfile = parse(`
+simfile_version: "0.1"
+name: causal-world
+clock:
+  seed: causal
+  tick: 1m
+rules:
+  announce:
+    fire: once
+    when:
+      event: clock.sync
+    do:
+      - action: moltnet:message
+        to: room:office-floor:case-warroom
+        content: "hi"
+`);
+
+    const result = runSimfileTrace(simfile, { runId: "run-causal", seed: "causal", ticks: 1 });
+    const clockSync = result.events.find((event) => event.kind === "clock.sync")!;
+    const ruleFired = result.events.find((event) => event.kind === "rule.fired")!;
+    const message = result.events.find((event) => event.kind === "world.message")!;
+
+    for (const event of result.events) {
+      assert.equal(event.version, "noopolis.causal-event.v1");
+      assert.equal(event.run_id, "run-causal");
+      assert.equal(event.event_id, `simfile:run-causal:${event.emitter?.seq}`);
+      assert.deepEqual(event.emitter && { system: event.emitter.system, stream_id: event.emitter.stream_id }, {
+        system: "simfile",
+        stream_id: "world"
+      });
+      assert.equal(event.principal_id, "system:simfile.world");
+      assert.equal(Array.isArray(event.cause_event_ids), true);
+    }
+
+    assert.deepEqual(clockSync.cause_event_ids, []);
+    assert.deepEqual(ruleFired.cause_event_ids, [clockSync.event_id]);
+    assert.deepEqual(message.cause_event_ids, [ruleFired.event_id]);
+
+    const messagePayload = payloadObject(message.payload);
+    assert.equal(messagePayload.act_id, `run-causal:act:${message.emitter?.seq}`);
+    assert.equal(messagePayload.action, "moltnet:message");
+    assert.equal(messagePayload.actor, "@world");
+    assert.equal(messagePayload.target, "room:office-floor:case-warroom");
+    assert.equal(messagePayload.scope, "room:office-floor:case-warroom");
+    assert.equal(messagePayload.sim_time, message.sim_time);
+    assert.equal(messagePayload.provenance, "mechanical");
+    assert.equal(messagePayload.value, "hi");
   });
 
   it("builds viewer traces with canonical event kinds and heuristic agent labels", () => {

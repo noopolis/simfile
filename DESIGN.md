@@ -429,7 +429,13 @@ Variables have three sources, and the determinism contract decides the split:
   inward: participants whose writes land as `agentic`/`external` provenance
   events at tick boundaries, replayed as inputs. Each fed variable names
   exactly one instrument; an instrument may feed several declared variables.
-  This does not un-defer `world.act`.
+  The fed-variable write mechanics (`variable:set` on a declared `fed_by`
+  variable, validated and ledgered as a canonical `world.act` event) are
+  landed: this is `world.act`'s first act, exercised today by a deterministic
+  driver over `RuntimeOptions.worldActs` and the `simfile run --acts` CLI
+  flag. What remains deferred is the live agent tool binding (an agent
+  calling `world_act` directly instead of a driver queuing it) and any act
+  grammar beyond `variable:set`.
 
   The instrument is typically not a bespoke entity but an **org inside the
   world** — a steered Spawnfile team (a weather service, a market desk, a
@@ -1339,20 +1345,27 @@ world.observe
 world.ledger
 ```
 
+`world.act` mechanics have landed: one generic act, `{act_id, action:
+"variable:set", variable, value}`, on a declared `fed_by` variable —
+validated (dedup, run-open, declared-variable, authorized-actor,
+finite-and-in-range, reject-never-clamp) and ledgered as a canonical
+`world.act` event with `provenance: "agentic"`. What has not landed is the
+live tool binding: today the only writer is a deterministic driver
+(`RuntimeOptions.worldActs` / `simfile run --acts`), not an agent calling
+`world_act` mid-turn. Any act grammar beyond `variable:set` (movement,
+richer effects) is still deferred, same as the tool families below.
+
 Deferred tool families — they land with v3 governance:
 
 ```text
-world.act
 world.propose
 world.proposals
 ```
 
-`world.act` is deferred because the agent-to-world mutation surface has not
-earned schema yet: no current fixture needs it. When it lands, acts will be
-authored content over the existing primitives — named data-record effects
-validated against variable bounds — not a new primitive. Until then agents
-change the world the way people do: by speaking in rooms and letting other
-agents and the world's rules react.
+Until the live `world_act` binding lands, agents change the world the way
+people do: by speaking in rooms and letting other agents and the world's
+rules react — plus, since B58, a driver-mediated `world.act` for tasks that
+need a mechanically scored variable write.
 
 Provider-safe aliases replace dots with underscores (`world_status`, and so
 on).
@@ -1589,13 +1602,15 @@ Mechanics:
   or in transit on an edge. `presence.changed`, `transit.started`, and
   `transit.arrived` are ledger events — which is also everything a renderer
   needs: place graph + presence timeline + transcripts.
-- Movement is the first `world.act`, and the act that un-defers the surface:
-  preconditions (exit exists, agent at origin), a duration (the edge weight —
-  the cab ride is presence spent in transit), an effect at arrival. Acts
-  travel as speech to the world participant — structured messages parsed
-  against a closed act grammar, accepted or mechanically rejected in reply,
-  ledgered as agentic, replayed as input. No new transport, no MCP, no
-  policy server.
+- Movement is a richer `world.act` grammar member, not the first: B58 landed
+  the generic mechanics (one act, `variable:set` on a declared `fed_by`
+  variable) ahead of presence. Movement adds its own preconditions (exit
+  exists, agent at origin), a duration (the edge weight — the cab ride is
+  presence spent in transit), and an effect at arrival, over the same
+  accepted-or-mechanically-rejected, ledgered-as-agentic, replayed-as-input
+  shape. Acts travel as speech to the world participant — structured messages
+  parsed against a closed act grammar. No new transport, no MCP, no policy
+  server.
 - Situational awareness rides the observe snapshot: `at:`, `here:` (who else
   is present), `exits:` with travel times. Visibility already follows scope,
   so room-scoped variables naturally become local perception of where the

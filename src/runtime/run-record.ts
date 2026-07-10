@@ -16,8 +16,14 @@ import { evaluateTranscriptAcceptance, type TranscriptAcceptanceResult } from ".
 import type { Simfile } from "../schema/model.js";
 import { serializeCanonicalEvents } from "./trace-export.js";
 import { runSimfileTrace } from "./trace-run.js";
-import type { RuntimeTrace, RuntimeVariableSample } from "./types.js";
+import type { QueuedWorldAct, RuntimeTrace, RuntimeVariableSample, WorldActResult } from "./types.js";
 import { buildViewerTrace, type ViewerContractTrace } from "./viewer-trace.js";
+
+// Re-exported so the `emit-causal-fixture` npm script (B92's real entry
+// point into simfile) has a single, stable import surface next to the rest
+// of run-record's artifact-writing API. See causal-fixture.ts for the
+// noopolis.causal-event.v1 wire mapping.
+export { buildCausalFixtureRecords, toCausalFixtureRecord, type CausalFixtureRecord } from "./causal-fixture.js";
 
 export interface RunRecordOptions {
   moltnetArtifact?: MoltnetArtifactKind;
@@ -29,6 +35,7 @@ export interface RunRecordOptions {
   sourcePath: string;
   sourceText: string;
   ticks: number;
+  worldActs?: readonly QueuedWorldAct[];
 }
 
 export interface RunReport {
@@ -40,6 +47,7 @@ export interface RunReport {
   run_id: string;
   seed: string;
   ticks: number;
+  world_acts: WorldActResult[];
 }
 
 export interface TelemetryArtifact {
@@ -231,7 +239,8 @@ export const writeRunRecord = async (options: RunRecordOptions): Promise<RunReco
     precision: options.precision,
     runId: options.runId,
     seed: options.seed,
-    ticks: options.ticks
+    ticks: options.ticks,
+    worldActs: options.worldActs
   });
   const markers = evaluateMarkers(options.simfile, trace);
   const probes = evaluateProbes(options.simfile, trace);
@@ -242,7 +251,8 @@ export const writeRunRecord = async (options: RunRecordOptions): Promise<RunReco
     probes,
     run_id: options.runId,
     seed: options.seed,
-    ticks: options.ticks
+    ticks: options.ticks,
+    world_acts: trace.actResults
   };
   const telemetry = telemetryFor(options.simfile, trace);
   const viewerTrace = buildViewerTrace(options.simfile, trace, markers, probes);

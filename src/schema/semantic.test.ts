@@ -104,6 +104,49 @@ generators:
 `), /generator pressure_ramp delta_eq references unknown variable rumor_heat/);
   });
 
+  it("rejects a generator targeting a fed variable", () => {
+    assert.throws(() => parse(`
+simfile_version: "0.1"
+name: fed-world
+clock:
+  seed: fed
+  tick: 1m
+variables:
+  submitted:
+    scope: room:office-floor:incident-desk
+    range: 0..5
+    fed_by: lead
+generators:
+  drift:
+    kind: deterministic
+    variable: submitted
+    delta: 0.1
+`), /generator drift targets fed variable submitted/);
+  });
+
+  it("rejects a rule action targeting a fed variable", () => {
+    assert.throws(() => parse(`
+simfile_version: "0.1"
+name: fed-world
+clock:
+  seed: fed
+  tick: 1m
+variables:
+  submitted:
+    scope: room:office-floor:incident-desk
+    range: 0..5
+    fed_by: lead
+rules:
+  overwrite:
+    when:
+      event: clock.sync
+    do:
+      - action: variable:set
+        variable: submitted
+        value: 2
+`), /rule overwrite action variable:set targets fed variable submitted/);
+  });
+
   it("accepts duration literals in expressions", () => {
     const result = parse(`
 simfile_version: "0.1"

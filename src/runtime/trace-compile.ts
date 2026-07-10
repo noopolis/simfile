@@ -47,6 +47,10 @@ export interface CompiledTraceRuntime {
   derivedExpressions: Map<string, DerivedSpec>;
   generators: GeneratorRuntime[];
   rules: RuleRuntime[];
+  /** Declared `fed_by` writer per fed variable id (world.act authorization). */
+  variableFedBy: Map<string, string>;
+  /** Declared scope per variable id (world.act envelope scope). */
+  variableScopes: Map<string, string>;
 }
 
 export const parseVariableSpecs = (
@@ -201,9 +205,15 @@ export const compileRuntime = (simfile: Simfile): CompiledTraceRuntime => {
 
   const initialState: Record<string, number> = {};
   const ranges = new Map<string, RangeSpec>();
+  const variableFedBy = new Map<string, string>();
+  const variableScopes = new Map<string, string>();
   for (const [id, spec] of variables.entries()) {
     initialState[id] = spec.initial;
     ranges.set(id, spec.range);
+    variableScopes.set(id, spec.spec.scope);
+    if (spec.spec.fed_by !== undefined) {
+      variableFedBy.set(id, spec.spec.fed_by);
+    }
   }
 
   const { order, specs: derivedExpressions } = parseDerivedSpecs(variables);
@@ -213,7 +223,9 @@ export const compileRuntime = (simfile: Simfile): CompiledTraceRuntime => {
     derivedOrder: order,
     derivedExpressions,
     generators: compileGenerators(simfile, ranges),
-    rules: compileRules(simfile)
+    rules: compileRules(simfile),
+    variableFedBy,
+    variableScopes
   };
 };
 

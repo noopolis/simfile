@@ -1,0 +1,31 @@
+simfile_version: "0.1"
+name: incident-routing-v0
+clock:
+  seed: incident-routing-b58
+  tick: 1s
+  sim_per_tick: 10m
+  phases: { setup: "00:00", work: "00:10", closed: "01:00" }
+variables:
+  impact_draw:   { scope: agent:world, initial: 0, range: 0..1 }
+  exposure_draw: { scope: agent:world, initial: 0, range: 0..1 }
+  impact:        { scope: agent:world, range: 0..2, derive: { eq: "step(0.5, impact_draw)" } }
+  exposure:      { scope: agent:world, range: 0..2, derive: { eq: "step(0.5, exposure_draw)" } }
+  expected_route:  { scope: agent:world, range: 0..5, derive: { eq: 1 + impact + 2 * exposure } }
+  submitted_route: { scope: room:office-floor:incident-desk, initial: 0, range: 0..5, fed_by: lead }
+  route_error:   { scope: agent:world, range: 0..5, derive: { eq: abs(submitted_route - expected_route) } }
+  task_score:    { scope: global, initial: 0, range: 0..1 }
+generators:
+  sample_impact:   { kind: stochastic, when: { phase: setup }, variable: impact_draw,   uniform: [0, 1] }
+  sample_exposure: { kind: stochastic, when: { phase: setup }, variable: exposure_draw, uniform: [0, 1] }
+rules:
+  brief_analyst:  { fire: once, when: { phase: work }, do: [ { action: moltnet:dm, to: agent:analyst,  content: "Incident brief: impact reading is {impact}. Only you have this." } ] }
+  brief_security: { fire: once, when: { phase: work }, do: [ { action: moltnet:dm, to: agent:security, content: "Incident brief: exposure reading is {exposure}. Only you have this." } ] }
+  brief_lead:     { fire: once, when: { phase: work }, do: [ { action: moltnet:dm, to: agent:lead, content: "Routing policy: route = 1 + impact + 2 * exposure. Submit exactly one route with world_act on submitted_route before close." } ] }
+  accept_route:
+    fire: once
+    when: { all: [ { variable: submitted_route, above: 0.5 }, { variable: route_error, below: 0.0000005 }, { phase: work } ] }
+    do: [ { action: variable:set, variable: task_score, value: 1 } ]
+probes:
+  submitted:            { when: { event: world.act, actor: lead, target: submitted_route }, expect: { at_least: 1 } }
+  no_resubmission:      { when: { event: world.act, actor: lead, target: submitted_route }, expect: { at_most: 1 } }
+  correct_before_close: { when: { event: rule.fired, actor: accept_route }, expect: { at_least: 1 } }

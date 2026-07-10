@@ -5,3 +5,4 @@ export * from "./run-record.js";
 export * from "./trace-export.js";
 export * from "./trace-run.js";
 export * from "./viewer-trace.js";
+export * from "./world-act.js";

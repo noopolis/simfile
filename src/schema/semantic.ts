@@ -104,6 +104,11 @@ export const validateSimfileSemantics = (simfile: Simfile): string[] => {
   const warnings: string[] = [];
   const variableIds = new Set(Object.keys(simfile.variables));
   const phaseIds = new Set(Object.keys(simfile.clock.phases));
+  const fedVariableIds = new Set(
+    Object.entries(simfile.variables)
+      .filter(([, variable]) => variable.fed_by !== undefined)
+      .map(([variableId]) => variableId)
+  );
 
   for (const [variableId, variable] of Object.entries(simfile.variables)) {
     if (variable.derive) {
@@ -114,6 +119,9 @@ export const validateSimfileSemantics = (simfile: Simfile): string[] => {
   for (const [generatorId, generator] of Object.entries(simfile.generators)) {
     if (!variableIds.has(generator.variable)) {
       throw new Error(`generator ${generatorId} references unknown variable ${generator.variable}`);
+    }
+    if (fedVariableIds.has(generator.variable)) {
+      throw new Error(`generator ${generatorId} targets fed variable ${generator.variable}; fed variables have exactly one writer (fed_by)`);
     }
     if (generator.when) {
       validateWhenNode(generator.when, `generator ${generatorId} when`, variableIds, phaseIds);
@@ -134,6 +142,10 @@ export const validateSimfileSemantics = (simfile: Simfile): string[] => {
       if ((action.action === "variable:set" || action.action === "variable:delta")
         && !variableIds.has(action.variable)) {
         throw new Error(`rule ${ruleId} action ${action.action} references unknown variable ${action.variable}`);
+      }
+      if ((action.action === "variable:set" || action.action === "variable:delta")
+        && fedVariableIds.has(action.variable)) {
+        throw new Error(`rule ${ruleId} action ${action.action} targets fed variable ${action.variable}; fed variables have exactly one writer (fed_by)`);
       }
       if ("content" in action) {
         validatePlaceholders(action.content, `rule ${ruleId} action ${action.action}`, variableIds);

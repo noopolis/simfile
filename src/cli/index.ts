@@ -6,12 +6,13 @@ import { ZodError } from "zod";
 
 import { type BindingDiagnostic, type Simfile, createBindingDiagnostics, loadSpawnfileReport, parseSimfileSource } from "../schema/index.js";
 import { type MoltnetArtifactKind, writeRunRecord } from "../runtime/trace.js";
+import type { QueuedWorldAct } from "../runtime/types.js";
 import { runViewCommand } from "../view/index.js";
 
 const usage = (): string => [
   "Usage:",
   "  simfile validate <path> [--json] [--spawnfile-report <path>|<json>]",
-  "  simfile run <path> --ticks <n> [--out <dir>] [--seed <seed>] [--run-id <id>] [--moltnet-artifact transcript|delivery] [--spawnfile-report <path>|<json>]",
+  "  simfile run <path> --ticks <n> [--out <dir>] [--seed <seed>] [--run-id <id>] [--acts <path>] [--moltnet-artifact transcript|delivery] [--spawnfile-report <path>|<json>]",
   "  simfile view --state <path>",
   "  simfile view <run-record-dir>",
   "  simfile view --help",
@@ -30,6 +31,7 @@ const formatError = (error: unknown): string => {
 };
 
 interface ParsedRunOptions {
+  actsPath?: string;
   moltnetArtifact?: MoltnetArtifactKind;
   outDir?: string;
   path?: string;
@@ -150,13 +152,14 @@ const parseRunArguments = (argv: readonly string[]): { error?: string; options?:
       continue;
     }
 
-    if (arg === "--out" || arg === "--seed" || arg === "--run-id") {
+    if (arg === "--out" || arg === "--seed" || arg === "--run-id" || arg === "--acts") {
       const parsed = parseOptionalValueFlag(arg, argv, index, arg, `Missing value for ${arg}`);
       if (parsed.error) return { error: parsed.error };
       if (parsed.value === undefined) return { error: `Missing value for ${arg}` };
       if (arg === "--out") options.outDir = parsed.value;
       if (arg === "--seed") options.seed = parsed.value;
       if (arg === "--run-id") options.runId = parsed.value;
+      if (arg === "--acts") options.actsPath = parsed.value;
       index += 1;
       continue;
     }
@@ -173,6 +176,11 @@ const parseRunArguments = (argv: readonly string[]): { error?: string; options?:
 
     if (arg.startsWith("--run-id=")) {
       options.runId = arg.slice("--run-id=".length);
+      continue;
+    }
+
+    if (arg.startsWith("--acts=")) {
+      options.actsPath = arg.slice("--acts=".length);
       continue;
     }
 
@@ -222,6 +230,17 @@ const bindingWarningsFromReport = async (
 
 const hasErrorDiagnostic = (diagnostics: BindingDiagnostic[]): boolean =>
   diagnostics.some((diagnostic) => diagnostic.level === "error");
+
+const loadQueuedWorldActs = async (actsPath?: string): Promise<QueuedWorldAct[] | undefined> => {
+  if (!actsPath) {
+    return undefined;
+  }
+  const raw = JSON.parse(await readFile(actsPath, "utf8")) as unknown;
+  if (!Array.isArray(raw)) {
+    throw new Error(`--acts file must contain a JSON array: ${actsPath}`);
+  }
+  return raw as QueuedWorldAct[];
+};
 
 const printDiagnostics = (diagnostics: BindingDiagnostic[]): void => {
   for (const diagnostic of diagnostics) {
@@ -300,6 +319,7 @@ export const runCli = async (argv: readonly string[]): Promise<number> => {
       const seed = parsed.options.seed ?? result.simfile.clock.seed;
       const runId = parsed.options.runId ?? defaultRunId(seed);
       const outDir = resolve(parsed.options.outDir ?? `runs/${runId}`);
+      const worldActs = await loadQueuedWorldActs(parsed.options.actsPath);
       const record = await writeRunRecord({
         moltnetArtifact: parsed.options.moltnetArtifact,
         outDir,
@@ -308,7 +328,8 @@ export const runCli = async (argv: readonly string[]): Promise<number> => {
         simfile: result.simfile,
         sourcePath: path,
         sourceText: source,
-        ticks: parsed.options.ticks
+        ticks: parsed.options.ticks,
+        worldActs
       });
       process.stdout.write(`wrote run ${runId} to ${record.outDir}\n`);
       return 0;
