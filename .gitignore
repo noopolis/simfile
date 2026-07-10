@@ -2,6 +2,7 @@ node_modules/
 dist/
 .astro/
 coverage/
+!src/coverage/
 .artifacts/
 runs/
 here.txt
