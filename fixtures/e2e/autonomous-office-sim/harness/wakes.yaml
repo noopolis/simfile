@@ -1,0 +1,48 @@
+# Deterministic control wakes driven by the root E2E harness
+# (npm run test:e2e:autonomous-office-sim). Each entry is delivered as a
+# Moltnet-shaped POST to /agents/<to>/wake against the generated Daimon
+# control server: from/message describe the inbound event, room/contextKind
+# describe where it lands and what kind of room it is.
+wakes:
+  - name: sam-to-maya-neighborhood
+    from: sam
+    to: maya
+    room: neighborhood
+    contextKind: neighborhood
+    message: "Neighborhood check-in: quick word before the evening winds down."
+  - name: eleanor-to-maya-boss-office
+    from: eleanor
+    to: maya
+    room: boss-office
+    contextKind: boss
+    message: "Boss-office wake: confirm one private lead concern before end of day."
+  - name: maya-to-theo-break-room
+    from: maya
+    to: theo
+    room: break-room
+    contextKind: break
+    message: "Break-room wake: keep the hallway coordination short."
+  - name: theo-to-priya-case-warroom
+    from: theo
+    to: priya
+    room: case-warroom
+    contextKind: case
+    message: "Case-warroom wake: confirm the tenant marker only inside this room."
+  - name: sam-to-jules-eleanor-home
+    from: sam
+    to: jules
+    room: eleanor-home
+    contextKind: home
+    message: "Eleanor-home wake: confirm the household issue only inside this room."
+  - name: maya-to-sam-after-work-chat
+    from: maya
+    to: sam
+    room: after-work-chat
+    contextKind: social
+    message: "After-work wake: confirm the friend buffer only inside this room."
+  - name: sam-to-eleanor-dm
+    from: sam
+    to: eleanor
+    room: dm-sam-eleanor
+    contextKind: direct-message
+    message: "Direct message from Sam: quick check before the evening handoff."

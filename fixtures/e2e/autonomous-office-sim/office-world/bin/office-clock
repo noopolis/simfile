@@ -1,0 +1,48 @@
+#!/usr/bin/env node
+// Deterministic office-world clock reader.
+//
+// Reads {day, tick, hhmm, phase} from a world-mount state file and prints it
+// as JSON. This script never advances the clock itself -- only the E2E
+// harness (npm run test:e2e:autonomous-office-sim) writes the state file, so
+// repeated reads are side-effect free and fully deterministic.
+//
+// Usage:
+//   office-clock [--state <path>] [status]
+//
+// The state path defaults to ./state/clock-state.json next to this script's
+// own office-world directory, but the harness always passes an explicit
+// --state path pointing at its own run-scoped state file.
+
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const args = process.argv.slice(2);
+const stateFlagIndex = args.indexOf("--state");
+const defaultStatePath = path.join(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "..",
+  "state",
+  "clock-state.json"
+);
+const statePath = stateFlagIndex >= 0 && args[stateFlagIndex + 1]
+  ? args[stateFlagIndex + 1]
+  : (process.env.OFFICE_CLOCK_STATE_PATH ?? defaultStatePath);
+
+const defaultState = { day: 1, hhmm: "07:00", phase: "morning", tick: 0 };
+
+let state = defaultState;
+try {
+  const raw = readFileSync(statePath, "utf8");
+  const parsed = JSON.parse(raw);
+  state = {
+    day: typeof parsed.day === "number" ? parsed.day : defaultState.day,
+    hhmm: typeof parsed.hhmm === "string" ? parsed.hhmm : defaultState.hhmm,
+    phase: typeof parsed.phase === "string" ? parsed.phase : defaultState.phase,
+    tick: typeof parsed.tick === "number" ? parsed.tick : defaultState.tick
+  };
+} catch {
+  state = defaultState;
+}
+
+process.stdout.write(`${JSON.stringify(state)}\n`);

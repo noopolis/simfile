@@ -1,0 +1,74 @@
+# Deterministic per-agent reply templates for the root E2E harness
+# (npm run test:e2e:autonomous-office-sim). The harness's fake agy/claude/
+# codex/grok CLI engines render these templates instead of calling a real
+# model. `room` is the agent's primary schedule-turn room; `broadcast_rooms`
+# are additional shared rooms the harness also logs a boundary-safe copy of
+# the turn into; `direct_message` is a synthetic per-cycle direct message.
+# `schedule`/`dream` are the base reply bodies (the harness appends a
+# `[PHASE/phase day N]` suffix and, when the primary room is inside a
+# harness/secrets.yaml boundary's allowed_rooms, a boundary marker suffix).
+broadcast_text: "I am keeping this concise and boundary-safe for spillover."
+message_reply: "Acknowledged in {room}, prompted by {from}. Staying inside this room's boundary."
+
+agents:
+  arun:
+    room: priya-home
+    schedule: "I will keep dinner calm and ask Priya one concrete question about her day."
+    dream: "arun consolidated the office rhythm and filing risk"
+  meera:
+    room: priya-home
+    schedule: "I will check in on Priya without turning dinner into a status meeting."
+    dream: "meera consolidated the office rhythm and filing risk"
+  cam:
+    room: theo-home
+    schedule: "I will keep the apartment quiet enough for Theo to decompress before tomorrow."
+    dream: "cam consolidated the office rhythm and filing risk"
+  leo:
+    room: theo-home
+    schedule: "I will nudge Theo to stop rewriting the same paragraph tonight."
+    dream: "leo consolidated the office rhythm and filing risk"
+  jules:
+    room: eleanor-home
+    schedule: "I will tell Eleanor the school issue plainly and not turn it into another case meeting."
+    dream: "jules consolidated the office rhythm and filing risk"
+  sam:
+    room: eleanor-home
+    broadcast_rooms: [after-work-chat]
+    schedule: "I will hold the home thread steady and keep the after-work chat human."
+    dream: "sam consolidated the office rhythm and filing risk"
+  nina:
+    room: maya-home
+    schedule: "I will ask Maya what she actually thinks, not only what she can prove."
+    dream: "nina consolidated the office rhythm and filing risk"
+  ravi:
+    room: maya-home
+    schedule: "I will make room for Maya to drop the careful-lawyer voice at home."
+    dream: "ravi consolidated the office rhythm and filing risk"
+  eleanor:
+    room: office-hall
+    broadcast_rooms: [neighborhood, after-work-chat]
+    direct_message:
+      to: sam
+      room: after-work-chat
+      text: "Night continuity note: I am keeping secrets inside intended scopes."
+    schedule: "I will keep the filing plan calm and concrete; Maya checks the argument, Theo checks cites, Priya checks dates."
+    dream: "eleanor consolidated the office rhythm and filing risk"
+  maya:
+    room: boss-office
+    broadcast_rooms: [neighborhood, after-work-chat]
+    direct_message:
+      to: sam
+      room: after-work-chat
+      text: "Night continuity note: I am keeping secrets inside intended scopes."
+    schedule: "I will review one issue at a time and flag only what needs Eleanor's call."
+    dream: "maya consolidated the office rhythm and filing risk"
+  priya:
+    room: case-warroom
+    broadcast_rooms: [neighborhood]
+    schedule: "I will keep exhibits, docket dates, and the shared state current."
+    dream: "priya consolidated the office rhythm and filing risk"
+  theo:
+    room: break-room
+    broadcast_rooms: [neighborhood]
+    schedule: "I will check the cite list and leave a note when a source looks weak."
+    dream: "theo consolidated the office rhythm and filing risk"
