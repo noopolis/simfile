@@ -36,7 +36,9 @@
     "prepack": "npm run build",
     "prepublishOnly": "npm run typecheck && npm test",
     "typecheck": "tsc --project tsconfig.json --noEmit && tsc --project tsconfig.web.json --noEmit",
-    "test": "node --import tsx --test \"src/**/*.test.ts\" \"web/src/**/*.test.ts\""
+    "test": "node --import tsx --test \"src/**/*.test.ts\" \"web/src/**/*.test.ts\"",
+    "coverage:render": "node --import tsx scripts/render-coverage.ts",
+    "emit-causal-fixture": "tsx src/runtime/emit-causal-fixture.ts"
   },
   "engines": {
     "node": ">=22.0.0"
