@@ -1,0 +1,118 @@
+{
+  "seedMessageText": "@eleanor We need to finalize the office pilot rollout with Sam: propose the pilot office and a target date for the file migration, and get Sam's agreement.",
+  "transcript": [
+    {
+      "id": "msg_99fc83b2-da39-437e-8d32-a0e3f1dd4a1b",
+      "network_id": "office_lab",
+      "origin": {
+        "network_id": "office_lab",
+        "message_id": "msg_99fc83b2-da39-437e-8d32-a0e3f1dd4a1b"
+      },
+      "target": {
+        "kind": "room",
+        "room_id": "office-room"
+      },
+      "from": {
+        "type": "human",
+        "id": "operator",
+        "name": "Office Sim E2E",
+        "network_id": "office_lab",
+        "fqid": "molt://office_lab/agents/operator"
+      },
+      "parts": [
+        {
+          "kind": "text",
+          "text": "@eleanor We need to finalize the office pilot rollout with Sam: propose the pilot office and a target date for the file migration, and get Sam's agreement."
+        }
+      ],
+      "mentions": [
+        "molt://office_lab/agents/eleanor"
+      ],
+      "created_at": "2026-07-11T15:22:47.294203178Z"
+    },
+    {
+      "id": "msg_b39e7132-8efd-4356-a890-31278b8ff74c",
+      "network_id": "office_lab",
+      "origin": {
+        "network_id": "office_lab",
+        "message_id": "msg_b39e7132-8efd-4356-a890-31278b8ff74c"
+      },
+      "target": {
+        "kind": "room",
+        "room_id": "office-room"
+      },
+      "from": {
+        "type": "agent",
+        "id": "eleanor",
+        "name": "eleanor",
+        "network_id": "office_lab",
+        "fqid": "molt://office_lab/agents/eleanor"
+      },
+      "parts": [
+        {
+          "kind": "text",
+          "text": "Let's pilot the downtown office and target June 1 for the file migration. @sam does that work for you?"
+        }
+      ],
+      "mentions": [
+        "molt://office_lab/agents/sam"
+      ],
+      "created_at": "2026-07-11T15:22:47.387932469Z"
+    },
+    {
+      "id": "msg_13f51ee4-37f9-43f6-8399-23a95a27263c",
+      "network_id": "office_lab",
+      "origin": {
+        "network_id": "office_lab",
+        "message_id": "msg_13f51ee4-37f9-43f6-8399-23a95a27263c"
+      },
+      "target": {
+        "kind": "room",
+        "room_id": "office-room"
+      },
+      "from": {
+        "type": "agent",
+        "id": "sam",
+        "name": "sam",
+        "network_id": "office_lab",
+        "fqid": "molt://office_lab/agents/sam"
+      },
+      "parts": [
+        {
+          "kind": "text",
+          "text": "Downtown office and June 1 works for me. @eleanor agreed, let's lock it in."
+        }
+      ],
+      "mentions": [
+        "molt://office_lab/agents/eleanor"
+      ],
+      "created_at": "2026-07-11T15:22:47.442487636Z"
+    },
+    {
+      "id": "msg_200e1b8d-f896-470c-a666-4b9e20ce8930",
+      "network_id": "office_lab",
+      "origin": {
+        "network_id": "office_lab",
+        "message_id": "msg_200e1b8d-f896-470c-a666-4b9e20ce8930"
+      },
+      "target": {
+        "kind": "room",
+        "room_id": "office-room"
+      },
+      "from": {
+        "type": "agent",
+        "id": "eleanor",
+        "name": "eleanor",
+        "network_id": "office_lab",
+        "fqid": "molt://office_lab/agents/eleanor"
+      },
+      "parts": [
+        {
+          "kind": "text",
+          "text": "Great, that's settled: downtown office, go-live June 1 for the file migration. Done."
+        }
+      ],
+      "created_at": "2026-07-11T15:22:47.491570886Z"
+    }
+  ]
+}

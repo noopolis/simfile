@@ -5,6 +5,7 @@ import { resolve } from "node:path";
 import { ZodError } from "zod";
 
 import { type BindingDiagnostic, type Simfile, createBindingDiagnostics, loadSpawnfileReport, parseSimfileSource } from "../schema/index.js";
+import { runObserve, writeObserveReport } from "../observe/index.js";
 import { type MoltnetArtifactKind, writeRunRecord } from "../runtime/trace.js";
 import type { QueuedWorldAct } from "../runtime/types.js";
 import { runViewCommand } from "../view/index.js";
@@ -13,6 +14,7 @@ const usage = (): string => [
   "Usage:",
   "  simfile validate <path> [--json] [--spawnfile-report <path>|<json>]",
   "  simfile run <path> --ticks <n> [--out <dir>] [--seed <seed>] [--run-id <id>] [--acts <path>] [--moltnet-artifact transcript|delivery] [--spawnfile-report <path>|<json>]",
+  "  simfile observe <run-dir> [--json]",
   "  simfile view --state <path>",
   "  simfile view <run-record-dir>",
   "  simfile view --help",
@@ -46,6 +48,32 @@ interface ParsedValidateOptions {
   path?: string;
   spawnfileReport?: string;
 }
+
+interface ParsedObserveOptions {
+  json?: boolean;
+  runDir?: string;
+}
+
+const parseObserveArguments = (argv: readonly string[]): { error?: string; options?: ParsedObserveOptions } => {
+  const options: ParsedObserveOptions = {};
+
+  for (const arg of argv) {
+    if (arg === "--json") {
+      options.json = true;
+      continue;
+    }
+    if (arg.startsWith("-")) {
+      return { error: `Unknown flag ${arg}` };
+    }
+    if (options.runDir !== undefined) {
+      return { error: `Unexpected positional argument ${arg}` };
+    }
+    options.runDir = arg;
+  }
+
+  if (!options.runDir) return { error: "Missing run directory" };
+  return { options };
+};
 
 const parseOptionalValueFlag = (
   arg: string,
@@ -333,6 +361,50 @@ export const runCli = async (argv: readonly string[]): Promise<number> => {
       });
       process.stdout.write(`wrote run ${runId} to ${record.outDir}\n`);
       return 0;
+    } catch (error) {
+      process.stderr.write(`${formatError(error)}\n`);
+      return 1;
+    }
+  }
+
+  if (command === "observe") {
+    const parsed = parseObserveArguments(rest);
+    if (parsed.error || !parsed.options?.runDir) {
+      if (parsed.error) process.stderr.write(`${parsed.error}\n`);
+      process.stderr.write(usage());
+      return 1;
+    }
+
+    const runDir = resolve(parsed.options.runDir);
+    try {
+      const result = await runObserve(runDir);
+      const reportPath = await writeObserveReport(runDir, result.report);
+
+      const failedArtifacts = result.artifactIntegrity.filter((check) => !check.ok);
+      for (const failed of failedArtifacts) {
+        process.stderr.write(
+          `warning: artifact sha256 mismatch for ${failed.path} (expected ${failed.expectedSha256}, got ${failed.actualSha256 ?? "<missing>"})\n`
+        );
+      }
+      for (const parseError of result.causalParseErrors) {
+        process.stderr.write(`warning: ${parseError.relativePath}:${parseError.line}: ${parseError.message}\n`);
+      }
+
+      if (parsed.options.json) {
+        process.stdout.write(`${JSON.stringify({
+          artifactIntegrity: result.artifactIntegrity,
+          causalParseErrors: result.causalParseErrors,
+          report: result.report,
+          reportPath
+        }, null, 2)}\n`);
+      } else {
+        process.stdout.write(`wrote observe report for run ${result.report.run_id} to ${reportPath}\n`);
+        process.stdout.write(`participants: ${result.report.participants.join(", ")}\n`);
+        process.stdout.write(`agent turns: ${result.report.agent_turns.count} (${result.report.agent_turns.sequence.join(" -> ")})\n`);
+        process.stdout.write(`chains: ${result.report.chains.complete} complete, ${result.report.chains.incomplete.length} incomplete\n`);
+        process.stdout.write(`failures: ${result.report.failures.length}\n`);
+      }
+      return failedArtifacts.length > 0 ? 1 : 0;
     } catch (error) {
       process.stderr.write(`${formatError(error)}\n`);
       return 1;
