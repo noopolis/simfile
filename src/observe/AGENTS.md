@@ -16,12 +16,17 @@ Spawnfile internals; the only cross-repo dependency is the narrow shared package
 - `causalStreams.ts` — `collectCausalStreams`: walks `<runDir>/raw/**/causal.jsonl`,
   tags each stream by its authority directory (`raw/<authority>/...`), and parses it
   with `@noopolis/stele`'s `parseCausalJsonl`.
-- `memoryBanks.ts` — `collectMemoryBankCounts`: reads each mneme bank's own
-  `raw/mneme/<bank>/events.jsonl` (mneme's native event log, NOT the causal
-  envelope) for the memory-write count, since mneme's causal envelope has no
-  write-side event type yet (only `memory.recall.mode`/`memory.recalled` — see the
-  file's own comment). Falls back to counting that bank's `memory.recalled` causal
-  events if `events.jsonl` is absent from a future fixture.
+- `memoryBanks.ts` — `collectMemoryBankCounts`: ledger-first (Slice B Piece 4b).
+  Derives each bank's memory-write count from `memory.written` causal events
+  (mneme's write-side envelope, reconciled alongside `memory.recalled`) when at
+  least one is present, marking `memory_write_source: "ledger"` and deriving
+  `writes_by_agent` from each event's `principal_id`. Falls back to the interim
+  signal — mneme's own `raw/mneme/<bank>/events.jsonl` bank event log (NOT the
+  causal envelope), or that bank's `memory.recalled` causal events if even that
+  is absent — marking `memory_write_source: "events-fallback"` so a pre-4b run
+  is visibly on the fallback, never silently. `recalls` is unaffected by which
+  write source wins: it prefers `events.jsonl`'s own lines, falling back to
+  causal `memory.recalled` events.
 - `compute.ts` — pure functions building every `simfile.observe.v1` field from
   already-reconciled events: `participants` (from `principal_id`), `agent_turns`
   (ordered by the moltnet message seq that causally triggered each turn — never

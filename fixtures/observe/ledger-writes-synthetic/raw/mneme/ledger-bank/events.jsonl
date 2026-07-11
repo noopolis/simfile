@@ -1,0 +1,6 @@
+{"id":"evt_stale_1","type":"memory.claimed","createdAt":"2026-07-11T20:00:02.000Z","principal":{"agentId":"nora","scope":"room","qualifier":"ledger_lab:ledger-room"},"content":{"kind":"text","text":"stale fallback line 1"}}
+{"id":"evt_stale_2","type":"memory.observed","createdAt":"2026-07-11T20:00:03.000Z","principal":{"agentId":"nora","scope":"room","qualifier":"ledger_lab:ledger-room"},"content":{"kind":"text","text":"stale fallback line 2"}}
+{"id":"evt_stale_3","type":"memory.claimed","createdAt":"2026-07-11T20:00:04.000Z","principal":{"agentId":"iris","scope":"room","qualifier":"ledger_lab:ledger-room"},"content":{"kind":"text","text":"stale fallback line 3"}}
+{"id":"evt_stale_4","type":"memory.observed","createdAt":"2026-07-11T20:00:05.000Z","principal":{"agentId":"iris","scope":"room","qualifier":"ledger_lab:ledger-room"},"content":{"kind":"text","text":"stale fallback line 4"}}
+{"id":"evt_stale_5","type":"memory.recalled","createdAt":"2026-07-11T20:00:05.500Z","principal":{"agentId":"nora","scope":"room","qualifier":"ledger_lab:ledger-room"},"content":{"kind":"text","text":"stale fallback recall 1"}}
+{"id":"evt_stale_6","type":"memory.recalled","createdAt":"2026-07-11T20:00:05.600Z","principal":{"agentId":"iris","scope":"room","qualifier":"ledger_lab:ledger-room"},"content":{"kind":"text","text":"stale fallback recall 2"}}

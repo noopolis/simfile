@@ -113,6 +113,12 @@ export const buildObserveReport = (input: BuildObserveReportInput): SimfileObser
   participants: computeParticipants(input.allEvents),
   agent_turns: computeAgentTurns(input.allEvents),
   chains: computeChains(input.reconciled),
-  memory: input.memoryBanks.map((bank) => ({ bank: bank.bank, events: bank.events, recalls: bank.recalls })),
+  memory: input.memoryBanks.map((bank) => ({
+    bank: bank.bank,
+    events: bank.events,
+    recalls: bank.recalls,
+    memory_write_source: bank.memory_write_source,
+    ...(bank.writes_by_agent ? { writes_by_agent: bank.writes_by_agent } : {})
+  })),
   failures: computeFailures(input.allEvents)
 });

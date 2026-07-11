@@ -22,11 +22,25 @@ const incompleteChainEntrySchema = z
   })
   .strict();
 
+/**
+ * Where `memory.events` (the write-count proxy) for a bank came from —
+ * Slice B Piece 4b. `"ledger"` means at least one `memory.written` causal
+ * event was reconciled for the bank (mneme's write-side envelope);
+ * `"events-fallback"` means the count instead came from the interim signal
+ * (mneme's own `events.jsonl` bank log, or that bank's `memory.recalled`
+ * causal events if even that is absent). Optional so a pre-4b serialized
+ * report (no source marker at all) still validates.
+ */
+export const MEMORY_WRITE_SOURCES = ["ledger", "events-fallback"] as const;
+export type MemoryWriteSource = (typeof MEMORY_WRITE_SOURCES)[number];
+
 const memoryBankEntrySchema = z
   .object({
     bank: z.string().min(1),
     events: z.number().int().min(0),
-    recalls: z.number().int().min(0)
+    recalls: z.number().int().min(0),
+    memory_write_source: z.enum(MEMORY_WRITE_SOURCES).optional(),
+    writes_by_agent: z.record(z.string(), z.number().int().min(0)).optional()
   })
   .strict();
 
