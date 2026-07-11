@@ -1,0 +1,55 @@
+spawnfile_version: "0.1"
+kind: team
+name: office-sim
+description: "Composed sim org: Eleanor and Sam negotiate one office rollout decision over a managed Moltnet room, with a deterministic scripted engine and shared lexical-only Mneme memory"
+
+shared:
+  workspace:
+    docs:
+      system: TEAM.md
+
+members:
+  - id: eleanor
+    ref: ./agents/eleanor
+  - id: sam
+    ref: ./agents/sam
+
+memory:
+  - id: office-recall
+    access:
+      members: [eleanor, sam]
+    store:
+      kind: json
+      path: /var/lib/spawnfile/memory/office-sim/office-recall.jsonl
+      persistence:
+        mode: durable
+    index:
+      lexical:
+        enabled: true
+        engine: sqlite_fts
+      vector:
+        enabled: false
+
+mode: swarm
+
+networks:
+  - id: office_lab
+    name: Office Lab
+    provider: moltnet
+    server:
+      mode: managed
+      listen:
+        bind: 0.0.0.0
+        port: 19941
+      store:
+        kind: memory
+      auth:
+        mode: none
+      human_ingress: true
+    rooms:
+      - id: office-room
+        members: [eleanor, sam]
+
+policy:
+  mode: warn
+  on_degrade: warn

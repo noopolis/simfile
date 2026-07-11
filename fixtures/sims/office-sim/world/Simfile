@@ -1,0 +1,7 @@
+simfile_version: "0.1"
+name: office-sim-world
+spawnfile: ../org/Spawnfile
+
+clock:
+  seed: office-sim-composed-seed
+  tick: 1m
