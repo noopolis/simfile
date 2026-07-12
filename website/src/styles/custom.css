@@ -4,18 +4,18 @@
 }
 
 ::selection {
-  background: #8b7cf6;
+  background: #7c5cff;
   color: #0b0b0b;
 }
 ::-moz-selection {
-  background: #8b7cf6;
+  background: #7c5cff;
   color: #0b0b0b;
 }
 
 /* Canonical Simfile docs theme */
 :root {
   --sl-color-accent-low: #221a3a;
-  --sl-color-accent: #8b7cf6;
+  --sl-color-accent: #7c5cff;
   --sl-color-accent-high: #a78bfa;
   --sl-color-white: #f3eee7;
   --sl-color-gray-1: #d1c7b8;

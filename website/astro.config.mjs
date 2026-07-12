@@ -4,7 +4,7 @@ import starlight from '@astrojs/starlight';
 import sitemap from '@astrojs/sitemap';
 
 export default defineConfig({
-  site: 'https://simfile.dev',
+  site: 'https://simfile.org',
   integrations: [
     sitemap(),
     starlight({
@@ -30,6 +30,7 @@ export default defineConfig({
         {
           label: 'Guides',
           items: [
+            { label: 'Memetics Experiment', slug: 'guides/memetics' },
             { label: 'Live Viewer', slug: 'guides/live-viewer' },
             { label: 'Skins', slug: 'guides/skins' },
             { label: 'Spawnfile Integration', slug: 'guides/spawnfile-integration' },
