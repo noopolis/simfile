@@ -1,10 +1,12 @@
 import assert from "node:assert/strict";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 
 import { buildRunTimeline } from "./runTimeline.js";
-import type { RunTimeline } from "./runTimelineTypes.js";
+import type { RunTimeline, RunTimelineElementKind } from "./runTimelineTypes.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const GOLDEN_DIR = path.resolve(here, "..", "..", "fixtures", "observe", "office-sim-golden");
@@ -21,6 +23,102 @@ const eventById = (timeline: RunTimeline, eventId: string) => {
   const event = timeline.events.find((candidate) => candidate.eventId === eventId);
   assert.ok(event, `expected timeline to contain event ${eventId}`);
   return event!;
+};
+
+const writeMultiRoomRun = async (): Promise<string> => {
+  const runDir = await mkdtemp(path.join(tmpdir(), "simfile-timeline-multi-room-"));
+  const moltnetDir = path.join(runDir, "raw", "moltnet");
+  const daimonDir = path.join(runDir, "raw", "daimon", "alice");
+  await Promise.all([mkdir(moltnetDir, { recursive: true }), mkdir(daimonDir, { recursive: true })]);
+
+  await writeFile(path.join(runDir, "manifest.json"), JSON.stringify({
+    version: "simfile.run-manifest.v1",
+    run_id: "run-multi-room",
+    created_at: "2026-07-12T00:00:00.000Z",
+    contract_versions: {},
+    artifacts: [],
+    world: { network_id: "lab", room_id: "outer", members: ["alice"] },
+  }), "utf8");
+
+  const messages = [
+    { id: "msg-north", room: "north", text: "north message", at: "2026-07-12T00:00:00.000Z" },
+    { id: "msg-south", room: "south", text: "south message", at: "2026-07-12T00:00:01.000Z" },
+  ];
+  await writeFile(path.join(moltnetDir, "transcript.json"), JSON.stringify({
+    transcript: messages.map((message) => ({
+      id: message.id,
+      network_id: "lab",
+      target: { kind: "room", room_id: message.room },
+      from: { type: "human", id: "operator", name: "Operator" },
+      parts: [{ kind: "text", text: message.text }],
+      created_at: message.at,
+    })),
+  }), "utf8");
+
+  const moltnetEvents = messages.map((message, index) => ({
+    version: "noopolis.causal-event.v1",
+    run_id: "run-multi-room",
+    event_id: `moltnet:${message.id}`,
+    emitter: { system: "moltnet", stream_id: "network:lab", seq: index + 1 },
+    type: "message.accepted",
+    principal_id: "system:moltnet.anonymous",
+    recorded_at: message.at,
+    cause_event_ids: index === 0 ? [] : ["moltnet:msg-north"],
+    payload: { message_id: message.id, target: { kind: "room", room_id: message.room } },
+  }));
+  await writeFile(
+    path.join(moltnetDir, "causal.jsonl"),
+    `${moltnetEvents.map((event) => JSON.stringify(event)).join("\n")}\n`,
+    "utf8",
+  );
+
+  const daimonEvents = [
+    {
+      event_id: "daimon:south:turn.input.submitted",
+      seq: 1,
+      type: "turn.input.submitted",
+      recorded_at: "2026-07-12T00:00:01.100Z",
+      cause_event_ids: ["moltnet:msg-south"],
+      payload: { turn_id: "moltnet:msg-south" },
+    },
+    {
+      event_id: "daimon:south:turn.output.completed",
+      seq: 2,
+      type: "turn.output.completed",
+      recorded_at: "2026-07-12T00:00:01.200Z",
+      cause_event_ids: ["daimon:south:turn.input.submitted"],
+      payload: { turn_id: "moltnet:msg-south" },
+    },
+    {
+      event_id: "daimon:south:wake",
+      seq: 3,
+      type: "control.wake.accepted",
+      recorded_at: "2026-07-12T00:00:01.300Z",
+      cause_event_ids: ["moltnet:msg-south"],
+      payload: {},
+    },
+    {
+      event_id: "daimon:unresolved:wake",
+      seq: 4,
+      type: "control.wake.accepted",
+      recorded_at: "2026-07-12T00:00:01.400Z",
+      cause_event_ids: ["moltnet:missing"],
+      payload: {},
+    },
+  ].map(({ seq, ...event }) => ({
+    version: "noopolis.causal-event.v1",
+    run_id: "run-multi-room",
+    emitter: { system: "daimon", stream_id: "agent:alice", seq },
+    principal_id: "agent:alice",
+    ...event,
+  }));
+  await writeFile(
+    path.join(daimonDir, "causal.jsonl"),
+    `${daimonEvents.map((event) => JSON.stringify(event)).join("\n")}\n`,
+    "utf8",
+  );
+
+  return runDir;
 };
 
 describe("buildRunTimeline — golden fixture", () => {
@@ -71,6 +169,41 @@ describe("buildRunTimeline — golden fixture", () => {
     const timeline = await buildRunTimeline(GOLDEN_DIR);
     const refs = timeline.elements.map((element) => element.ref).sort();
     assert.deepEqual(refs, ["agent:eleanor", "agent:sam", "bank:office-recall", "room:office_lab:office-room"].sort());
+  });
+
+  it("keeps every daimon event attributed to the single room that caused it", async () => {
+    const timeline = await buildRunTimeline(GOLDEN_DIR);
+    const daimonEvents = timeline.events.filter((event) => event.authority === "daimon");
+    assert.ok(daimonEvents.length > 0);
+    for (const event of daimonEvents) {
+      assert.deepEqual(event.subjects, [`agent:${event.actor}`, "room:office_lab:office-room"]);
+    }
+  });
+
+  it("supports the team element kind and emits an empty membranes foundation", async () => {
+    const teamKind: RunTimelineElementKind = "team";
+    const timeline = await buildRunTimeline(GOLDEN_DIR);
+    assert.equal(teamKind, "team");
+    assert.deepEqual(timeline.membranes, []);
+  });
+});
+
+describe("buildRunTimeline — multi-room daimon attribution", () => {
+  it("uses the causing message room and omits a room when the cause cannot be resolved", async () => {
+    const runDir = await writeMultiRoomRun();
+    try {
+      const timeline = await buildRunTimeline(runDir);
+      for (const eventId of [
+        "daimon:south:turn.input.submitted",
+        "daimon:south:turn.output.completed",
+        "daimon:south:wake",
+      ]) {
+        assert.deepEqual(eventById(timeline, eventId).subjects, ["agent:alice", "room:lab:south"]);
+      }
+      assert.deepEqual(eventById(timeline, "daimon:unresolved:wake").subjects, ["agent:alice"]);
+    } finally {
+      await rm(runDir, { recursive: true, force: true });
+    }
   });
 });
 

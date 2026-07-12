@@ -34,6 +34,8 @@ const messageText = (message: RawTranscriptMessage): string =>
 
 const agentIdFromStreamId = (streamId: string): string | undefined => streamId.match(/^agent:(.+)$/u)?.[1];
 
+const networkIdFromStreamId = (streamId: string): string | undefined => streamId.match(/^network:(.+)$/u)?.[1];
+
 const bankFromRelativePath = (relativePath: string): string | undefined => {
   const segments = relativePath.split(path.sep);
   return segments[0] === "raw" && segments[1] === "mneme" ? segments[2] : undefined;
@@ -78,8 +80,19 @@ const viewClassForBankLogType = (type: string): TimelineViewClass => {
 interface JoinContext {
   room?: ElementRef;
   messagesById: ReadonlyMap<string, RawTranscriptMessage>;
+  roomsByMessageEventId: ReadonlyMap<string, ElementRef>;
   memoryContentById: ReadonlyMap<string, string>;
 }
+
+const roomForMoltnetMessage = (event: CausalEvent): ElementRef | undefined => {
+  if (event.type !== "message.accepted") return undefined;
+  const networkId = networkIdFromStreamId(event.emitter.stream_id);
+  const target = event.payload?.target;
+  if (!networkId || typeof target !== "object" || target === null) return undefined;
+  const targetRecord = target as Record<string, unknown>;
+  const roomId = stringField(targetRecord, "room_id");
+  return targetRecord.kind === "room" && roomId ? roomRef(networkId, roomId) : undefined;
+};
 
 const buildMoltnetRecord = (event: CausalEvent, base: Omit<RawRecord, "subjects" | "actor" | "text">, ctx: JoinContext): RawRecord => {
   if (event.type !== "message.accepted") {
@@ -98,11 +111,18 @@ const buildMoltnetRecord = (event: CausalEvent, base: Omit<RawRecord, "subjects"
 
 const buildDaimonRecord = (event: CausalEvent, base: Omit<RawRecord, "subjects" | "actor" | "text">, ctx: JoinContext): RawRecord => {
   const agentId = agentIdFromStreamId(event.emitter.stream_id);
-  const subjects = [agentId ? agentRef(agentId) : undefined, ctx.room].filter(isDefined);
+  const turnId = stringField(event.payload, "turn_id");
+  const causingMessageEventIds = [
+    turnId?.startsWith("moltnet:") ? turnId : undefined,
+    ...event.cause_event_ids,
+  ].filter(isDefined);
+  const causingRoom = causingMessageEventIds
+    .map((eventId) => ctx.roomsByMessageEventId.get(eventId))
+    .find(isDefined);
+  const subjects = [agentId ? agentRef(agentId) : undefined, causingRoom].filter(isDefined);
 
   let text: string | undefined;
   if (event.type === "turn.input.submitted") {
-    const turnId = stringField(event.payload, "turn_id");
     const causingMessageId = turnId?.startsWith("moltnet:") ? turnId.slice("moltnet:".length) : undefined;
     const causingMessage = causingMessageId ? ctx.messagesById.get(causingMessageId) : undefined;
     text = causingMessage ? messageText(causingMessage) : undefined;
@@ -264,11 +284,19 @@ export const buildRunTimeline = async (runDir: string): Promise<RunTimeline> => 
   ]);
 
   const messagesById = new Map(transcript.transcript.map((message) => [message.id, message] as const));
+  const roomsByMessageEventId = new Map<string, ElementRef>();
+  for (const stream of streams) {
+    if (stream.authority !== "moltnet") continue;
+    for (const event of stream.events) {
+      const messageRoom = roomForMoltnetMessage(event);
+      if (messageRoom) roomsByMessageEventId.set(event.event_id, messageRoom);
+    }
+  }
   const memoryContentById = new Map<string, string>();
   for (const bankEvents of mnemeByBank.values()) {
     for (const event of bankEvents) memoryContentById.set(event.id, event.content.text);
   }
-  const ctx: JoinContext = { room, messagesById, memoryContentById };
+  const ctx: JoinContext = { room, messagesById, roomsByMessageEventId, memoryContentById };
 
   const records: RawRecord[] = [];
   for (const stream of streams) {
@@ -301,5 +329,5 @@ export const buildRunTimeline = async (runDir: string): Promise<RunTimeline> => 
 
   const elements = buildElements({ members, room, roomId, streams, mnemeByBank });
 
-  return { version: "simfile.run-timeline.v1", runId: manifest.run_id, events, elements };
+  return { version: "simfile.run-timeline.v1", runId: manifest.run_id, events, elements, membranes: [] };
 };

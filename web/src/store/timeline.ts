@@ -42,7 +42,7 @@ export interface TimelineEvent {
   payload: unknown;
 }
 
-export type RunTimelineElementKind = "agent" | "room" | "bank";
+export type RunTimelineElementKind = "agent" | "room" | "bank" | "team";
 
 export interface RunTimelineElement {
   ref: ElementRef;
@@ -55,6 +55,13 @@ export interface RunTimeline {
   runId: string;
   events: TimelineEvent[];
   elements: RunTimelineElement[];
+  membranes?: Array<{
+    ref: string;
+    label: string;
+    representative: string;
+    interiorRooms: string[];
+    members: string[];
+  }>;
 }
 
 export interface TimelineStoreState {
@@ -199,6 +206,25 @@ export const eventsUpTo = (timeline: RunTimeline, cursor: number): TimelineEvent
  */
 export const eventsForElement = (timeline: RunTimeline, ref: ElementRef): TimelineEvent[] =>
   timeline.events.filter((event) => event.subjects.includes(ref));
+
+/**
+ * The combined storyline inside a membrane. An event may name both an
+ * interior room and a member, so union by event id before restoring the
+ * timeline's ascending `t` order.
+ */
+export const eventsForMembrane = (timeline: RunTimeline, membraneRef: ElementRef): TimelineEvent[] => {
+  const membrane = timeline.membranes?.find(({ ref }) => ref === membraneRef);
+  if (!membrane) return [];
+
+  const eventsById = new Map<string, TimelineEvent>();
+  for (const ref of [...membrane.interiorRooms, ...membrane.members]) {
+    for (const event of eventsForElement(timeline, ref)) {
+      if (!eventsById.has(event.eventId)) eventsById.set(event.eventId, event);
+    }
+  }
+
+  return [...eventsById.values()].sort((left, right) => left.t - right.t);
+};
 
 /**
  * Recall -> turn linked selection (increment 2 rule 2): a `turn.input` event

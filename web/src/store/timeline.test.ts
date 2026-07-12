@@ -5,6 +5,7 @@ import {
   closePortal,
   clearHighlightedEventIds,
   eventsForElement,
+  eventsForMembrane,
   eventsUpTo,
   focusAndOpenPortal,
   jumpEnd,
@@ -48,6 +49,7 @@ const fixtureTimeline = (): RunTimeline => ({
     { ref: "agent:eleanor", kind: "agent", label: "eleanor" },
     { ref: "room:net:room", kind: "room", label: "room" },
   ],
+  membranes: [],
 });
 
 /** A timeline shaped like the golden fixture's turn 3: a turn.input caused by its message plus two mneme: recalls. */
@@ -84,6 +86,7 @@ const fixtureTimelineWithRecall = (): RunTimeline => ({
     { ref: "bank:office-recall", kind: "bank", label: "office-recall" },
     { ref: "room:net:room", kind: "room", label: "room" },
   ],
+  membranes: [],
 });
 
 describe("timelineStore", () => {
@@ -167,6 +170,32 @@ describe("timelineStore", () => {
     assert.deepEqual(bank.map((event) => event.eventId), ["mneme:recall-a", "mneme:recall-b"]);
     const room = eventsForElement(timeline, "room:net:room");
     assert.deepEqual(room.map((event) => event.eventId), ["moltnet:msg-1", "daimon:turn-3-input"]);
+  });
+
+  it("eventsForMembrane unions interior-room and member storylines, deduplicated by eventId in t order", () => {
+    const timeline = fixtureTimeline();
+    timeline.events[2] = {
+      ...timeline.events[2]!,
+      subjects: ["room:net:room", "agent:eleanor"],
+    };
+    timeline.membranes = [{
+      ref: "team:research",
+      label: "Research",
+      representative: "agent:eleanor",
+      interiorRooms: ["room:net:room"],
+      members: ["agent:eleanor"],
+    }];
+
+    const events = eventsForMembrane(timeline, "team:research");
+    assert.deepEqual(events.map((event) => event.eventId), [
+      "event-0",
+      "event-1",
+      "event-2",
+      "event-3",
+      "event-4",
+    ]);
+    assert.equal(events.filter((event) => event.eventId === "event-2").length, 1);
+    assert.deepEqual(events.map((event) => event.t), [0, 1, 2, 3, 4]);
   });
 
   it("openPortal/closePortal/setOpenPortals manage the portal stack without disturbing other portals", () => {

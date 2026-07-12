@@ -48,7 +48,7 @@ export interface TimelineEvent {
   payload: unknown;
 }
 
-export type RunTimelineElementKind = "agent" | "room" | "bank";
+export type RunTimelineElementKind = "agent" | "room" | "bank" | "team";
 
 export interface RunTimelineElement {
   ref: ElementRef;
@@ -61,4 +61,11 @@ export interface RunTimeline {
   runId: string;
   events: TimelineEvent[];
   elements: RunTimelineElement[];
+  membranes?: Array<{
+    ref: string;
+    label: string;
+    representative: string;
+    interiorRooms: string[];
+    members: string[];
+  }>;
 }
