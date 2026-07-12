@@ -11,6 +11,7 @@ export default defineConfig({
       title: 'Simfile',
       description: 'Deterministic simulation worlds for agentic organizations.',
       components: {
+        Header: './src/components/DocsHeader.astro',
         ThemeSelect: './src/components/EmptyThemeSelect.astro',
         SiteTitle: './src/components/SiteTitle.astro',
       },
