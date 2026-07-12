@@ -111,6 +111,55 @@ describe("createViewerServer", () => {
     }
   });
 
+  it("serves run-replay mode (React shell + timeline + world adapter) for a compose-and-observe run directory", async () => {
+    const runDir = path.resolve(
+      path.dirname(fileURLToPath(import.meta.url)),
+      "..",
+      "..",
+      "fixtures",
+      "observe",
+      "office-sim-golden"
+    );
+    const handle = await createViewerServer({
+      mode: "replay",
+      port: 0,
+      sourcePath: runDir,
+    });
+
+    try {
+      const stateResponse = await fetch(`${handle.url}/api/state`);
+      const state = await stateResponse.json() as { mode: string };
+      assert.equal(state.mode, "run-replay");
+
+      const page = await fetch(`${handle.url}/`);
+      assert.equal(page.status, 200);
+      assert.match(await page.text(), /Simfile View/);
+
+      const modelResponse = await fetch(`${handle.url}/api/run-view-model.json`);
+      assert.equal(modelResponse.status, 200);
+      const model = await modelResponse.json() as { thread: unknown[]; verdict: { turnCount: number } };
+      assert.equal(model.thread.length, 4);
+      assert.equal(model.verdict.turnCount, 3);
+
+      const timelineResponse = await fetch(`${handle.url}/api/timeline`);
+      assert.equal(timelineResponse.status, 200);
+      const timeline = await timelineResponse.json() as { runId: string; events: { t: number }[] };
+      assert.equal(timeline.runId, "run-58fa4bd3beed42e5954517389dca2646");
+      assert.ok(timeline.events.length > 0);
+      timeline.events.forEach((event, index) => assert.equal(event.t, index));
+
+      const worldResponse = await fetch(`${handle.url}/api/world`);
+      assert.equal(worldResponse.status, 200, "run-replay mode must adapt a world trace, not 404");
+      const world = await worldResponse.json() as { trace: { rooms: { id: string }[] } };
+      assert.equal(world.trace.rooms[0]?.id, "office-room");
+
+      const eventsResponse = await fetch(`${handle.url}/api/events`);
+      assert.equal(eventsResponse.status, 404, "run-replay mode must not open the live SSE stream");
+    } finally {
+      await handle.close();
+    }
+  });
+
   it("serves viewer traces from the shipped office fixture run", async () => {
     const fixturePath = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "runs", "office-world-v0");
     const handle = await createViewerServer({

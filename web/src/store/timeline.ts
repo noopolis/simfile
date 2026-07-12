@@ -1,0 +1,148 @@
+import { useSyncExternalStore } from "react";
+
+/**
+ * The one clock every time-linked view subscribes to (`VIEW_DESIGN.md` rule
+ * 7: time is one axis everywhere, and the map, chat, minds rail, and agent
+ * storyline portal must all rewind together, never keep private clocks).
+ * This module is a plain external store (no Context, no per-tree instance)
+ * so `ScrubBar`, `RunReplayShell`, and `StorylinePortal` all read and move
+ * the exact same cursor.
+ *
+ * The shapes below mirror `src/view/runTimelineTypes.ts`'s `RunTimeline` /
+ * `TimelineEvent` — a structural duplicate of the `/api/timeline` JSON
+ * contract, not a cross-package import (this repo's web/src never imports
+ * from src/; see `runWorldTrace.ts`'s equivalent note on the server side).
+ */
+
+export type ElementRef = string;
+
+export type TimelineViewClass =
+  | "message"
+  | "wake"
+  | "turn.input"
+  | "turn.output"
+  | "memory.claimed"
+  | "memory.observed"
+  | "memory.recalled"
+  | "other";
+
+export interface TimelineEvent {
+  t: number;
+  eventId: string;
+  authority: string;
+  streamId: string;
+  seq: number;
+  type: string;
+  viewClass: TimelineViewClass;
+  recordedAt: string;
+  actor?: string;
+  subjects: ElementRef[];
+  causes: string[];
+  text?: string;
+  payload: unknown;
+}
+
+export type RunTimelineElementKind = "agent" | "room" | "bank";
+
+export interface RunTimelineElement {
+  ref: ElementRef;
+  kind: RunTimelineElementKind;
+  label: string;
+}
+
+export interface RunTimeline {
+  version: string;
+  runId: string;
+  events: TimelineEvent[];
+  elements: RunTimelineElement[];
+}
+
+export interface TimelineStoreState {
+  timeline: RunTimeline | null;
+  /** The dense scrub key `0..events.length-1` every time-linked view reads as-of. */
+  cursor: number;
+  playing: boolean;
+  /** Steps per second while `playing`. */
+  speed: number;
+  selection: ElementRef | null;
+  loadError: string | null;
+}
+
+const listeners = new Set<() => void>();
+
+let state: TimelineStoreState = {
+  timeline: null,
+  cursor: 0,
+  playing: false,
+  speed: 2,
+  selection: null,
+  loadError: null,
+};
+
+const emit = (): void => {
+  for (const listener of listeners) listener();
+};
+
+const setState = (patch: Partial<TimelineStoreState>): void => {
+  state = { ...state, ...patch };
+  emit();
+};
+
+export const timelineStore = {
+  subscribe(listener: () => void): () => void {
+    listeners.add(listener);
+    return () => listeners.delete(listener);
+  },
+  getSnapshot(): TimelineStoreState {
+    return state;
+  },
+};
+
+/** Reset hook for tests: this module holds process-wide singleton state. */
+export const resetTimelineStoreForTests = (): void => {
+  state = { timeline: null, cursor: 0, playing: false, speed: 2, selection: null, loadError: null };
+};
+
+export const maxCursor = (timeline: RunTimeline | null): number =>
+  timeline ? Math.max(0, timeline.events.length - 1) : 0;
+
+export const loadTimeline = (timeline: RunTimeline): void => {
+  setState({ timeline, cursor: 0, loadError: null });
+};
+
+export const setLoadError = (message: string): void => setState({ loadError: message });
+
+export const setCursor = (t: number): void => {
+  const max = maxCursor(state.timeline);
+  const clamped = Math.max(0, Math.min(max, Math.round(t)));
+  setState({ cursor: clamped });
+};
+
+export const stepBy = (delta: number): void => setCursor(state.cursor + delta);
+export const jumpStart = (): void => setCursor(0);
+export const jumpEnd = (): void => setCursor(maxCursor(state.timeline));
+
+export const play = (): void => setState({ playing: true });
+export const pause = (): void => setState({ playing: false });
+export const togglePlay = (): void => setState({ playing: !state.playing });
+export const setSpeed = (speed: number): void => setState({ speed: Math.max(0.25, speed) });
+
+export const setSelection = (ref: ElementRef | null): void => setState({ selection: ref });
+
+/**
+ * The time-link invariant, as a value every consumer shares instead of
+ * re-deriving: the prefix slice of events "as of" a cursor. Because
+ * `TimelineEvent.t` is assigned densely in final order (`runTimeline.ts`),
+ * this is equivalent to `timeline.events.slice(0, cursor + 1)`, but filters
+ * defensively on `t` so it can never return an event with `t > cursor` even
+ * if a caller passes an unsorted or filtered event list.
+ */
+export const eventsUpTo = (timeline: RunTimeline, cursor: number): TimelineEvent[] =>
+  timeline.events.filter((event) => event.t <= cursor);
+
+/** Every event whose `subjects` includes `ref`, in `t` order — the raw feed an agent storyline portal renders. */
+export const eventsForElement = (timeline: RunTimeline, ref: ElementRef): TimelineEvent[] =>
+  timeline.events.filter((event) => event.subjects.includes(ref));
+
+export const useTimelineStore = (): TimelineStoreState =>
+  useSyncExternalStore(timelineStore.subscribe, timelineStore.getSnapshot, timelineStore.getSnapshot);

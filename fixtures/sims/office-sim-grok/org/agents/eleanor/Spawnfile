@@ -1,0 +1,20 @@
+spawnfile_version: "0.1"
+kind: agent
+name: eleanor
+description: "Eleanor is the managing partner deciding the office rollout with Sam."
+
+runtime:
+  name: pi
+  options:
+    engine: grok
+
+surfaces:
+  moltnet:
+    - network: office_lab
+      rooms:
+        office-room:
+          wake: mentions
+
+workspace:
+  docs:
+    system: AGENTS.md

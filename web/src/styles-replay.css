@@ -1,0 +1,386 @@
+/* RunReplayShell + ScrubBar + StorylinePortal — reuses the palette declared
+   in styles-base.css (--bg/--ink/--sub/--mute/--accent/--line) so run-replay
+   mode reads as one system with the world/live console, not a bolted-on
+   page. */
+
+.replay-shell {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  height: 100%;
+}
+
+.replay-grid {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) 260px;
+  gap: 14px;
+  padding: 14px 16px;
+  overflow: hidden;
+}
+
+.replay-pane {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--bg);
+  overflow: hidden;
+}
+
+.replay-pane-header {
+  flex: 0 0 auto;
+  padding: 6px 10px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  border-bottom: 1px solid var(--border);
+  text-transform: uppercase;
+}
+
+.replay-pane-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 8px 10px;
+}
+
+.replay-caption {
+  margin: 0;
+  padding: 6px 10px;
+  font-size: 11px;
+  color: var(--mute);
+  font-style: italic;
+  border-bottom: 1px solid var(--dashed);
+}
+
+.replay-loading,
+.replay-error {
+  padding: 16px;
+  color: var(--mute);
+}
+
+/* Chat */
+
+.chat-message {
+  padding: 6px 0;
+  border-bottom: 1px solid var(--dashed);
+}
+
+.chat-message-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.chat-author {
+  background: none;
+  border: none;
+  color: var(--accent-hi);
+  font-weight: 600;
+  padding: 0;
+  cursor: pointer;
+}
+
+.chat-time {
+  color: var(--faint);
+  font-size: 11px;
+}
+
+.chat-text {
+  margin: 4px 0;
+  white-space: pre-wrap;
+  color: var(--ink);
+}
+
+.mention {
+  background: var(--tint);
+  color: var(--accent-hi);
+  padding: 0 2px;
+  border-radius: 2px;
+}
+
+.chat-chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.chat-chip {
+  font-size: 10px;
+  padding: 2px 6px;
+  border: 1px solid var(--line-soft);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--sub);
+  cursor: pointer;
+}
+
+.chat-chip:hover {
+  border-color: var(--line);
+  color: var(--accent-hi);
+}
+
+/* Minds rail */
+
+.mind-portal {
+  margin-bottom: 10px;
+}
+
+.mind-header {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  background: none;
+  border: none;
+  color: var(--ink);
+  font-weight: 600;
+  padding: 4px 0;
+  cursor: pointer;
+}
+
+.mind-header span {
+  color: var(--mute);
+  font-weight: 400;
+}
+
+.mind-strata {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.mind-strata li {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  gap: 6px;
+  font-size: 11px;
+  padding: 3px 4px;
+  border-left: 2px solid var(--line-soft);
+}
+
+.stratum-kind {
+  color: var(--mute);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.stratum-claimed { border-left-color: var(--cyan); }
+.stratum-observed { border-left-color: var(--accent); }
+.stratum-recalled { border-left-color: var(--coral); }
+
+.stratum-text {
+  color: var(--sub);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+/* Scrub bar (global chrome) */
+
+.scrub-bar {
+  flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 8px 16px;
+  border-top: 1px solid var(--line);
+  background: var(--bg);
+}
+
+.scrub-bar-empty {
+  color: var(--mute);
+  padding: 10px 16px;
+}
+
+.scrub-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.scrub-controls button {
+  background: transparent;
+  border: 1px solid var(--line-soft);
+  color: var(--ink);
+  border-radius: 3px;
+  padding: 3px 8px;
+}
+
+.scrub-controls button.active {
+  background: var(--tint);
+  color: var(--accent-hi);
+  border-color: var(--line);
+}
+
+.scrub-speed {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--mute);
+  margin-left: 6px;
+}
+
+.scrub-track-wrap {
+  position: relative;
+  min-width: 0;
+}
+
+.scrub-track-wrap input[type="range"] {
+  width: 100%;
+}
+
+.scrub-density {
+  position: relative;
+  height: 4px;
+}
+
+.scrub-density span {
+  position: absolute;
+  top: 0;
+  width: 1px;
+  height: 100%;
+  background: var(--line-soft);
+}
+
+.scrub-readout {
+  font-size: 11px;
+  color: var(--sub);
+  white-space: nowrap;
+}
+
+/* Storyline portal */
+
+.storyline-portal {
+  position: fixed;
+  top: 56px;
+  right: 16px;
+  bottom: 64px;
+  width: 320px;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  z-index: 20;
+  overflow: hidden;
+}
+
+.storyline-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.storyline-title {
+  font-weight: 600;
+  color: var(--accent-hi);
+}
+
+.storyline-count {
+  color: var(--mute);
+  font-size: 11px;
+  flex: 1;
+}
+
+.storyline-header button {
+  background: none;
+  border: none;
+  color: var(--mute);
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.storyline-breadcrumb {
+  padding: 4px 10px;
+  font-size: 11px;
+  color: var(--faint);
+  border-bottom: 1px solid var(--dashed);
+}
+
+.storyline-strip {
+  list-style: none;
+  margin: 0;
+  padding: 6px 8px;
+  overflow: auto;
+  flex: 1;
+}
+
+.storyline-now-line {
+  height: 1px;
+  margin: 6px 0;
+  background: var(--coral);
+  position: relative;
+}
+
+.storyline-now-line::after {
+  content: "now";
+  position: absolute;
+  right: 0;
+  top: -8px;
+  font-size: 9px;
+  color: var(--coral);
+}
+
+.storyline-row {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 36px 84px 70px minmax(0, 1fr);
+  gap: 6px;
+  text-align: left;
+  background: none;
+  border: none;
+  color: var(--sub);
+  padding: 4px 2px;
+  cursor: pointer;
+  font-size: 11px;
+}
+
+.storyline-row.future {
+  opacity: 0.45;
+}
+
+.storyline-row.current {
+  color: var(--accent-hi);
+}
+
+.storyline-t {
+  color: var(--faint);
+}
+
+.storyline-clock {
+  color: var(--faint);
+}
+
+.storyline-class {
+  color: var(--mute);
+}
+
+.storyline-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 1100px) {
+  .replay-grid {
+    grid-template-columns: minmax(0, 1fr);
+    grid-auto-rows: minmax(220px, auto);
+  }
+
+  .storyline-portal {
+    left: 16px;
+    width: auto;
+  }
+}

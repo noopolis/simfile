@@ -105,8 +105,26 @@ Implemented commands today:
 ```bash
 simfile view --state .sim/                 # live: attach to a running world
 simfile view runs/<run_id>/                # replay: render a run record
+simfile view <compose-and-observe-run-dir> # run-replay: scrub a run record's
+                                            # timeline (manifest.json @
+                                            # simfile.run-manifest.v1 +
+                                            # raw/moltnet/transcript.json)
 simfile view --port 4400 --no-open
 ```
+
+Run-replay mode is selected purely by run-directory shape, never a flag: when
+the positional path (never `--state`) is a sealed compose-and-observe run
+directory — see `fixtures/observe/office-sim-golden/` and the report
+`simfile observe` already reconciles from it — `simfile view` serves the same
+React shell as world/live mode (`RunReplayShell`), fed by a merged,
+causally-repaired `RunTimeline` (`/api/timeline`) and a `viewer.trace.v1`
+adapter over it (`/api/world`, one informational room anchor: these runs have
+no place-bearing world yet). A global scrub bar drives one cursor shared by
+the map, the room's conversation (with each agent turn's causal trace
+`message -> wake -> turn -> reply -> memory`, including the `mneme:`-caused
+"recall fed this turn" edge), a per-agent minds rail, and an agent storyline
+portal, all time-linked per rule 7. It is additive: the world/3D replay and
+live paths above are unchanged when the directory is not this shape.
 
 Future viewer flags, not current CLI surface:
 

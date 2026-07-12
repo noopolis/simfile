@@ -4,6 +4,14 @@ import { access, readFile, stat } from "node:fs/promises";
 import { dirname, resolve, relative, extname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { isObserveRunDir } from "./runDetect.js";
+import { buildRunViewModel } from "./runViewModel.js";
+import type { RunViewModel } from "./runViewModelTypes.js";
+import { buildRunTimeline } from "./runTimeline.js";
+import type { RunTimeline } from "./runTimelineTypes.js";
+import { buildRunWorldTrace } from "./runWorldTrace.js";
+import type { RunWorldTrace } from "./runWorldTrace.js";
+
 export interface ViewerServerConfig {
   port: number;
   sourcePath: string;
@@ -68,10 +76,15 @@ const streamFile = async (res: ServerResponse, requestedPath: string): Promise<v
   }
 };
 
-const sendState = (req: IncomingMessage, res: ServerResponse, config: ViewerServerConfig): void => {
+const sendState = (
+  req: IncomingMessage,
+  res: ServerResponse,
+  config: ViewerServerConfig,
+  effectiveMode: ViewerServerConfig["mode"] | "run-replay",
+): void => {
   if (req.url === undefined) return;
   sendJson(res, {
-    mode: config.mode,
+    mode: effectiveMode,
     sourcePath: config.sourcePath,
     statePath: config.statePath,
     now: new Date().toISOString(),
@@ -191,12 +204,49 @@ const sendEvents = async (_req: IncomingMessage, res: ServerResponse, config: Vi
   res.on("close", cleanup);
 };
 
+interface RunReplayBundle {
+  model: RunViewModel;
+  timeline: RunTimeline;
+  world: RunWorldTrace;
+}
+
+/**
+ * `simfile view <dir>` picks run-replay mode over the world/3D replay mode
+ * purely from the run directory's shape: a sealed compose-and-observe run
+ * directory (`manifest.json` @ `simfile.run-manifest.v1` +
+ * `raw/moltnet/transcript.json`, see `runDetect.ts`) never has `--state`
+ * set, so this only applies in replay mode. Built once at server start (the
+ * run directory is sealed, not tailed) rather than per-request. This
+ * REPLACES the old bespoke run-reader HTML routing: run-replay mode serves
+ * the same React shell as world/live mode, fed by `/api/timeline` and the
+ * `runWorldTrace` adapter's `/api/world`, instead of `runPage.ts`'s
+ * dedicated page. `runPage.ts`/`runPageScript.ts`/`runPageStyles.ts` stay in
+ * the tree (their retirement is a later increment) but are no longer wired
+ * into this server.
+ */
+const loadRunReplay = async (config: ViewerServerConfig): Promise<RunReplayBundle | null> => {
+  if (config.mode !== "replay" || config.statePath) return null;
+  const runDir = resolve(config.sourcePath);
+  if (!(await isObserveRunDir(runDir))) return null;
+
+  const [model, timeline] = await Promise.all([buildRunViewModel(runDir), buildRunTimeline(runDir)]);
+  const world = buildRunWorldTrace({
+    runId: model.runId,
+    runName: model.runId,
+    world: model.world,
+    timeline,
+  });
+  return { model, timeline, world };
+};
+
 export const createViewerServer = async (config: ViewerServerConfig): Promise<ViewerServerHandle> => {
+  const runReplay = await loadRunReplay(config);
+
   const server: Server = createServer(async (req, res) => {
     const path = req.url?.split("?")[0] ?? "/";
 
     if (path === "/api/state") {
-      sendState(req, res, config);
+      sendState(req, res, config, runReplay ? "run-replay" : config.mode);
       return;
     }
 
@@ -205,14 +255,36 @@ export const createViewerServer = async (config: ViewerServerConfig): Promise<Vi
       return;
     }
 
-    if (path === "/api/world") {
-      await sendWorld(req, res, config);
-      return;
-    }
+    if (runReplay) {
+      if (path === "/api/timeline") {
+        sendJson(res, runReplay.timeline);
+        return;
+      }
+      if (path === "/api/world") {
+        sendJson(res, {
+          now: new Date().toISOString(),
+          run_id: runReplay.world.run_id,
+          run_name: runReplay.world.run_name,
+          trace: runReplay.world,
+        });
+        return;
+      }
+      if (path === "/api/run-view-model.json") {
+        sendJson(res, runReplay.model);
+        return;
+      }
+      // No `/api/events`: run-replay's cursor is scrubbed by the client
+      // store, never a live/synthetic tick that would fight it.
+    } else {
+      if (path === "/api/world") {
+        await sendWorld(req, res, config);
+        return;
+      }
 
-    if (path === "/api/events") {
-      await sendEvents(req, res, config);
-      return;
+      if (path === "/api/events") {
+        await sendEvents(req, res, config);
+        return;
+      }
     }
 
     const assetPath = path === "/" || path === "/index.html" ? "index.html" : path.replace(/^\//, "");

@@ -1,0 +1,128 @@
+import type { CausalEvent } from "@noopolis/stele";
+
+/**
+ * `RunViewModel` — the data-driven model the run-reader page renders
+ * (`VIEW_DESIGN.md` rule 3: every rendered element traces to a record id).
+ * Built once per `simfile view <run-dir>` invocation by
+ * `buildRunViewModel` (`runViewModel.ts`) from a sealed compose-and-observe
+ * run directory: the reconciled `simfile.observe.v1` report, the raw
+ * moltnet transcript, and the raw per-bank mneme event logs. Nothing here
+ * is invented; fields that cannot be derived from a real record are simply
+ * omitted (`trace`, `recallEventIds` on non-agent messages).
+ */
+export interface RunVerdict {
+  healthy: boolean;
+  turnCount: number;
+  chainsComplete: number;
+  chainsIncomplete: number;
+  memoryEvents: number;
+  memoryRecalls: number;
+  artifactsVerified: number;
+  artifactsTotal: number;
+  failures: number;
+}
+
+/** One hop the causal trace names, each a real `event_id` from a causal stream. */
+export interface RunThreadTrace {
+  /** The moltnet message event_id that triggered this turn. */
+  inEventId: string;
+  /** `daimon` `control.wake.accepted` event_id for this turn, when reconciled. */
+  wakeEventId?: string;
+  turnInputEventId: string;
+  turnOutputEventId?: string;
+  /** `turn.input.submitted`'s own `cause_event_ids`, verbatim. */
+  turnInputCauses: string[];
+  /** The subset of `turnInputCauses` prefixed `mneme:` — memories that fed this turn. */
+  recalledMemoryEventIds: string[];
+  /** This turn's mneme bank writes (claimed/observed/recalled), in file order. */
+  memoryWrites: RunMindRow[];
+}
+
+export interface RunThreadMessage {
+  messageId: string;
+  /** `null` for a human/operator message — it has no daimon turn. */
+  agentId: string | null;
+  fromName: string;
+  /** 1-based ordinal among agent-authored messages; `null` for the seed. */
+  turn: number | null;
+  role: string;
+  createdAt: string;
+  text: string;
+  /** Agent ids `@mentioned` in this message's text. */
+  mentions: string[];
+  trace?: RunThreadTrace;
+}
+
+export type RunMindStratum = "claimed" | "observed" | "recalled";
+
+export interface RunMindRow {
+  stratum: RunMindStratum;
+  text: string;
+  sourceId: string;
+}
+
+export interface RunMindPortal {
+  agentId: string;
+  eventCount: number;
+  rows: RunMindRow[];
+}
+
+export interface RunProvenanceArtifact {
+  path: string;
+  sha256: string;
+  ok: boolean;
+}
+
+export interface RunProvenanceEntry {
+  key: string;
+  value: string;
+}
+
+export interface RunViewModel {
+  version: "simfile.run-view-model.v1";
+  runId: string;
+  createdAt: string;
+  engine?: string;
+  world?: { networkId?: string; roomId?: string; members?: string[] };
+  participants: string[];
+  verdict: RunVerdict;
+  thread: RunThreadMessage[];
+  minds: RunMindPortal[];
+  provenance: {
+    artifacts: RunProvenanceArtifact[];
+    entries: RunProvenanceEntry[];
+  };
+}
+
+/** The raw `raw/moltnet/transcript.json` shape this package writes and reads. */
+export interface RawTranscriptMessage {
+  id: string;
+  from: { type: string; id: string; name: string };
+  parts: { kind: string; text?: string }[];
+  mentions?: string[];
+  created_at: string;
+}
+
+export interface RawTranscript {
+  seedMessageText?: string;
+  transcript: RawTranscriptMessage[];
+}
+
+/** One line of a mneme bank's `events.jsonl` (the human-readable memory log). */
+export interface RawMnemeEvent {
+  id: string;
+  type: string;
+  createdAt: string;
+  principal: { agentId: string };
+  content: { kind: string; text: string };
+  /** This bank log's own causal predecessors (distinct id space from `causal.jsonl`'s `event_id`s). */
+  parentEventIds?: string[];
+  /** Per-principal sequence number within this bank's `events.jsonl`. */
+  seq?: number;
+}
+
+export interface RunViewModelSource {
+  events: readonly CausalEvent[];
+  mnemeEventsByBank: ReadonlyMap<string, readonly RawMnemeEvent[]>;
+  transcript: RawTranscript;
+}

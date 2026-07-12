@@ -1,5 +1,6 @@
 export interface ViewerState {
-  mode: "live" | "replay";
+  /** `run-replay` selects `RunReplayShell` instead of this app's own world console (see `main.tsx`). */
+  mode: "live" | "replay" | "run-replay";
   sourcePath: string;
   statePath?: string;
   now: string;
