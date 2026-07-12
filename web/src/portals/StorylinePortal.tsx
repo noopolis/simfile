@@ -1,13 +1,17 @@
 import { useMemo } from "react";
 
-import { closePortal, eventsForElement, setCursor, useTimelineStore, type ElementRef } from "../store/timeline.js";
-import { RecallChips } from "./RecallChips.js";
-
-const formatClock = (recordedAt: string): string => {
-  const date = new Date(recordedAt);
-  if (Number.isNaN(date.getTime())) return recordedAt;
-  return date.toISOString().slice(11, 23);
-};
+import {
+  breadcrumbSegments,
+  closePortal,
+  eventsForElement,
+  focusAndOpenPortal,
+  membraneForRef,
+  membraneForRepresentative,
+  useTimelineStore,
+  type ElementRef,
+} from "../store/timeline.js";
+import { MembraneView } from "./MembraneView.js";
+import { StorylineRows } from "./StorylineRows.js";
 
 const labelFor = (ref: ElementRef): string => ref.split(":").slice(1).join(":") || ref;
 
@@ -21,17 +25,24 @@ const PORTAL_STACK_WIDTH = 336;
  * per-kind portal code"), because `eventsForElement` already slices by
  * subject membership regardless of what kind of ref it is.
  *
- * A vertical strip of one element's own timeline slice, in `t` order, with
- * a "now" line rendered at the global cursor — rows after it are dimmed,
- * never hidden, so the whole storyline stays visible while still reading
- * "as of now" at a glance. Clicking a row jumps the *global* cursor (rule 7:
- * portals are time-linked, never privately clocked).
+ * The branch that matters for the recursive membrane portal (increment 4):
+ * when `elementRef` names a membrane (`../store/timeline.ts`'s
+ * `membraneForRef` — a real `RunTimeline.membranes` entry, e.g. `team:luna`),
+ * this renders `MembraneView` instead of the flat strip — the mini interior
+ * map + interior chat + minds rail, all reading the same store cursor. This
+ * is a DATA-PRESENCE branch, not a per-run special case: a leaf agent/room
+ * (no membrane, e.g. every office-sim element) falls through to the exact
+ * flat rendering that existed before membranes did, via the shared
+ * `StorylineRows` component. An agent that happens to BE some membrane's own
+ * representative additionally gets a boundary note and a "descend ⤵" button
+ * in its own (still flat) portal — descending pushes the membrane's portal
+ * onto the stack, the same `focusAndOpenPortal` mechanism as every other
+ * open, so recursion (`luna` -> `luna-shadow`) is free.
  *
- * `turn.input` rows additionally render `RecallChips`: the `mneme:`-caused
- * recall edge (increment 2 rule 2), and any row whose event id is in the
- * shared `highlightedEventIds` set (set by hovering/selecting a recall chip
- * in this or any other open portal) renders with the `highlighted` class —
- * this is the cross-portal linked-selection mechanism.
+ * The breadcrumb (`breadcrumbSegments`) shows the real nested path: a leaf
+ * portal is `world → <name>`, unchanged; a membrane portal is
+ * `world → <team> → <council-room>`; a portal opened from within an open
+ * membrane portal nests under it.
  *
  * Multiple portals can be open at once (`openPortals`, a stack, not a
  * single selection) — `stackIndex` offsets this instance so they don't
@@ -39,13 +50,14 @@ const PORTAL_STACK_WIDTH = 336;
  * map/chat `selection`.
  */
 export function StorylinePortal({ elementRef, stackIndex = 0 }: { elementRef: ElementRef; stackIndex?: number }) {
-  const { timeline, cursor, highlightedEventIds } = useTimelineStore();
+  const { timeline, cursor, highlightedEventIds, openPortals } = useTimelineStore();
   const rows = useMemo(() => (timeline ? eventsForElement(timeline, elementRef) : []), [timeline, elementRef]);
 
   if (!timeline) return null;
 
-  const nowIndex = rows.findIndex((row) => row.t > cursor);
-  const splitAt = nowIndex === -1 ? rows.length : nowIndex;
+  const membrane = membraneForRef(timeline, elementRef);
+  const representedMembrane = membrane ? undefined : membraneForRepresentative(timeline, elementRef);
+  const breadcrumb = breadcrumbSegments(timeline, openPortals, elementRef).join(" → ");
 
   return (
     <aside
@@ -54,35 +66,32 @@ export function StorylinePortal({ elementRef, stackIndex = 0 }: { elementRef: El
       style={{ right: 16 + stackIndex * PORTAL_STACK_WIDTH }}
     >
       <div className="storyline-header">
-        <span className="storyline-title">{labelFor(elementRef)}</span>
-        <span className="storyline-count">{rows.length} events</span>
+        <span className="storyline-title">{membrane ? membrane.label : labelFor(elementRef)}</span>
+        {!membrane ? <span className="storyline-count">{rows.length} events</span> : null}
         <button aria-label="Close storyline portal" onClick={() => closePortal(elementRef)} type="button">×</button>
       </div>
-      <div className="storyline-breadcrumb">world → {labelFor(elementRef)}</div>
-      <ol className="storyline-strip">
-        {rows.map((row, index) => (
-          <li key={row.eventId}>
-            {index === splitAt ? <div className="storyline-now-line" aria-hidden="true" /> : null}
-            <button
-              className={[
-                "storyline-row",
-                row.t <= cursor ? "past" : "future",
-                row.t === cursor ? "current" : "",
-                highlightedEventIds.includes(row.eventId) ? "highlighted" : "",
-              ].filter(Boolean).join(" ")}
-              onClick={() => setCursor(row.t)}
-              type="button"
-            >
-              <span className="storyline-t">t={row.t}</span>
-              <span className="storyline-clock">{formatClock(row.recordedAt)}</span>
-              <span className="storyline-class">{row.viewClass}</span>
-              <span className="storyline-text">{row.text ?? row.type}</span>
-            </button>
-            {row.viewClass === "turn.input" ? <RecallChips timeline={timeline} turnInput={row} /> : null}
-          </li>
-        ))}
-        {splitAt === rows.length ? <li><div className="storyline-now-line" aria-hidden="true" /></li> : null}
-      </ol>
+      <div className="storyline-breadcrumb">{breadcrumb}</div>
+      {membrane ? (
+        <MembraneView membrane={membrane} timeline={timeline} />
+      ) : (
+        <>
+          {representedMembrane ? (
+            <>
+              <span className="boundary-badge" style={{ margin: "6px 10px 0", alignSelf: "flex-start" }}>
+                boundary · represents {representedMembrane.label}
+              </span>
+              <button
+                className="descend-button"
+                onClick={() => focusAndOpenPortal(representedMembrane.ref)}
+                type="button"
+              >
+                ⤵ descend into {representedMembrane.label}
+              </button>
+            </>
+          ) : null}
+          <StorylineRows cursor={cursor} highlightedEventIds={highlightedEventIds} rows={rows} timeline={timeline} />
+        </>
+      )}
     </aside>
   );
 }

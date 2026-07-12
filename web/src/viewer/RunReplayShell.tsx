@@ -21,6 +21,7 @@ import {
   type RunMeta,
 } from "./RunMetaPanels.js";
 import { defaultRenderSettings } from "./renderSettings.js";
+import { membraneMapNodes } from "./membraneMapNodes.js";
 import { firstAppearanceGlowScopes, seedSpreadEventIds, utteredEventIds } from "./spreadModel.js";
 import { buildViewerWorld, viewerSkins } from "./worldModel.js";
 import type { ViewerContractTrace, ViewerWorldResponse } from "./types.js";
@@ -80,9 +81,32 @@ export function RunReplayShell() {
   }, [timeline]);
 
   const world = useMemo(() => (worldTrace ? buildViewerWorld(worldTrace) : null), [worldTrace]);
+
+  // The recursive membrane portal's outer-map affordance (VIEW_DESIGN.md rule
+  // 5): a synthesized "team" node beside each membrane's representative, plus
+  // the descendable-scope set (that team node + the representative's own
+  // agent body) `AsciiMap` renders with the "⤵" affordance. Both are no-ops
+  // (unchanged `world`, `undefined` scopes) on a leaf-only run — office-sim
+  // regression.
+  const worldWithMembranes = useMemo(() => {
+    if (!world || !timeline?.membranes?.length) return world;
+    const extra = membraneMapNodes(world.nodes, timeline.membranes);
+    return extra.length ? { ...world, nodes: [...world.nodes, ...extra] } : world;
+  }, [world, timeline]);
+
+  const descendableScopes = useMemo(() => {
+    if (!timeline?.membranes?.length) return undefined;
+    const scopes = new Set<string>();
+    for (const membrane of timeline.membranes) {
+      scopes.add(membrane.ref);
+      scopes.add(membrane.representative);
+    }
+    return scopes;
+  }, [timeline]);
+
   const selectedNode = useMemo(
-    () => world?.nodes.find((node) => node.scope === selection) ?? world?.nodes[0] ?? null,
-    [world, selection],
+    () => worldWithMembranes?.nodes.find((node) => node.scope === selection) ?? worldWithMembranes?.nodes[0] ?? null,
+    [worldWithMembranes, selection],
   );
   const skin = viewerSkins[0]!;
   const caption = worldTrace?.rooms[0]?.access_hint;
@@ -138,17 +162,18 @@ export function RunReplayShell() {
         <section className="replay-pane replay-map" aria-label="World map">
           <header className="replay-pane-header">world map</header>
           {caption ? <p className="replay-caption">{caption}</p> : null}
-          {world && selectedNode ? (
+          {worldWithMembranes && selectedNode ? (
             <AsciiMap
+              descendableScopes={descendableScopes}
               glowScopes={glowScopes}
-              nodes={world.nodes}
+              nodes={worldWithMembranes.nodes}
               onSelect={(id) => {
-                const node = world.nodes.find((candidate) => candidate.id === id);
+                const node = worldWithMembranes.nodes.find((candidate) => candidate.id === id);
                 if (node) focusAndOpenPortal(node.scope);
               }}
               renderSettings={defaultRenderSettings}
-              roomPaths={world.roomPaths}
-              rooms={world.roomGeometries}
+              roomPaths={worldWithMembranes.roomPaths}
+              rooms={worldWithMembranes.roomGeometries}
               selectedNode={selectedNode}
               selectedSkin={skin}
             />

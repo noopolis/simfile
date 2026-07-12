@@ -261,4 +261,43 @@ describe("createViewerServer", () => {
       await handle.close();
     }
   });
+
+  it("serves the recursive membrane portal's data for the jungian psyche golden (increment 4)", async () => {
+    const runDir = path.resolve(
+      path.dirname(fileURLToPath(import.meta.url)),
+      "..",
+      "..",
+      "fixtures",
+      "observe",
+      "jungian-daimon-org-golden",
+    );
+    const handle = await createViewerServer({ mode: "replay", port: 0, sourcePath: runDir });
+
+    try {
+      // The outer map now shows only the parent floor's own room (`commons`,
+      // two representatives) — not a synthetic single room mixing in every
+      // interior agent, which is what a bare `manifest.world.rooms[]` parse
+      // would otherwise fall back to.
+      const worldResponse = await fetch(`${handle.url}/api/world`);
+      assert.equal(worldResponse.status, 200);
+      const world = await worldResponse.json() as { trace: { rooms: { id: string; members: string[] }[] } };
+      assert.equal(world.trace.rooms.length, 1);
+      assert.equal(world.trace.rooms[0]?.id, "commons");
+      assert.deepEqual(world.trace.rooms[0]?.members.slice().sort(), ["luna-representative", "selene-representative"]);
+
+      const timelineResponse = await fetch(`${handle.url}/api/timeline`);
+      assert.equal(timelineResponse.status, 200);
+      const timeline = await timelineResponse.json() as {
+        membranes: { ref: string; interiorWorld?: { rooms: { id: string; members: string[] }[] } }[];
+      };
+      const luna = timeline.membranes.find((membrane) => membrane.ref === "team:luna");
+      assert.ok(luna?.interiorWorld, "expected team:luna to carry an interiorWorld trace over the wire");
+      assert.equal(luna!.interiorWorld!.rooms[0]?.id, "luna-council");
+      assert.deepEqual(luna!.interiorWorld!.rooms[0]?.members.slice().sort(), [
+        "luna-animus", "luna-representative", "luna-shadow",
+      ]);
+    } finally {
+      await handle.close();
+    }
+  });
 });

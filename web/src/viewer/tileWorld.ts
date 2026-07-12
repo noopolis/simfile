@@ -73,7 +73,7 @@ const signalGlyph = (kind: ViewerNode["kind"]): string => (
 );
 
 const toneForNode = (kind: ViewerNode["kind"]): TileTone => {
-  if (kind === "agent") return "agent";
+  if (kind === "agent" || kind === "team") return "agent";
   if (kind === "variable") return "variable";
   if (kind === "marker") return "marker";
   if (kind === "probe") return "probe";
@@ -218,13 +218,13 @@ export const buildTileWorld = ({
     const [col, row] = pointToTile(node.scene[0], node.scene[1]);
     const cell: TileCell = {
       col,
-      glyph: node.kind === "agent" ? "@" : signalGlyph(node.kind),
+      glyph: node.kind === "agent" ? "@" : node.kind === "team" ? "◈" : signalGlyph(node.kind),
       nodeId: node.id,
       row,
       tone: toneForNode(node.kind),
     };
     anchors.push({ col, nodeId: node.id, row });
-    if (node.kind === "agent") {
+    if (node.kind === "agent" || node.kind === "team") {
       agentCells.push(cell);
       continue;
     }

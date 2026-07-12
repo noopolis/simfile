@@ -16,6 +16,14 @@ interface AsciiMapProps {
   selectedSkin: ViewerSkin;
   /** Increment 3: node `scope`s (`agent:`/`room:` refs) to render with the "glow" class — the seeded meme's first-appearance highlight (`../spreadModel.ts`'s `firstAppearanceGlowScopes`). Omitted/empty on a run with no seed spread. */
   glowScopes?: ReadonlySet<string>;
+  /**
+   * Node `scope`s that have a "descend into a mind" affordance (a `team:`
+   * membrane node itself, or the agent that represents one) — rendered with
+   * the `descendable` class and a "⤵" prefix on the anchor label
+   * (`VIEW_DESIGN.md` rule 5's descend affordance). Omitted on a leaf-only
+   * run (no membranes), which renders with zero affordance markup.
+   */
+  descendableScopes?: ReadonlySet<string>;
 }
 
 export function AsciiMap({
@@ -27,6 +35,7 @@ export function AsciiMap({
   selectedNode,
   selectedSkin,
   glowScopes,
+  descendableScopes,
 }: AsciiMapProps) {
   const tileWorld = useMemo(
     () => buildTileWorld({
@@ -122,10 +131,16 @@ export function AsciiMap({
           }
           const selected = node.id === selectedNode.id;
           const glowing = glowNodeIds.has(node.id);
+          const descendable = Boolean(descendableScopes?.has(node.scope));
           const short = node.kind === "room" ? node.label : `${glyphForNode(node)} ${node.label}`;
           return (
             <button
-              className={["tile-anchor", selected ? "selected" : "", glowing ? "glow" : ""].filter(Boolean).join(" ")}
+              className={[
+                "tile-anchor",
+                selected ? "selected" : "",
+                glowing ? "glow" : "",
+                descendable ? "descendable" : "",
+              ].filter(Boolean).join(" ")}
               key={`${anchor.nodeId}:${anchor.row}:${anchor.col}`}
               onClick={() => onSelect(anchor.nodeId)}
               style={{
@@ -134,7 +149,7 @@ export function AsciiMap({
               }}
               type="button"
             >
-              <span>{short}</span>
+              <span>{descendable ? "⤵ " : ""}{short}</span>
               {renderSettings.showLabels ? <small>{node.kind}</small> : null}
             </button>
           );
@@ -155,6 +170,7 @@ export function AsciiMap({
 
 function glyphForNode(node: ViewerNode): string {
   if (node.kind === "agent") return "@";
+  if (node.kind === "team") return "◈";
   if (node.kind === "variable") return "v";
   if (node.kind === "marker") return "*";
   if (node.kind === "probe") return "?";

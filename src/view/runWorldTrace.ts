@@ -1,4 +1,5 @@
-import type { RunTimeline } from "./runTimelineTypes.js";
+import type { RunTimeline, RunTimelineMembrane } from "./runTimelineTypes.js";
+import { parseRoomRef, stripRefPrefix } from "./runTimelineRefs.js";
 
 /**
  * Adapts a run-replay `RunTimeline` into the same `viewer.trace.v1` shape
@@ -11,10 +12,11 @@ import type { RunTimeline } from "./runTimelineTypes.js";
  * the wire, not a shared TS type.
  *
  * These moltnet-room runs have no place-bearing world (Space Module has not
- * landed): there is exactly one informational room anchor, no corridors, no
- * presence stream. Agents render with `label_hint: "heuristic"`, which is
- * the same "no presence stream yet" treatment `worldModel.ts` already gives
- * any agent lacking presence events — nothing new to teach the renderer.
+ * landed): there is exactly one informational room anchor per room in the
+ * `rooms` list, no corridors, no presence stream. Agents render with
+ * `label_hint: "heuristic"`, which is the same "no presence stream yet"
+ * treatment `worldModel.ts` already gives any agent lacking presence events
+ * — nothing new to teach the renderer.
  */
 export interface RunWorldTraceRoom {
   id: string;
@@ -81,30 +83,57 @@ const ledgerFactType = (viewClass: string): RunWorldTraceLedgerFactType => {
 const provenanceFor = (authority: string): RunWorldTraceLedgerFact["provenance"] =>
   authority === "moltnet" || authority === "daimon" ? "agentic" : "mechanical";
 
+/** One explicit room to render as an anchor — the generalized replacement for the old single-room `world` shape. */
+export interface BuildRunWorldTraceRoomInput {
+  networkId: string;
+  roomId: string;
+  members?: string[];
+}
+
 export interface BuildRunWorldTraceParams {
   runId: string;
   runName: string;
+  /** Legacy single-room shape, kept for callers that only ever had one anchor. Ignored when `rooms` is given. */
   world?: { networkId?: string; roomId?: string; members?: string[] };
+  /**
+   * Explicit room list — the parameterization the recursive membrane portal
+   * needs (`VIEW_DESIGN.md` rule 5): the outer map's rooms (every
+   * `manifest.world` room that is NOT some membrane's interior room) and a
+   * membrane's own `interiorRooms` both go through this same param, laid out
+   * side by side (`ROOM_SPACING` apart) rather than stacked at one origin.
+   */
+  rooms?: BuildRunWorldTraceRoomInput[];
   timeline: RunTimeline;
 }
 
-export const buildRunWorldTrace = ({ runId, runName, world, timeline }: BuildRunWorldTraceParams): RunWorldTrace => {
-  const roomId = world?.roomId ?? "run-room";
-  const networkId = world?.networkId ?? "run";
-  const members = world?.members?.length
-    ? world.members
-    : timeline.elements.filter((element) => element.kind === "agent").map((element) => element.label);
+/** Deterministic x-offset between room anchors when more than one room is rendered — presentation only, never fed back into the schema (rule 4). */
+const ROOM_SPACING = 3.2;
 
-  const room: RunWorldTraceRoom = {
-    id: roomId,
-    label: roomId,
-    scope: `room:${networkId}:${roomId}`,
-    members,
-    scene: [0, 0, 0],
-    access_hint: NO_PLACE_CAPTION,
-  };
+export const buildRunWorldTrace = ({ runId, runName, world, rooms: roomInputs, timeline }: BuildRunWorldTraceParams): RunWorldTrace => {
+  const inputs: BuildRunWorldTraceRoomInput[] = roomInputs?.length
+    ? roomInputs
+    : [{ networkId: world?.networkId ?? "run", roomId: world?.roomId ?? "run-room", members: world?.members }];
 
-  const agents: RunWorldTraceAgent[] = members.map((id) => ({
+  const allAgentLabels = timeline.elements.filter((element) => element.kind === "agent").map((element) => element.label);
+
+  const rooms: RunWorldTraceRoom[] = inputs.map((input, index) => {
+    // The "fall back to every agent in the timeline" rule only makes sense
+    // for the single-anchor legacy shape; an explicit multi-room list always
+    // states its own membership (an empty interior/outer room legitimately
+    // has no members rather than borrowing every other room's agents).
+    const members = input.members?.length ? input.members : inputs.length === 1 ? allAgentLabels : [];
+    return {
+      id: input.roomId,
+      label: input.roomId,
+      scope: `room:${input.networkId}:${input.roomId}`,
+      members,
+      scene: [index * ROOM_SPACING, 0, 0],
+      access_hint: NO_PLACE_CAPTION,
+    };
+  });
+
+  const memberIds = new Set(rooms.flatMap((room) => room.members));
+  const agents: RunWorldTraceAgent[] = [...memberIds].map((id) => ({
     id,
     label: id,
     scope: `agent:${id}`,
@@ -130,7 +159,7 @@ export const buildRunWorldTrace = ({ runId, runName, world, timeline }: BuildRun
     version: "viewer.trace.v1",
     run_id: runId,
     run_name: runName,
-    rooms: [room],
+    rooms,
     corridors: [],
     agents,
     presence: [],
@@ -138,3 +167,31 @@ export const buildRunWorldTrace = ({ runId, runName, world, timeline }: BuildRun
     signals: [],
   };
 };
+
+/**
+ * Builds a `viewer.trace.v1` mini-map for every membrane, scoped to exactly
+ * its own `interiorRooms` — the recursive membrane portal's interior map
+ * (`VIEW_DESIGN.md` rule 5, "descend into a mind"). Called once by
+ * `server.ts` after the full `RunTimeline` (interior events included)
+ * exists; membranes with no parseable interior room ref pass through
+ * unchanged rather than throwing (defensive — every membrane
+ * `deriveMembranes` emits today always has at least one, but a future
+ * shape should degrade, not crash the server).
+ */
+export const buildMembraneInteriorWorlds = (
+  membranes: readonly RunTimelineMembrane[],
+  timeline: RunTimeline,
+): RunTimelineMembrane[] =>
+  membranes.map((membrane) => {
+    const memberIds = membrane.members.map(stripRefPrefix);
+    const rooms = membrane.interiorRooms
+      .map(parseRoomRef)
+      .filter((room): room is { networkId: string; roomId: string } => room !== undefined)
+      .map((room) => ({ ...room, members: memberIds }));
+    if (rooms.length === 0) return membrane;
+
+    return {
+      ...membrane,
+      interiorWorld: buildRunWorldTrace({ runId: timeline.runId, runName: timeline.runId, rooms, timeline }),
+    };
+  });

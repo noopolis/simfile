@@ -392,6 +392,107 @@
   white-space: nowrap;
 }
 
+/* Descend affordance (recursive membrane portal, VIEW_DESIGN.md rule 5) */
+
+.tile-anchor.descendable {
+  outline: 1px dashed var(--cyan);
+  outline-offset: 1px;
+}
+
+.tile-anchor.descendable:hover {
+  outline-style: solid;
+}
+
+.boundary-badge {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 1px 5px;
+  border-radius: 8px;
+  border: 1px solid var(--cyan);
+  color: var(--cyan);
+  margin-left: 6px;
+}
+
+.descend-button {
+  font-size: 11px;
+  padding: 3px 8px;
+  margin: 6px 10px 0;
+  border: 1px dashed var(--cyan);
+  border-radius: 3px;
+  background: transparent;
+  color: var(--cyan);
+  cursor: pointer;
+  align-self: flex-start;
+}
+
+.descend-button:hover {
+  background: var(--cyan);
+  color: var(--bg);
+}
+
+/* Membrane (interior) portal view */
+
+.membrane-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+}
+
+.membrane-tab {
+  flex: 1;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--mute);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 6px 4px;
+  cursor: pointer;
+}
+
+.membrane-tab.active {
+  color: var(--accent-hi);
+  border-bottom-color: var(--accent-hi);
+}
+
+.membrane-view {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.membrane-interior-map {
+  height: 160px;
+  flex: 0 0 auto;
+  border-bottom: 1px solid var(--dashed);
+  overflow: hidden;
+}
+
+.membrane-view .replay-chat {
+  flex: 1 1 auto;
+  min-height: 100px;
+  border: none;
+  border-bottom: 1px solid var(--dashed);
+  border-radius: 0;
+}
+
+.membrane-view .replay-minds {
+  flex: 0 0 auto;
+  max-height: 200px;
+  border: none;
+  border-radius: 0;
+}
+
+.membrane-crossings {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
 /* Storyline portal */
 
 .storyline-portal {

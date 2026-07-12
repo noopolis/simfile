@@ -1,3 +1,5 @@
+import type { RunWorldTrace } from "./runWorldTrace.js";
+
 /**
  * `RunTimeline` — the single merged, dense, causally-repaired event
  * timeline `simfile view <run-dir>`'s run-replay mode scrubs (`VIEW_DESIGN.md`
@@ -93,6 +95,15 @@ export interface RunTimelineMembrane {
   interiorRooms: string[];
   /** `agent:<id>` refs for every member of the interior room(s). */
   members: string[];
+  /**
+   * A `viewer.trace.v1` world trace scoped to exactly this membrane's
+   * `interiorRooms` — the "descend into a mind" mini map (`runWorldTrace.ts`'s
+   * `buildMembraneInteriorWorlds`, populated by `server.ts` once the full
+   * `RunTimeline` exists; `deriveMembranes`/`buildRunTimeline` never set this
+   * field themselves, since it needs the completed timeline). Undefined only
+   * before that population step runs.
+   */
+  interiorWorld?: RunWorldTrace;
 }
 
 export interface RunTimeline {

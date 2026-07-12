@@ -70,9 +70,17 @@ const causalRepair = (records: readonly RawRecord[]): RawRecord[] => {
   return order;
 };
 
-/** One room the run declares (`manifest.world`): a `room:<network>:<room>` ref, its bare room id (label), and its member agent ids. */
-interface WorldRoom {
+/**
+ * One room the run declares (`manifest.world`): a `room:<network>:<room>`
+ * ref, its network + bare room id, and its member agent ids. Exported so
+ * `server.ts` can tell an OUTER (parent-floor) room from an interior one —
+ * a membrane's `interiorRooms` are also entries of this same list — when it
+ * builds the outer map's `/api/world` trace (`runWorldTrace.ts`'s
+ * `buildRunWorldTrace` `rooms` param).
+ */
+export interface WorldRoom {
   ref: ElementRef;
+  networkId: string;
   roomId: string;
   members: string[];
 }
@@ -129,7 +137,7 @@ const parseWorldRooms = (worldRecord: Record<string, unknown> | undefined): Worl
     const networkId = stringField(record, "network_id");
     const roomId = stringField(record, "room_id");
     if (!networkId || !roomId) return undefined;
-    return { ref: roomRef(networkId, roomId), roomId, members: stringMembers(record?.members) };
+    return { ref: roomRef(networkId, roomId), networkId, roomId, members: stringMembers(record?.members) };
   };
 
   const roomsRaw = worldRecord?.rooms;
@@ -141,6 +149,17 @@ const parseWorldRooms = (worldRecord: Record<string, unknown> | undefined): Worl
 
   const single = toRoom(worldRecord);
   return single ? [single] : [];
+};
+
+/**
+ * Reads and parses `manifest.json`'s `world` field into its declared rooms —
+ * the same parse `buildRunTimeline` does internally, exported so `server.ts`
+ * can tell an outer (parent-floor) room from an interior one when it builds
+ * the outer map's `/api/world` trace, without re-deriving the whole timeline.
+ */
+export const readWorldRooms = async (runDir: string): Promise<WorldRoom[]> => {
+  const manifest = parseRunManifest(JSON.parse(await readFile(path.join(runDir, "manifest.json"), "utf8")));
+  return parseWorldRooms(manifest.world as Record<string, unknown> | undefined);
 };
 
 export const buildRunTimeline = async (runDir: string): Promise<RunTimeline> => {

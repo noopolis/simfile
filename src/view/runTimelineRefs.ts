@@ -15,6 +15,15 @@ export const agentRef = (id: string): ElementRef => `agent:${id}`;
 export const roomRef = (network: string, room: string): ElementRef => `room:${network}:${room}`;
 export const bankRef = (bank: string): ElementRef => `bank:${bank}`;
 
+/** Inverse of `roomRef`: splits a `room:<network>:<room>` ref back into its parts. `undefined` for anything else. */
+export const parseRoomRef = (ref: ElementRef): { networkId: string; roomId: string } | undefined => {
+  const match = ref.match(/^room:([^:]+):(.+)$/u);
+  return match ? { networkId: match[1]!, roomId: match[2]! } : undefined;
+};
+
+/** Strips a ref's `<kind>:` prefix, e.g. `agent:luna-shadow` -> `luna-shadow`. Refs with no `:` pass through unchanged. */
+export const stripRefPrefix = (ref: ElementRef): string => (ref.includes(":") ? ref.slice(ref.indexOf(":") + 1) : ref);
+
 export const isDefined = <T,>(value: T | undefined): value is T => value !== undefined;
 
 export const stringField = (record: Record<string, unknown> | undefined, key: string): string | undefined => {

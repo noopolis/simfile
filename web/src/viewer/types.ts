@@ -31,7 +31,14 @@ export interface ViewerEvent {
 export interface ViewerNode {
   id: string;
   label: string;
-  kind: "room" | "agent" | "org" | "marker" | "variable" | "probe" | "event";
+  /**
+   * `team` is a synthesized map node (`RunReplayShell.tsx`'s
+   * `withMembraneNodes`, never emitted by any server trace): the descendable
+   * self-membrane body next to its representative's own body — clicking it
+   * calls `focusAndOpenPortal(membrane.ref)` directly (`VIEW_DESIGN.md`
+   * rule 5, "the luna team node on the map").
+   */
+  kind: "room" | "agent" | "org" | "marker" | "variable" | "probe" | "event" | "team";
   scope: string;
   subtitle: string;
   detail: string;

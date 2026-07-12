@@ -2,6 +2,9 @@ import assert from "node:assert/strict";
 import { describe, it, beforeEach } from "node:test";
 
 import {
+  agentsForMembrane,
+  banksForMembrane,
+  breadcrumbSegments,
   closePortal,
   clearHighlightedEventIds,
   echoedWorldEventIds,
@@ -13,6 +16,8 @@ import {
   jumpStart,
   loadTimeline,
   maxCursor,
+  membraneForRef,
+  membraneForRepresentative,
   openPortal,
   pause,
   play,
@@ -89,6 +94,136 @@ const fixtureTimelineWithRecall = (): RunTimeline => ({
     { ref: "room:net:room", kind: "room", label: "room" },
   ],
   membranes: [],
+});
+
+/**
+ * A scaled-down jungian-shaped fixture: an outer `commons` room with a
+ * representative, an interior `luna-council` room with the representative
+ * plus animus/shadow, a decoy `selene-council` bank with NO overlapping
+ * event (so `banksForMembrane` must not pick it up by name alone), and one
+ * `team:luna` membrane.
+ */
+const fixtureTimelineWithMembrane = (): RunTimeline => ({
+  version: "simfile.run-timeline.v1",
+  runId: "run-membrane-test",
+  events: [
+    {
+      t: 0, eventId: "floor-1", authority: "moltnet", streamId: "room:psyche-floor:commons", seq: 0,
+      type: "message.accepted", viewClass: "message", recordedAt: "2026-01-01T00:00:00.000Z",
+      actor: "luna-representative", subjects: ["room:psyche-floor:commons", "agent:luna-representative"],
+      causes: [], text: "Consulting my inner council.", payload: {},
+    },
+    {
+      t: 1, eventId: "council-1", authority: "moltnet", streamId: "room:luna_inner:luna-council", seq: 0,
+      type: "message.accepted", viewClass: "message", recordedAt: "2026-01-01T00:00:01.000Z",
+      actor: "luna-animus", subjects: ["room:luna_inner:luna-council", "agent:luna-animus"],
+      causes: ["floor-1"], text: "As the animus: I see momentum.", payload: {},
+    },
+    {
+      t: 2, eventId: "council-2", authority: "moltnet", streamId: "room:luna_inner:luna-council", seq: 1,
+      type: "message.accepted", viewClass: "message", recordedAt: "2026-01-01T00:00:02.000Z",
+      actor: "luna-shadow", subjects: ["room:luna_inner:luna-council", "agent:luna-shadow"],
+      causes: ["council-1"], text: "As the shadow: COUNCIL-CONCLUDED.", payload: {},
+    },
+    {
+      t: 3, eventId: "council-recall", authority: "mneme", streamId: "bank:luna-council", seq: 0,
+      type: "memory.recalled", viewClass: "memory.recalled", recordedAt: "2026-01-01T00:00:03.000Z",
+      subjects: ["bank:luna-council", "agent:luna-shadow"], causes: [], text: "recalled prior counsel", payload: {},
+    },
+    {
+      t: 4, eventId: "floor-2", authority: "moltnet", streamId: "room:psyche-floor:commons", seq: 1,
+      type: "message.accepted", viewClass: "message", recordedAt: "2026-01-01T00:00:04.000Z",
+      actor: "luna-representative", subjects: ["room:psyche-floor:commons", "agent:luna-representative"],
+      causes: ["council-2"], text: "The council has spoken.", payload: {},
+    },
+    {
+      t: 5, eventId: "decoy-1", authority: "mneme", streamId: "bank:selene-council", seq: 0,
+      type: "memory.recalled", viewClass: "memory.recalled", recordedAt: "2026-01-01T00:00:05.000Z",
+      subjects: ["bank:selene-council", "agent:selene-shadow"], causes: [], text: "unrelated selene memory", payload: {},
+    },
+  ],
+  elements: [
+    { ref: "room:psyche-floor:commons", kind: "room", label: "commons" },
+    { ref: "room:luna_inner:luna-council", kind: "room", label: "luna-council" },
+    { ref: "agent:luna-representative", kind: "agent", label: "luna-representative" },
+    { ref: "agent:luna-animus", kind: "agent", label: "luna-animus" },
+    { ref: "agent:luna-shadow", kind: "agent", label: "luna-shadow" },
+    { ref: "agent:selene-shadow", kind: "agent", label: "selene-shadow" },
+    { ref: "bank:luna-council", kind: "bank", label: "luna-council" },
+    { ref: "bank:selene-council", kind: "bank", label: "selene-council" },
+    { ref: "team:luna", kind: "team", label: "luna" },
+  ],
+  membranes: [{
+    ref: "team:luna",
+    label: "luna",
+    representative: "agent:luna-representative",
+    interiorRooms: ["room:luna_inner:luna-council"],
+    members: ["agent:luna-animus", "agent:luna-representative", "agent:luna-shadow"],
+  }],
+});
+
+describe("membrane selectors (recursive membrane portal)", () => {
+  it("membraneForRef finds a membrane by its own ref, undefined for a leaf agent/room", () => {
+    const timeline = fixtureTimelineWithMembrane();
+    assert.equal(membraneForRef(timeline, "team:luna")?.label, "luna");
+    assert.equal(membraneForRef(timeline, "agent:luna-animus"), undefined);
+    assert.equal(membraneForRef(timeline, "room:luna_inner:luna-council"), undefined);
+  });
+
+  it("membraneForRef returns undefined for every element in a leaf-only run (office-sim regression)", () => {
+    const timeline = fixtureTimeline();
+    for (const element of timeline.elements) {
+      assert.equal(membraneForRef(timeline, element.ref), undefined);
+    }
+  });
+
+  it("membraneForRepresentative resolves the representative agent to its membrane, and only that agent", () => {
+    const timeline = fixtureTimelineWithMembrane();
+    assert.equal(membraneForRepresentative(timeline, "agent:luna-representative")?.ref, "team:luna");
+    assert.equal(membraneForRepresentative(timeline, "agent:luna-animus"), undefined);
+    assert.equal(membraneForRepresentative(timeline, "agent:luna-shadow"), undefined);
+  });
+
+  it("banksForMembrane picks the bank by overlapping events, not by name — the decoy selene bank is excluded", () => {
+    const timeline = fixtureTimelineWithMembrane();
+    const banks = banksForMembrane(timeline, "team:luna");
+    assert.deepEqual(banks.map((bank) => bank.ref), ["bank:luna-council"]);
+  });
+
+  it("banksForMembrane is empty for a ref with no membrane", () => {
+    const timeline = fixtureTimelineWithMembrane();
+    assert.deepEqual(banksForMembrane(timeline, "agent:luna-animus"), []);
+  });
+
+  it("agentsForMembrane returns exactly the membrane's own member agents", () => {
+    const timeline = fixtureTimelineWithMembrane();
+    const agents = agentsForMembrane(timeline, "team:luna").map((agent) => agent.ref).sort();
+    assert.deepEqual(agents, ["agent:luna-animus", "agent:luna-representative", "agent:luna-shadow"]);
+  });
+
+  it("breadcrumbSegments for a leaf portal is unchanged from before membranes existed", () => {
+    const timeline = fixtureTimeline();
+    assert.deepEqual(breadcrumbSegments(timeline, [], "agent:eleanor"), ["world", "eleanor"]);
+    assert.deepEqual(breadcrumbSegments(timeline, [], "room:net:room"), ["world", "net:room"]);
+  });
+
+  it("breadcrumbSegments for a membrane portal shows the team + its own council room", () => {
+    const timeline = fixtureTimelineWithMembrane();
+    assert.deepEqual(breadcrumbSegments(timeline, ["team:luna"], "team:luna"), ["world", "luna", "luna-council"]);
+  });
+
+  it("breadcrumbSegments for a descendant opened from an open membrane portal nests under it (recursion)", () => {
+    const timeline = fixtureTimelineWithMembrane();
+    assert.deepEqual(
+      breadcrumbSegments(timeline, ["team:luna", "agent:luna-shadow"], "agent:luna-shadow"),
+      ["world", "luna", "luna-council", "luna-shadow"],
+    );
+  });
+
+  it("breadcrumbSegments does not nest a descendant whose membrane isn't actually open yet", () => {
+    const timeline = fixtureTimelineWithMembrane();
+    assert.deepEqual(breadcrumbSegments(timeline, ["agent:luna-shadow"], "agent:luna-shadow"), ["world", "luna-shadow"]);
+  });
 });
 
 describe("timelineStore", () => {

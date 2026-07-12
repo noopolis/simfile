@@ -6,6 +6,7 @@ import {
   eventsForElement,
   eventsUpTo,
   focusAndOpenPortal,
+  membraneForRepresentative,
   setCursor,
   type ElementRef,
   type RunTimeline,
@@ -13,6 +14,7 @@ import {
   type TimelineEvent,
 } from "../store/timeline.js";
 import { RecallChips } from "../portals/RecallChips.js";
+import { membraneColor } from "./membraneColor.js";
 
 /**
  * The room chat pane and the minds rail — split out of `RunReplayShell.tsx`
@@ -58,18 +60,29 @@ export function ChatPane({
   timeline,
   cursor,
   utteredEventIds,
+  roomFilter,
 }: {
   timeline: RunTimeline;
   cursor: number;
   utteredEventIds?: ReadonlySet<string>;
+  /**
+   * When set, only messages whose `subjects` intersect this set render —
+   * the membrane portal's interior chat scoped to its own `interiorRooms`
+   * (`VIEW_DESIGN.md` rule 5's membrane view). Omitted for the outer/commons
+   * chat, unchanged from before membranes existed.
+   */
+  roomFilter?: ReadonlySet<ElementRef>;
 }) {
   const echoedWorldIds = useMemo(() => echoedWorldEventIds(timeline.events), [timeline]);
   const messages = useMemo(
     () =>
       eventsUpTo(timeline, cursor).filter(
-        (event) => event.viewClass === "message" && !(event.authority === "world" && echoedWorldIds.has(event.eventId)),
+        (event) =>
+          event.viewClass === "message" &&
+          !(event.authority === "world" && echoedWorldIds.has(event.eventId)) &&
+          (!roomFilter || event.subjects.some((subject) => roomFilter.has(subject))),
       ),
-    [timeline, cursor, echoedWorldIds],
+    [timeline, cursor, echoedWorldIds, roomFilter],
   );
 
   return (
@@ -82,8 +95,18 @@ export function ChatPane({
           const isUndeliveredWorld = message.authority === "world";
           const isWorldEcho = message.authority === "moltnet" && Boolean(message.worldEventId);
           const isSeed = utteredEventIds?.has(message.eventId) ?? false;
+          // Representative = boundary crossing (VIEW_DESIGN.md's crossing
+          // vocabulary): a message authored by a membrane's own
+          // representative carries that membrane's color, wherever it's
+          // rendered — it's the one voice that crosses the interior/exterior
+          // boundary.
+          const asMembrane = message.actor ? membraneForRepresentative(timeline, `agent:${message.actor}`) : undefined;
           return (
-            <article className={["chat-message", isUndeliveredWorld ? "chat-message-undelivered" : ""].filter(Boolean).join(" ")} key={message.eventId}>
+            <article
+              className={["chat-message", isUndeliveredWorld ? "chat-message-undelivered" : ""].filter(Boolean).join(" ")}
+              key={message.eventId}
+              style={asMembrane ? { borderLeft: `2px solid ${membraneColor(asMembrane.ref)}`, paddingLeft: 6 } : undefined}
+            >
               <div className="chat-message-head">
                 <button
                   className="chat-author"
@@ -92,6 +115,15 @@ export function ChatPane({
                 >
                   {message.actor ?? "unknown"}
                 </button>
+                {asMembrane ? (
+                  <span
+                    className="chat-badge boundary-badge"
+                    style={{ borderColor: membraneColor(asMembrane.ref), color: membraneColor(asMembrane.ref) }}
+                    title={`Crosses the ${asMembrane.label} membrane boundary`}
+                  >
+                    boundary · {asMembrane.label}
+                  </span>
+                ) : null}
                 {isWorldEcho ? (
                   <span className="chat-badge chat-badge-world" title="Originated from a world action, delivered through moltnet">world</span>
                 ) : null}
@@ -153,12 +185,31 @@ function MindStrata({ rows }: { rows: readonly TimelineEvent[] }) {
   );
 }
 
-export function MindsRail({ timeline, cursor }: { timeline: RunTimeline; cursor: number }) {
-  const banks = useMemo(() => timeline.elements.filter((element) => element.kind === "bank"), [timeline]);
-  const agents = useMemo(() => timeline.elements.filter((element) => element.kind === "agent"), [timeline]);
+export function MindsRail({
+  timeline,
+  cursor,
+  agents: agentsOverride,
+  banks: banksOverride,
+}: {
+  timeline: RunTimeline;
+  cursor: number;
+  /**
+   * Restricts the rail to exactly these agents/banks — the membrane
+   * portal's interior minds rail (`../store/timeline.ts`'s
+   * `agentsForMembrane`/`banksForMembrane`). Omitted for the outer rail,
+   * unchanged from before membranes existed (every agent/bank in the run).
+   */
+  agents?: RunTimelineElement[];
+  banks?: RunTimelineElement[];
+}) {
+  const banks = useMemo(() => banksOverride ?? timeline.elements.filter((element) => element.kind === "bank"), [timeline, banksOverride]);
+  const agents = useMemo(() => agentsOverride ?? timeline.elements.filter((element) => element.kind === "agent"), [timeline, agentsOverride]);
 
   const memoryEventsAsOf = (ref: ElementRef): TimelineEvent[] =>
     eventsForElement(timeline, ref).filter((event) => event.t <= cursor && event.viewClass.startsWith("memory."));
+
+  const boundaryBadge = (agentRef: ElementRef): ReactNode =>
+    membraneForRepresentative(timeline, agentRef) ? <span className="boundary-badge">boundary</span> : null;
 
   return (
     <aside className="replay-pane replay-minds" aria-label="Minds rail">
@@ -176,7 +227,7 @@ export function MindsRail({ timeline, cursor }: { timeline: RunTimeline; cursor:
                 {byAgent.map(([agentRef, rows]) => (
                   <div className="mind-portal" key={agentRef}>
                     <button className="mind-header" onClick={() => focusAndOpenPortal(agentRef)} type="button">
-                      {agentRef.split(":").slice(1).join(":")} <span>{rows.length}</span>
+                      {agentRef.split(":").slice(1).join(":")} {boundaryBadge(agentRef)} <span>{rows.length}</span>
                     </button>
                     <MindStrata rows={rows} />
                   </div>
@@ -190,7 +241,7 @@ export function MindsRail({ timeline, cursor }: { timeline: RunTimeline; cursor:
             return (
               <div className="mind-portal" key={agent.ref}>
                 <button className="mind-header" onClick={() => focusAndOpenPortal(agent.ref)} type="button">
-                  {agent.label} <span>{strata.length}</span>
+                  {agent.label} {boundaryBadge(agent.ref)} <span>{strata.length}</span>
                 </button>
                 <MindStrata rows={strata} />
               </div>

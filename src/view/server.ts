@@ -7,9 +7,9 @@ import { fileURLToPath } from "node:url";
 import { isObserveRunDir } from "./runDetect.js";
 import { buildRunViewModel } from "./runViewModel.js";
 import type { RunViewModel } from "./runViewModelTypes.js";
-import { buildRunTimeline } from "./runTimeline.js";
+import { buildRunTimeline, readWorldRooms } from "./runTimeline.js";
 import type { RunTimeline } from "./runTimelineTypes.js";
-import { buildRunWorldTrace } from "./runWorldTrace.js";
+import { buildMembraneInteriorWorlds, buildRunWorldTrace } from "./runWorldTrace.js";
 import type { RunWorldTrace } from "./runWorldTrace.js";
 
 export interface ViewerServerConfig {
@@ -234,14 +234,37 @@ const loadRunReplay = async (config: ViewerServerConfig): Promise<RunReplayBundl
   const runDir = resolve(config.sourcePath);
   if (!(await isObserveRunDir(runDir))) return null;
 
-  const [model, timeline] = await Promise.all([buildRunViewModel(runDir), buildRunTimeline(runDir)]);
+  const [model, timeline, worldRooms] = await Promise.all([
+    buildRunViewModel(runDir),
+    buildRunTimeline(runDir),
+    readWorldRooms(runDir),
+  ]);
+
+  // The outer map renders every declared room that is NOT some membrane's own
+  // interior council room — for a recursive-psyche run that is the parent
+  // floor (`commons`) alone; for a flat run (no membranes) it is every room
+  // the manifest declares, unchanged from before this parameterization
+  // (`runWorldTrace.ts`'s `rooms` param, `VIEW_DESIGN.md` rule 5).
+  const interiorRoomRefs = new Set(timeline.membranes?.flatMap((membrane) => membrane.interiorRooms) ?? []);
+  const outerRooms = worldRooms.filter((room) => !interiorRoomRefs.has(room.ref));
   const world = buildRunWorldTrace({
     runId: model.runId,
     runName: model.runId,
     world: model.world,
+    rooms: outerRooms.map((room) => ({ networkId: room.networkId, roomId: room.roomId, members: room.members })),
     timeline,
   });
-  return { model, timeline, world };
+
+  // Each membrane's own "descend into a mind" mini map — populated here,
+  // once the full timeline (interior events included) exists; `deriveMembranes`
+  // itself never sees a completed `RunTimeline` (increment's ordering: the
+  // report-derived membrane shape comes first, the interior world trace after).
+  const timelineWithInteriorWorlds: RunTimeline = {
+    ...timeline,
+    membranes: buildMembraneInteriorWorlds(timeline.membranes ?? [], timeline),
+  };
+
+  return { model, timeline: timelineWithInteriorWorlds, world };
 };
 
 export const createViewerServer = async (config: ViewerServerConfig): Promise<ViewerServerHandle> => {

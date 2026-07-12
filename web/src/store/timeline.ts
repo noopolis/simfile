@@ -1,5 +1,7 @@
 import { useSyncExternalStore } from "react";
 
+import type { ViewerContractTrace } from "../viewer/types.js";
+
 /**
  * The one clock every time-linked view subscribes to (`VIEW_DESIGN.md` rule
  * 7: time is one axis everywhere, and the map, chat, minds rail, and agent
@@ -60,13 +62,27 @@ export interface RunTimeline {
   runId: string;
   events: TimelineEvent[];
   elements: RunTimelineElement[];
-  membranes?: Array<{
-    ref: string;
-    label: string;
-    representative: string;
-    interiorRooms: string[];
-    members: string[];
-  }>;
+  membranes?: RunTimelineMembrane[];
+}
+
+/**
+ * An interior self-team (the "descend into a mind" structure —
+ * `src/view/runTimelineTypes.ts`'s `RunTimelineMembrane`, structurally
+ * mirrored here per this store's existing src/web duplicate-contract rule).
+ * `interiorWorld` is a `viewer.trace.v1` trace scoped to exactly this
+ * membrane's `interiorRooms` (`src/view/runWorldTrace.ts`'s
+ * `buildMembraneInteriorWorlds`) — the same shape `../viewer/worldModel.ts`'s
+ * `buildViewerWorld` already turns into map-ready nodes/rooms for the OUTER
+ * map, so the membrane portal's interior map reuses that exact function,
+ * not a second map renderer.
+ */
+export interface RunTimelineMembrane {
+  ref: string;
+  label: string;
+  representative: string;
+  interiorRooms: string[];
+  members: string[];
+  interiorWorld?: ViewerContractTrace;
 }
 
 export interface TimelineStoreState {
@@ -229,6 +245,88 @@ export const eventsForMembrane = (timeline: RunTimeline, membraneRef: ElementRef
   }
 
   return [...eventsById.values()].sort((left, right) => left.t - right.t);
+};
+
+/** The membrane whose own `ref` is `elementRef` — the data-presence test the recursive membrane portal branches on (increment 4 rule 4: a leaf agent/room with no matching entry renders exactly as today). */
+export const membraneForRef = (timeline: RunTimeline, elementRef: ElementRef): RunTimelineMembrane | undefined =>
+  timeline.membranes?.find((membrane) => membrane.ref === elementRef);
+
+/**
+ * The membrane `elementRef` represents on a parent floor, if any — "an agent
+ * that resolves to one" (`VIEW_DESIGN.md`'s descend affordance: clicking
+ * `agent:luna-representative`'s own flat portal still shows a "descend into
+ * luna" button, distinct from clicking the `team:luna` map node itself,
+ * which opens the membrane view directly).
+ */
+export const membraneForRepresentative = (timeline: RunTimeline, elementRef: ElementRef): RunTimelineMembrane | undefined =>
+  timeline.membranes?.find((membrane) => membrane.representative === elementRef);
+
+/**
+ * The bank elements that belong to a membrane's interior — derived purely
+ * from data (never a naming convention): a bank belongs to the interior when
+ * at least one of its own events is also in the membrane's combined
+ * storyline (`eventsForMembrane`). Feeds the membrane portal's minds rail so
+ * it shows only `bank:luna-council`, not every bank in the run.
+ */
+export const banksForMembrane = (timeline: RunTimeline, membraneRef: ElementRef): RunTimelineElement[] => {
+  const membrane = membraneForRef(timeline, membraneRef);
+  if (!membrane) return [];
+  const interiorEventIds = new Set(eventsForMembrane(timeline, membraneRef).map((event) => event.eventId));
+  return timeline.elements.filter(
+    (element) => element.kind === "bank" && eventsForElement(timeline, element.ref).some((event) => interiorEventIds.has(event.eventId)),
+  );
+};
+
+/** The agent elements that belong to a membrane's interior, in `timeline.elements` order. */
+export const agentsForMembrane = (timeline: RunTimeline, membraneRef: ElementRef): RunTimelineElement[] => {
+  const membrane = membraneForRef(timeline, membraneRef);
+  if (!membrane) return [];
+  return timeline.elements.filter((element) => element.kind === "agent" && membrane.members.includes(element.ref));
+};
+
+/**
+ * The breadcrumb path for a portal, as ordered segments (never a
+ * pre-joined string, so a test can assert on the segments themselves): a
+ * plain leaf portal is `["world", label]`, unchanged from before membranes
+ * existed. A membrane portal is `["world", membrane.label, interiorRoomLabel]`
+ * — its own team + council path. A portal opened FROM one (its `elementRef`
+ * is a member of some membrane that is earlier in the currently open
+ * `openPortals` stack) prepends that ancestor's own path, so descending
+ * further (`luna` -> `luna-shadow`) reads as a real nested path, recursively,
+ * with zero special-casing for a leaf-only run (no membranes -> this branch
+ * never matches, and every portal falls through to the unchanged default).
+ */
+export const breadcrumbSegments = (
+  timeline: RunTimeline,
+  openPortals: readonly ElementRef[],
+  elementRef: ElementRef,
+): string[] => {
+  // Matches `StorylinePortal.tsx`'s pre-existing `labelFor` exactly, so a
+  // leaf portal's breadcrumb text is byte-identical to before membranes
+  // existed (agent/room/bank refs with a single `kind:` prefix).
+  const label = (ref: ElementRef): string => ref.split(":").slice(1).join(":") || ref;
+  // The bare id (last path segment) — used only for an interior room's own
+  // breadcrumb segment, so `room:luna_inner:luna-council` reads as
+  // "luna-council," the real room name, not "luna_inner:luna-council."
+  const bareId = (ref: ElementRef): string => ref.split(":").pop() || ref;
+
+  const ownMembrane = membraneForRef(timeline, elementRef);
+  if (ownMembrane) {
+    const interiorRoomLabel = ownMembrane.interiorRooms[0] ? bareId(ownMembrane.interiorRooms[0]) : ownMembrane.label;
+    return ["world", ownMembrane.label, interiorRoomLabel];
+  }
+
+  const elementIndex = openPortals.indexOf(elementRef);
+  const ancestorMembrane = timeline.membranes?.find((membrane) => {
+    const membraneIndex = openPortals.indexOf(membrane.ref);
+    if (membraneIndex === -1 || (elementIndex !== -1 && membraneIndex >= elementIndex)) return false;
+    return membrane.interiorRooms.includes(elementRef) || membrane.members.includes(elementRef);
+  });
+  if (ancestorMembrane) {
+    return [...breadcrumbSegments(timeline, openPortals, ancestorMembrane.ref), label(elementRef)];
+  }
+
+  return ["world", label(elementRef)];
 };
 
 /**
