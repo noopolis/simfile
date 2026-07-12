@@ -704,6 +704,49 @@
   gap: 8px;
 }
 
+/* Engine provenance badge (honesty gap fix): unmissable topbar disclosure of
+   whether a run's dialogue is a deterministic scripted screenplay or came
+   from a real engine. Bold, high-contrast borders by design — this is the
+   one topbar element that must never read as decorative chrome. */
+
+.engine-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 3px;
+  border: 1px solid currentColor;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.engine-badge-scripted {
+  color: var(--coral);
+  background: rgba(212, 96, 74, 0.1);
+}
+
+.engine-badge-real-engine {
+  color: var(--green-hi);
+  background: rgba(61, 220, 132, 0.1);
+}
+
+.engine-badge-mixed {
+  color: var(--coral);
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(212, 96, 74, 0.12),
+    rgba(212, 96, 74, 0.12) 6px,
+    rgba(61, 220, 132, 0.12) 6px,
+    rgba(61, 220, 132, 0.12) 12px
+  );
+}
+
+.engine-badge-unknown {
+  color: var(--mute);
+  background: var(--tint);
+}
+
 /* Verdict strip + provenance panel (increment 2 rule 3: React parity with
    the retired bespoke run page) */
 

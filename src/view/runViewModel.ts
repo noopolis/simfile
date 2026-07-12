@@ -1,6 +1,13 @@
 import { runObserve } from "../observe/index.js";
+import { computeEngineProvenance, type EngineEntry } from "./engineProvenance.js";
 import { computeMinds, computeProvenance, computeThread, computeVerdict } from "./runViewModelCompute.js";
-import { hasVariableSamples, readMnemeEventsByBank, readTranscript, readWorldTelemetry } from "./runRawArtifacts.js";
+import {
+  hasVariableSamples,
+  readMnemeEventsByBank,
+  readTranscript,
+  readUpReceiptEngines,
+  readWorldTelemetry
+} from "./runRawArtifacts.js";
 import type { RunViewModel } from "./runViewModelTypes.js";
 
 const stringField = (world: Record<string, unknown>, key: string): string | undefined => {
@@ -31,16 +38,26 @@ export const buildRunViewModel = async (runDir: string): Promise<RunViewModel> =
   const transcript = await readTranscript(runDir);
   const mnemeEventsByBank = await readMnemeEventsByBank(runDir);
   const telemetrySamples = await readWorldTelemetry(runDir);
+  const upReceiptEngines = await readUpReceiptEngines(runDir);
   const allEvents = observed.streams.flatMap((stream) => stream.events);
 
   const world = observed.manifest.world;
   const members = world?.members;
+
+  // Prefer the up-receipt's per-agent engines[] (finer-grained, catches a
+  // mixed run) when the run-dir has one; otherwise fall back to the
+  // manifest's own single collapsed `engine` string, folded to one entry.
+  // No engine anywhere at all -> an empty list, which `computeEngineProvenance`
+  // reports as `"unknown"` rather than defaulting to real.
+  const engineEntries: EngineEntry[] =
+    upReceiptEngines ?? (observed.manifest.engine ? [{ engine: observed.manifest.engine }] : []);
 
   return {
     version: "simfile.run-view-model.v1",
     runId: observed.manifest.run_id,
     createdAt: observed.manifest.created_at,
     engine: observed.manifest.engine,
+    engineProvenance: computeEngineProvenance(engineEntries),
     world: world
       ? {
           networkId: stringField(world, "network_id"),

@@ -1,5 +1,6 @@
 import type { CausalEvent } from "@noopolis/stele";
 
+import type { EngineProvenance } from "./engineProvenance.js";
 import type { SeedSpreadEntry, SpreadSummary } from "../observe/report.js";
 
 /**
@@ -85,6 +86,16 @@ export interface RunViewModel {
   runId: string;
   createdAt: string;
   engine?: string;
+  /**
+   * The honesty-critical disclosure (VIEW_DESIGN.md / the run-replay badge):
+   * whether this run's dialogue came from a deterministic scripted
+   * screenplay or a real engine, derived by `engineProvenance.ts` from
+   * `spawnfile/up-receipt.json`'s per-agent `engines[]` when present, else
+   * this same `engine` field collapsed to one entry. Never absent — an
+   * engine-less manifest still yields `{mode: "unknown", ...}` rather than
+   * omitting the field, so the viewer always has something to badge.
+   */
+  engineProvenance: EngineProvenance;
   world?: { networkId?: string; roomId?: string; members?: string[] };
   participants: string[];
   verdict: RunVerdict;

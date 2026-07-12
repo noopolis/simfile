@@ -141,6 +141,7 @@ describe("createViewerServer", () => {
         runId: string;
         verdict: { turnCount: number; healthy: boolean };
         provenance: { artifacts: { path: string; ok: boolean }[]; entries: { key: string; value: string }[] };
+        engineProvenance: { mode: string; label: string; engines: { engine: string }[] };
         seedSpread?: unknown[];
         spreadSummary?: unknown;
       };
@@ -149,6 +150,12 @@ describe("createViewerServer", () => {
       assert.ok(meta.provenance.artifacts.length >= 6);
       assert.ok(meta.provenance.artifacts.every((artifact) => artifact.ok));
       assert.ok(meta.provenance.entries.some((entry) => entry.value.includes("eleanor")));
+      // office-sim-golden's manifest.engine is "fake-grok-office-sim" — a
+      // canned screenplay, not a real engine, and the honesty-critical badge
+      // must say so unmissably (never silently omitted).
+      assert.equal(meta.engineProvenance.mode, "scripted");
+      assert.match(meta.engineProvenance.label, /SCRIPTED/);
+      assert.match(meta.engineProvenance.label, /authored/i);
       // office-sim-golden has no manifest.seed_declaration — graceful absence,
       // not a fabricated empty array (increment 3).
       assert.equal(meta.seedSpread, undefined);

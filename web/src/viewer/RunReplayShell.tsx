@@ -13,6 +13,7 @@ import { StorylinePortal } from "../portals/StorylinePortal.js";
 import { AsciiMap } from "./AsciiMap.js";
 import { ChatPane, MindsRail } from "./ReplayPanes.js";
 import {
+  EngineProvenanceBadge,
   ProvenancePanel,
   SpreadReadout,
   VariableGaugeRail,
@@ -159,6 +160,12 @@ export function RunReplayShell() {
           <span className="version">run-replay</span>
           <span className="run-name">{timeline.runId}</span>
         </div>
+        {/* Honesty-critical disclosure (unmissable by placement, first thing after
+            the run name): whether this run's dialogue is a deterministic scripted
+            screenplay or came from a real engine — never omitted, never softened.
+            Renders before the verdict strip so it cannot be mistaken for a
+            secondary/optional detail. */}
+        {runMeta ? <EngineProvenanceBadge provenance={runMeta.engineProvenance} /> : null}
         {runMeta ? <VerdictStrip meta={runMeta} onOpenProvenance={provenancePanel.toggle} /> : null}
         {runMeta?.spreadSummary ? (
           <SpreadReadout participants={runMeta.participants} seedSpread={runMeta.seedSpread ?? []} summary={runMeta.spreadSummary} />

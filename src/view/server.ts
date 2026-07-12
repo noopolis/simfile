@@ -302,6 +302,10 @@ export const createViewerServer = async (config: ViewerServerConfig): Promise<Vi
           runId: runReplay.model.runId,
           verdict: runReplay.model.verdict,
           provenance: runReplay.model.provenance,
+          // Honesty-critical disclosure (never omitted): scripted vs
+          // real-engine vs mixed vs unknown, badged unmissably by the
+          // React shell's topbar (`EngineProvenanceBadge`).
+          engineProvenance: runReplay.model.engineProvenance,
           // Passthrough context for the spread readout's "reach/total"
           // denominator (never spread math itself — that stays in
           // `spreadSummary`, computed once by `computeSeedSpread`).

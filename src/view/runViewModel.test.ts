@@ -115,6 +115,55 @@ describe("buildRunViewModel — office-sim golden fixture", () => {
     const model = await buildRunViewModel(GOLDEN_FIXTURE_DIR);
     assert.equal(model.variableSamples, undefined);
   });
+
+  it("discloses the fake-grok-office-sim manifest engine as scripted, never real (honesty gap fix)", async () => {
+    const model = await buildRunViewModel(GOLDEN_FIXTURE_DIR);
+    assert.equal(model.engine, "fake-grok-office-sim");
+    assert.equal(model.engineProvenance.mode, "scripted");
+    assert.match(model.engineProvenance.label, /SCRIPTED/);
+    assert.match(model.engineProvenance.label, /authored/i);
+    assert.match(model.engineProvenance.label, /not emergent/i);
+  });
+});
+
+describe("buildRunViewModel — engine provenance across the scripted goldens", () => {
+  const FIXTURE_NAMES = ["office-secret-v0-golden", "office-pressure-v0-golden", "jungian-daimon-org-golden"];
+
+  for (const fixtureName of FIXTURE_NAMES) {
+    it(`discloses ${fixtureName}'s "scripted" manifest engine as scripted`, async () => {
+      const runDir = path.resolve(
+        path.dirname(fileURLToPath(import.meta.url)),
+        "..",
+        "..",
+        "fixtures",
+        "observe",
+        fixtureName
+      );
+      const model = await buildRunViewModel(runDir);
+      assert.equal(model.engine, "scripted");
+      assert.equal(model.engineProvenance.mode, "scripted");
+      assert.match(model.engineProvenance.label, /SCRIPTED/);
+    });
+  }
+});
+
+describe("buildRunViewModel — engine provenance for a real-grok run", () => {
+  const REAL_GROK_COMPOSED_DIR = path.resolve(
+    path.dirname(fileURLToPath(import.meta.url)),
+    "..",
+    "..",
+    "runs",
+    "real-grok-composed",
+    "run-b7ef07f0fd2c4779894c2bb746140972"
+  );
+
+  it("discloses the grok manifest engine as real-engine, labeled with its name", async () => {
+    const model = await buildRunViewModel(REAL_GROK_COMPOSED_DIR);
+    assert.equal(model.engine, "grok");
+    assert.equal(model.engineProvenance.mode, "real-engine");
+    assert.match(model.engineProvenance.label, /REAL ENGINE/);
+    assert.match(model.engineProvenance.label, /grok/);
+  });
 });
 
 describe("buildRunViewModel — office-pressure-v0 golden fixture (variable storyline)", () => {

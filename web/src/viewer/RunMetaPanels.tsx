@@ -44,6 +44,25 @@ export interface RunMetaProvenanceEntry {
   value: string;
 }
 
+/** One disclosed engine entry — `agent` present only for a per-agent (up-receipt) breakdown. */
+export interface RunMetaEngineEntry {
+  agent?: string;
+  engine: string;
+}
+
+/**
+ * The honesty-critical engine-provenance disclosure (`src/view/engineProvenance.ts`):
+ * whether this run's dialogue is a deterministic scripted screenplay or came
+ * from a real engine. Always present on `/api/run-meta` — an engine-less
+ * manifest still yields `mode: "unknown"` rather than omitting the field, so
+ * `EngineProvenanceBadge` always has something honest to render.
+ */
+export interface RunMetaEngineProvenance {
+  mode: "scripted" | "real-engine" | "mixed" | "unknown";
+  engines: RunMetaEngineEntry[];
+  label: string;
+}
+
 export interface RunMeta {
   runId: string;
   verdict: RunMetaVerdict;
@@ -51,12 +70,36 @@ export interface RunMeta {
     artifacts: RunMetaProvenanceArtifact[];
     entries: RunMetaProvenanceEntry[];
   };
+  engineProvenance: RunMetaEngineProvenance;
   participants: string[];
   /** Increment 3: undefined for a run with no `manifest.seed_declaration` (graceful absence, never a fabricated empty spread). */
   seedSpread?: SeedSpreadEntry[];
   spreadSummary?: SpreadSummary;
   /** Increment 3: undefined unless the run has a non-empty `world/telemetry.json` variable sample set. */
   variableSamples?: RunMetaVariableSample[];
+}
+
+/**
+ * The unmissable topbar badge that disclosed which run this is: a canned,
+ * deterministic screenplay (`"scripted"`) or a real engine driving live
+ * agents (`"real-engine"`) — plus the honest `"mixed"`/`"unknown"` states
+ * when the run's own provenance data does not cleanly resolve to one or the
+ * other. This is the fix for a real confusion that already happened (a
+ * scripted demo mistaken for live agents), so it renders `meta.engineProvenance.label`
+ * verbatim rather than a shortened/softened version — the label itself is
+ * already worded to be unambiguous ("authored screenplay, not emergent
+ * dialogue" for scripted; the engine name for real).
+ */
+export function EngineProvenanceBadge({ provenance }: { provenance: RunMetaEngineProvenance }) {
+  return (
+    <span
+      aria-label="Engine provenance disclosure"
+      className={`engine-badge engine-badge-${provenance.mode}`}
+      title={provenance.engines.map((entry) => (entry.agent ? `${entry.agent}: ${entry.engine}` : entry.engine)).join(", ")}
+    >
+      {provenance.label}
+    </span>
+  );
 }
 
 /** The compact verdict strip in the topbar: participants/turns/chains/memory/failures/artifacts at a glance. */

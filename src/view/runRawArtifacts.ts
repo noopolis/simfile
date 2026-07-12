@@ -1,6 +1,7 @@
 import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 
+import type { EngineEntry } from "./engineProvenance.js";
 import type { RawMnemeEvent, RawTranscript, RawTranscriptMessage, RunTelemetrySample } from "./runViewModelTypes.js";
 
 /**
@@ -141,3 +142,34 @@ export const readWorldTelemetry = async (runDir: string): Promise<RunTelemetrySa
 /** `true` when at least one sample carries at least one variable — the gate that decides whether a run has real gauge data to render (`RunViewModel.variableSamples`'s own doc comment: never a fabricated empty gauge). */
 export const hasVariableSamples = (samples: readonly RunTelemetrySample[] | null): boolean =>
   samples !== null && samples.some((sample) => Object.keys(sample.variables).length > 0);
+
+/**
+ * Reads `spawnfile/up-receipt.json`'s `engines[]` (per-agent engine
+ * breakdown) when a composed run-dir carries one. Loosely shaped, not
+ * schema-validated — this is an optional, best-effort finer-grained signal
+ * layered on top of the manifest's own single `engine` field, so a
+ * malformed/partial file degrades to `undefined` (the caller falls back to
+ * `manifest.engine`) rather than throwing. No run-dir currently ships this
+ * file, but a composed driver's `spawnfileReceipts.ts` up-receipt schema
+ * already carries `engines` when a real deployment reports mixed per-agent
+ * engines, so this reads it the moment one does.
+ */
+export const readUpReceiptEngines = async (runDir: string): Promise<EngineEntry[] | undefined> => {
+  const raw = await readFile(path.join(runDir, "spawnfile", "up-receipt.json"), "utf8").catch(() => null);
+  if (raw === null) return undefined;
+  try {
+    const parsed = JSON.parse(raw) as { engines?: unknown };
+    if (!Array.isArray(parsed.engines)) return undefined;
+    const entries = parsed.engines.filter(
+      (entry): entry is EngineEntry =>
+        typeof entry === "object" &&
+        entry !== null &&
+        typeof (entry as { engine?: unknown }).engine === "string" &&
+        (entry as { engine: string }).engine.length > 0 &&
+        (typeof (entry as { agent?: unknown }).agent === "string" || (entry as { agent?: unknown }).agent === undefined)
+    );
+    return entries.length > 0 ? entries : undefined;
+  } catch {
+    return undefined;
+  }
+};

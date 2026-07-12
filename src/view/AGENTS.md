@@ -18,14 +18,32 @@ a bespoke page.
   endpoints for the world viewer; at startup it calls `loadRunReplay` to
   detect run-replay mode (`isObserveRunDir`) and, when detected, additionally
   serves `/api/timeline`, an adapted `/api/world`, and `/api/run-meta`
-  (`{ runId, verdict, provenance, participants }`, reusing `computeVerdict`/
-  `computeProvenance` unchanged, plus increment 3's `seedSpread`/
-  `spreadSummary`/`variableSamples` — each omitted, never faked, when the
-  run has none) — `/` still falls through to the same React static assets
-  as world/live mode, and `/api/state.mode` reports `"run-replay"`.
-  `/api/events` (the live SSE tick) is not served in this mode.
+  (`{ runId, verdict, provenance, engineProvenance, participants }`, reusing
+  `computeVerdict`/`computeProvenance` unchanged, plus increment 3's
+  `seedSpread`/`spreadSummary`/`variableSamples` — each omitted, never
+  faked, when the run has none) — `/` still falls through to the same React
+  static assets as world/live mode, and `/api/state.mode` reports
+  `"run-replay"`. `engineProvenance` (the honesty-gap fix) is NEVER omitted,
+  unlike the seed/variable fields above: an engine-less manifest still
+  yields `{mode: "unknown", ...}` so the viewer always has an honest badge
+  to render. `/api/events` (the live SSE tick) is not served in this mode.
   `/api/run-view-model.json` is retired (increment 2): it 404s like any
   other unknown path.
+- `engineProvenance.ts` — the honesty-critical disclosure logic: whether a
+  run's dialogue came from a deterministic scripted screenplay or a real
+  engine (the confusion this closes: a canned demo mistaken for live
+  agents). `classifyEngineName` maps one engine string to `"scripted"`
+  (`fake-*`/exactly `"scripted"`), `"real-engine"` (a recognized model name
+  — `grok`/`codex`/`agy`/`claude`, matched as a whole segment so
+  `claude-sonnet-4.5` still matches but `agyeman` does not), or `"unknown"`
+  — absence or an unrecognized string NEVER collapses to real.
+  `computeEngineProvenance` folds a list of `{agent?, engine}` entries into
+  one `EngineProvenance` (`mode`/`engines`/`label`): all-agree -> that
+  classification; disagree -> `"mixed"` (itself a disclosure, listing each
+  agent's own engine in the label). `runViewModel.ts` feeds it either
+  `spawnfile/up-receipt.json`'s per-agent `engines[]` (`readUpReceiptEngines`
+  in `runRawArtifacts.ts`, when a composed run-dir has one) or the
+  manifest's single `engine` field collapsed to one entry.
 - `runDetect.ts` — `isObserveRunDir`: the shape check that selects
   run-replay mode (never touched when `--state` is passed — that always
   means the world live mode).
@@ -39,7 +57,12 @@ a bespoke page.
   gates whether its variable samples are real (never a fabricated empty
   gauge when every sample's `variables` map is empty, as in
   `office-secret-v0-golden`; a real ramp lives in
-  `fixtures/observe/office-pressure-v0-golden/`, increment 4).
+  `fixtures/observe/office-pressure-v0-golden/`, increment 4) — and
+  `readUpReceiptEngines`, the optional finer-grained read for
+  `engineProvenance.ts`: `spawnfile/up-receipt.json`'s `engines[]` when a
+  composed run-dir carries one (loosely parsed, `undefined` on any
+  missing/malformed file rather than throwing — `runViewModel.ts` falls back
+  to the manifest's own single `engine` field).
 - `runTimelineTypes.ts` / `runTimelineRefs.ts` / `runTimelineRecords.ts` /
   `runTimeline.ts` — `buildRunTimeline(runDir)` merges every `causal.jsonl`
   stream (`../observe/causalStreams.ts`) and every mneme bank's
@@ -113,13 +136,15 @@ a bespoke page.
   informational room anchor — these runs have no place-bearing world yet —
   heuristic agents, and `ledger_facts` keyed by `tick := t`).
 - `runViewModelTypes.ts` — the `RunViewModel` shape (verdict, thread with
-  per-turn causal trace, minds, provenance) plus the raw
+  per-turn causal trace, minds, provenance, engineProvenance) plus the raw
   transcript/mneme-event-log shapes read from disk. `thread`/`minds` are
   computed but no longer served whole; `/api/run-meta` exposes
-  `verdict`/`provenance`/`participants` plus increment 3's
+  `verdict`/`provenance`/`engineProvenance`/`participants` plus increment 3's
   `seedSpread`/`spreadSummary`/`variableSamples` (the React shell gets its
   chat/minds content from `/api/timeline` instead — see
-  `web/src/viewer/ReplayPanes.tsx`).
+  `web/src/viewer/ReplayPanes.tsx`). `engineProvenance` is the one field
+  that is never optional (unlike the increment-3 fields) — see
+  `engineProvenance.ts` above.
 - `runViewModelCompute.ts` — pure functions building the thread (message ->
   wake -> turn -> reply, plus the `mneme:`-cause "recall fed this turn" edge),
   the per-agent memory portals, the verdict, and provenance from
@@ -128,8 +153,9 @@ a bespoke page.
   `server.ts` or in `web/`.
 - `runViewModel.ts` — `buildRunViewModel(runDir)`: calls the existing
   `runObserve` (`../observe/`) for the reconciled report and causal streams,
-  `runRawArtifacts.ts` for the transcript and mneme event logs, and
-  assembles the `RunViewModel`.
+  `runRawArtifacts.ts` for the transcript, mneme event logs, and any
+  up-receipt engines, and assembles the `RunViewModel` — including
+  `engineProvenance` via `engineProvenance.ts`'s `computeEngineProvenance`.
 
 `runPage.ts` / `runPageStyles.ts` / `runPageScript.ts` (the bespoke
 run-reader HTML page) and the `/api/run-view-model.json` endpoint they fed
