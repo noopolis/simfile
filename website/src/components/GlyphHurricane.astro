@@ -1,0 +1,203 @@
+---
+// Animated ASCII "hurricane" of glyphs, rendered by GlyphCSS's software
+// rasterizer (writes one <pre>). It is the wind-tunnel hero visual: a swirling
+// funnel of monospace characters around a calm eye where the headline sits.
+//
+// Mirrors glyphcss's own GlyphDemo.astro mounting model: a static host + a
+// client module that imports the vanilla `glyphcss` + `@glyphcss/fonts` APIs,
+// builds the vortex once, then spins it in a RAF loop. Honors
+// prefers-reduced-motion (static frame) and pauses when off-screen.
+const { fontUrl = "/fonts/hero.ttf" } = Astro.props;
+---
+
+<div class="hurricane" data-font={fontUrl} aria-hidden="true">
+  <div class="hurricane__stage"></div>
+  <div class="hurricane__vignette"></div>
+</div>
+
+<script>
+  import { createGlyphScene, createGlyphPerspectiveCamera } from "glyphcss";
+  import { loadFont, textPolygons } from "@glyphcss/fonts";
+
+  const CREAM = [255, 232, 184];
+  const VIOLET = [124, 92, 255];
+  const VIOLET_HI = [167, 139, 250];
+
+  const hex = (rgb: number[]) =>
+    "#" + rgb.map((c) => Math.max(0, Math.min(255, Math.round(c))).toString(16).padStart(2, "0")).join("");
+  const lerp = (a: number[], b: number[], t: number) => a.map((v, i) => v + (b[i] - v) * t);
+
+  // Characters that read as "signals / code / minds streaming past".
+  const CHARS = "01</>{}[]#*+=·:∴≈λΨΔ∇⊹◇→←↑↓|аgentworldsimflow".split("");
+
+  const DEG = 180 / Math.PI;
+
+  async function boot(root: HTMLElement) {
+    const stage = root.querySelector(".hurricane__stage") as HTMLElement;
+    if (!stage) return;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    let font;
+    try {
+      font = await loadFont(root.dataset.font || "/fonts/hero.ttf");
+    } catch {
+      return; // font missing → hero still works, just no swirl
+    }
+
+    // Tunables (URL query overrides for live design iteration).
+    const q = new URLSearchParams(window.location.search);
+    const num = (k: string, d: number) => (q.has(k) ? Number(q.get(k)) : d);
+    const T = {
+      rotX: num("rotX", 14),
+      zoom: num("zoom", 2.3),
+      N: num("N", 300),
+      arms: num("arms", 2),
+      turns: num("turns", 2.1),
+      gsize: num("gsize", 20),
+      rMax: num("rMax", 150),
+      rEye: num("rEye", 8),
+      aspectX: num("aspectX", 1.85),
+      aspectY: num("aspectY", 0.92),
+      roll: num("roll", 1), // 1 = glyphs sweep tangent to the arm
+      spin: num("spin", 0.28),
+    };
+
+    const camera = createGlyphPerspectiveCamera({ rotX: T.rotX, rotY: 0, distance: 0, zoom: T.zoom });
+    const scene = createGlyphScene(stage, {
+      mode: "solid",
+      camera,
+      autoSize: true,
+      cellAspect: 2.0,
+      useColors: true,
+      directionalLight: { direction: [0.3, 1, 0.6], intensity: 1.05, color: "#ffffff" },
+      ambientLight: { intensity: 0.6, color: "#b9a7ff" },
+    });
+
+    // ── Hurricane: N glyph-particles distributed along `arms` logarithmic
+    //    spiral arms on a tilted disc, dense + bright at the eye, sparse +
+    //    violet at the rim. A slight funnel dips the center (the eye).
+    const N = T.N;
+    const rng = (seed: number) => {
+      // deterministic pseudo-random from index (no Math.random in the loop)
+      const x = Math.sin(seed * 12.9898) * 43758.5453;
+      return x - Math.floor(x);
+    };
+
+    type G = { handle: any; base: number; r: number; z: number; spin: number };
+    const glyphs: G[] = [];
+
+    for (let i = 0; i < N; i++) {
+      const u = i / (N - 1);
+      const arm = i % T.arms;
+      const s = Math.pow(u, 0.82); // arc-length param; slight center bias
+      const r = T.rEye + (T.rMax - T.rEye) * s;
+      const jitterA = (rng(i) - 0.5) * 0.4;
+      const jitterR = (rng(i + 99) - 0.5) * 12;
+      const base = (arm * (Math.PI * 2)) / T.arms + s * T.turns * Math.PI * 2 + jitterA;
+      const rr = Math.max(2, r + jitterR);
+      const z = (rng(i + 7) - 0.5) * 26; // slight depth so the tilt reads as 3D
+      const spin = 1.4 - 0.72 * s; // inner arms shear faster (vortex)
+      const size = T.gsize * (1.2 - 0.5 * s) * (0.78 + rng(i + 3) * 0.55);
+      const col = s < 0.42 ? lerp(CREAM, VIOLET_HI, s / 0.42) : lerp(VIOLET_HI, VIOLET, (s - 0.42) / 0.58);
+      const ch = CHARS[(i * 7 + 3) % CHARS.length];
+      const polys = textPolygons(font, ch, {
+        size: Math.max(4, size),
+        depth: Math.max(1.2, size * 0.14),
+        curveSteps: 1,
+        color: hex(col),
+        sideColor: hex(lerp(col, [0, 0, 0], 0.5)),
+      });
+      const handle = scene.add(polys, { position: [rr * T.aspectX, 0, z], rotation: [0, 0, 0] });
+      glyphs.push({ handle, base, r: rr, z, spin });
+    }
+
+    // Face-on elliptical spiral rotating in the screen plane → a wide hurricane.
+    const apply = (theta: number) => {
+      for (const g of glyphs) {
+        const a = g.base + theta * g.spin;
+        const x = g.r * T.aspectX * Math.cos(a);
+        const y = g.r * T.aspectY * Math.sin(a);
+        const roll = T.roll ? a * DEG + 90 : 0; // sweep glyphs along the arm
+        g.handle.setTransform({ position: [x, y, g.z], rotation: [0, 0, roll] });
+      }
+      scene.rerender();
+    };
+
+    apply(0);
+
+    if (reduce) return; // static vortex frame
+
+    let raf = 0;
+    let last: number | null = null;
+    let theta = 0;
+    let running = true;
+
+    const tick = (now: number) => {
+      raf = requestAnimationFrame(tick);
+      if (!running) {
+        last = now;
+        return;
+      }
+      const dt = last !== null ? Math.min((now - last) / 1000, 0.05) : 0;
+      last = now;
+      theta += dt * T.spin; // radians / second
+      apply(theta);
+    };
+    raf = requestAnimationFrame(tick);
+
+    // Pause when the hero scrolls off-screen (save the main thread).
+    const io = new IntersectionObserver(
+      (entries) => {
+        running = entries[0]?.isIntersecting ?? true;
+        last = null;
+      },
+      { threshold: 0.01 }
+    );
+    io.observe(root);
+  }
+
+  const el = document.currentScript?.previousElementSibling as HTMLElement | null;
+  const root = el?.classList.contains("hurricane") ? el : document.querySelector(".hurricane");
+  if (root) boot(root as HTMLElement);
+</script>
+
+<style>
+  .hurricane {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .hurricane__stage {
+    position: absolute;
+    inset: -6% -2% -10% -2%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  /* GlyphCSS writes a <pre>; keep it centered, monospace, non-selectable. */
+  .hurricane__stage :global(pre) {
+    margin: 0;
+    width: 100%;
+    height: 100%;
+    line-height: 1;
+    letter-spacing: 0;
+    user-select: none;
+    font-family: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, monospace;
+    opacity: 1;
+  }
+  /* Radial vignette: dark, legible core (the eye) fading to the swirl. */
+  .hurricane__vignette {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(42% 46% at 50% 47%, rgba(11, 11, 13, 0.78) 0%, rgba(11, 11, 13, 0.34) 40%, rgba(11, 11, 13, 0) 74%),
+      linear-gradient(180deg, rgba(11, 11, 13, 0.28) 0%, rgba(11, 11, 13, 0) 22%, rgba(11, 11, 13, 0) 72%, #0b0b0d 100%);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .hurricane__stage :global(pre) {
+      opacity: 0.7;
+    }
+  }
+</style>

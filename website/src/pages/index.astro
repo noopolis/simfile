@@ -1,4 +1,5 @@
 ---
+import GlyphHurricane from '../components/GlyphHurricane.astro';
 import '../styles/landing.css';
 ---
 <!DOCTYPE html>
@@ -6,10 +7,10 @@ import '../styles/landing.css';
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Simfile — test a society of AI agents without scripting the outcome</title>
+    <title>Simfile — a wind tunnel for societies of AI agents</title>
     <meta
       name="description"
-      content="Declare a deterministic world around real AI agents, seed an idea, run the experiment, and scrub the causal timeline."
+      content="Build a deterministic world, drop in real AI agents, run your question forward — org behavior, product reception, what spreads — then rewind the whole run."
     />
     <link rel="canonical" href="https://simfile.org/" />
     <link rel="sitemap" href="/sitemap-0.xml" />
@@ -17,10 +18,10 @@ import '../styles/landing.css';
     <meta name="author" content="Noopolis" />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Simfile" />
-    <meta property="og:title" content="Simfile — test a society of AI agents without scripting the outcome" />
+    <meta property="og:title" content="Simfile — a wind tunnel for societies of AI agents" />
     <meta
       property="og:description"
-      content="Declare a deterministic world around real AI agents, seed an idea, run the experiment, and scrub the causal timeline."
+      content="Build a deterministic world, drop in real AI agents, run your question forward — org behavior, product reception, what spreads — then rewind the whole run."
     />
     <meta property="og:url" content="https://simfile.org/" />
     <meta property="og:image" content="https://simfile.org/shots/viewer-memetics.png" />
@@ -43,18 +44,14 @@ import '../styles/landing.css';
 
     <main>
       <section class="hero" aria-labelledby="hero-title">
+        <GlyphHurricane />
         <div class="hero-copy">
-          <p class="eyebrow">Reproducible experiments for AI-agent societies</p>
-          <h1 id="hero-title">Test a <span>society</span> of AI agents without scripting the outcome.</h1>
+          <p class="eyebrow">A deterministic simulator for societies of AI agents</p>
+          <h1 id="hero-title">A <span>wind tunnel</span> for societies of AI agents.</h1>
           <p class="hero-sub">
-            Declare a deterministic world around a real Spawnfile organization of AI agents. Run the experiment.
-            Then scrub one causal timeline to see what happened — and why.
+            Build a world, drop in real AI agents, and run your question forward — will the org behave, will they
+            buy it, what spreads, what happens next. Then rewind the whole run.
           </p>
-
-          <aside class="result-callout" aria-label="First experiment result">
-            <div class="term-cmd-bar" aria-hidden="true"><span>signal / first-result</span><span>verified</span></div>
-            <p><strong>First result</strong> — a secret seeded in one agent's private memory reached a second agent, with no scripted handoff, in 5/5 runs. Swap the seed and the replacement spreads. Leave it unseeded and it never appears.</p>
-          </aside>
 
           <div class="actions">
             <a class="btn" href="/quickstart/">Run your first experiment</a>
@@ -65,18 +62,27 @@ import '../styles/landing.css';
             <pre><code><span class="prompt">$</span> npm install simfile</code></pre>
           </div>
         </div>
+      </section>
 
-        <figure class="evidence-plate">
-          <figcaption>Captured from sealed run run-0928df7f… · 🧠 REAL ENGINE · grok · the seed reaching the second agent</figcaption>
-          <div class="image-frame">
-            <img
-              src="/shots/viewer-memetics.png"
-              width="3360"
-              height="2000"
-              alt="Simfile's run-replay viewer showing the seeded Rosa Delgado reference moving from Eleanor to Sam."
-            />
-          </div>
-        </figure>
+      <section class="proof" aria-label="First experiment result">
+        <div class="inner proof-inner">
+          <aside class="result-callout" aria-label="First experiment result">
+            <div class="term-cmd-bar" aria-hidden="true"><span>signal / first-result</span><span>verified</span></div>
+            <p><strong>First result</strong> — a secret seeded in one agent's private memory reached a second agent, with no scripted handoff, in 5/5 runs. Swap the seed and the replacement spreads. Leave it unseeded and it never appears.</p>
+          </aside>
+
+          <figure class="evidence-plate">
+            <figcaption>Captured from sealed run run-0928df7f… · 🧠 REAL ENGINE · grok · the seed reaching the second agent</figcaption>
+            <div class="image-frame">
+              <img
+                src="/shots/viewer-memetics.png"
+                width="3360"
+                height="2000"
+                alt="Simfile's run-replay viewer showing the seeded Rosa Delgado reference moving from Eleanor to Sam."
+              />
+            </div>
+          </figure>
+        </div>
       </section>
 
       <section class="band term-section-rule" id="result" aria-labelledby="result-title">
