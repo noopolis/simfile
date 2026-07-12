@@ -1,0 +1,18 @@
+{
+  "run_id": "run-289dccce5595430e8e8e8e0faf48b4d3",
+  "samples": [
+    {
+      "phase": "workday",
+      "sim_time": 0,
+      "tick": 0,
+      "variables": {}
+    },
+    {
+      "phase": "workday",
+      "sim_time": 60,
+      "tick": 1,
+      "variables": {}
+    }
+  ],
+  "version": "simfile.telemetry.v1"
+}

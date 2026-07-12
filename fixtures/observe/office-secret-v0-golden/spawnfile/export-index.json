@@ -1,0 +1,53 @@
+{
+  "deployment": "simfile-office-secret-v0-golden",
+  "exported_at": "2026-07-12T06:23:02.339Z",
+  "files": [
+    {
+      "bytes": 3812,
+      "path": "raw/daimon/eleanor/causal.jsonl",
+      "sha256": "8f31b168ff5f4f3d2e86250419e6e72e6fe28d02cfd64f6b9257da4c8e5ed9a4",
+      "source": {
+        "kind": "volume",
+        "ref": "spawnfile-org-agent-eleanor-daimon-telemetry-run-289dccce5595430e8e8e-0359784e:/causal.jsonl"
+      }
+    },
+    {
+      "bytes": 1809,
+      "path": "raw/daimon/sam/causal.jsonl",
+      "sha256": "77ea878c5b208be9e901f8d26dc96ec26d9872630388419494eaa39a090fe629",
+      "source": {
+        "kind": "volume",
+        "ref": "spawnfile-org-agent-sam-daimon-telemetry-run-289dccce5595430e8e8e-111c59d4:/causal.jsonl"
+      }
+    },
+    {
+      "bytes": 2837,
+      "path": "raw/mneme/office-recall/causal.jsonl",
+      "sha256": "1926233d8a54573ac75b8e1d6dfc8fb8b2999ac7dc6b586ef11a9e7c776607da",
+      "source": {
+        "kind": "volume",
+        "ref": "spawnfile-org-memory-var-lib-spawnfile-memory-office-secret-v0-run-289dccce5595430e8e8e-3f160576:/memory/causal.jsonl"
+      }
+    },
+    {
+      "bytes": 16980,
+      "path": "raw/mneme/office-recall/events.jsonl",
+      "sha256": "87e608490b2e9d81e025df6eddbefc8601ad5d6aadafaf0ac92d2c1e615c38d4",
+      "source": {
+        "kind": "volume",
+        "ref": "spawnfile-org-memory-var-lib-spawnfile-memory-office-secret-v0-run-289dccce5595430e8e8e-3f160576:/memory/events.jsonl"
+      }
+    },
+    {
+      "bytes": 2516,
+      "path": "raw/moltnet/causal.jsonl",
+      "sha256": "19604774624d146cfb1f649dda444e05519716a59dee508696ea1cb1c9ab3f3e",
+      "source": {
+        "kind": "volume",
+        "ref": "spawnfile-org-moltnet-office-lab-causal-run-289dccce5595430e8e8e-fcfb2164:/causal.jsonl"
+      }
+    }
+  ],
+  "run_id": "run-289dccce5595430e8e8e8e0faf48b4d3",
+  "version": "spawnfile.export-index.v1"
+}

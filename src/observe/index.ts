@@ -5,3 +5,5 @@ export * from "./manifest.js";
 export * from "./memoryBanks.js";
 export * from "./observe.js";
 export * from "./report.js";
+export * from "./seedSpread.js";
+export * from "./seedSpreadArtifacts.js";

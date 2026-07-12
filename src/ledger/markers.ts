@@ -45,7 +45,11 @@ const normalizeAlias = (text: string): string => text.trim().toLocaleLowerCase()
 
 const escapeRegExp = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
 
-const containsAlias = (payload: string, alias: string): boolean => {
+/** Exported for reuse by `../observe/seedSpread.ts`'s exact-matcher: the same
+ * word-boundary, case-insensitive alias check `scanMarker` uses internally,
+ * applied directly to already-joined content strings (transcript messages,
+ * mneme bank content, recalled memory content) rather than `LedgerEvent`s. */
+export const containsAlias = (payload: string, alias: string): boolean => {
   const boundary = "(?<![\\p{L}\\p{N}_])";
   const endBoundary = "(?![\\p{L}\\p{N}_])";
   return new RegExp(`${boundary}${escapeRegExp(alias)}${endBoundary}`, "iu").test(payload);

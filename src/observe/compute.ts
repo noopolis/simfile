@@ -3,6 +3,7 @@ import type { CausalEvent, ReconcileResult, ReconciliationState } from "@noopoli
 import type { MemoryBankCounts } from "./memoryBanks.js";
 import type { SimfileRunManifest } from "./manifest.js";
 import { INCOMPLETE_CHAIN_FLAGS, OBSERVE_REPORT_VERSION, type SimfileObserveReport } from "./report.js";
+import type { SeedSpreadComputeResult } from "./seedSpread.js";
 
 const FAILURE_TYPES = new Set(["turn.failed", "wake.failed"]);
 const AGENT_PRINCIPAL_PATTERN = /^agent:(.+)$/u;
@@ -104,6 +105,10 @@ export interface BuildObserveReportInput {
   manifest: SimfileRunManifest;
   memoryBanks: readonly MemoryBankCounts[];
   reconciled: ReconcileResult;
+  /** Memetics increment (b): present only when `manifest.seed_declaration`
+   * exists. `excluded` hits (instrument/operator actors) fold into
+   * `failures`, never into `seed_spread`. */
+  seedSpread?: SeedSpreadComputeResult;
 }
 
 export const buildObserveReport = (input: BuildObserveReportInput): SimfileObserveReport => ({
@@ -120,5 +125,9 @@ export const buildObserveReport = (input: BuildObserveReportInput): SimfileObser
     memory_write_source: bank.memory_write_source,
     ...(bank.writes_by_agent ? { writes_by_agent: bank.writes_by_agent } : {})
   })),
-  failures: computeFailures(input.allEvents)
+  failures: [
+    ...computeFailures(input.allEvents),
+    ...(input.seedSpread?.excluded.map((excluded) => ({ event_id: excluded.event_id, reason: excluded.reason })) ?? [])
+  ],
+  ...(input.seedSpread ? { seed_spread: input.seedSpread.entries, spread_summary: input.seedSpread.summary } : {})
 });

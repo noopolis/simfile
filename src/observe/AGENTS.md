@@ -31,10 +31,36 @@ Spawnfile internals; the only cross-repo dependency is the narrow shared package
   already-reconciled events: `participants` (from `principal_id`), `agent_turns`
   (ordered by the moltnet message seq that causally triggered each turn — never
   `recorded_at`), `chains` (from `@noopolis/stele`'s reconciliation states),
-  `failures` (`turn.failed`/`wake.failed` events).
+  `failures` (`turn.failed`/`wake.failed` events, plus any `seedSpread.ts`
+  exclusion). `buildObserveReport` takes an optional `seedSpread` input
+  (memetics increment (b)) and folds it into `seed_spread`/`spread_summary`
+  when present — omitted entirely for a manifest without `seed_declaration`.
+- `seedSpreadArtifacts.ts` — I/O-only reads `seedSpread.ts`'s re-derivation
+  needs beyond `causalStreams.ts`/`memoryBanks.ts`: `readSpreadTranscriptMessages`
+  (every `transcript.json` under `raw/moltnet/**`, flattened to `{id, fromId,
+  text}`), `readSpreadMnemeEventsByBank` (every bank's `events.jsonl` parsed to
+  `{id, type, agentId, text}` — a malformed line is skipped, never a crash),
+  `readTickByIngestedMessageId` (`world/ingested-messages.jsonl`'s `message_id
+  -> tick` join; empty map for a non-world-driven run).
+- `seedSpread.ts` — memetics increment (b)'s pure `computeSeedSpread`: re-derives
+  `seed_spread` from sealed artifacts + `manifest.seed_declaration`, applying
+  the `exact` matcher (`../ledger/markers.ts`'s `containsAlias`, word-boundary,
+  case-insensitive) to transcript messages (`uttered`), mneme bank content
+  joined to any `memory.written` ledger event (`registered`, ledger-first —
+  same precedence as `memoryBanks.ts`), and `memory.recalled` causal events'
+  joined content (`recalled`) — plus exactly one `doc-seeded` entry taken
+  verbatim from the manifest. Never scans `turn.input.submitted` payloads
+  (exposure is not expression); excludes any hit whose actor is `world` or
+  `operator:<agent>` into `excluded` (an instrument/containment flag, folded
+  into `failures` by `compute.ts`, never counted as spread). Also computes
+  `spread_summary` (`reach`, `latency`, `first_appearance`) excluding the seed
+  agent's own appearances. `diffSeedSpreadAgainstLiveMarkerSeen` is a
+  diagnostic-only self-check against the live world loop's own `marker.seen`
+  events (`spreadSelfCheck` on `ObserveResult`, never fed into the report
+  itself — `worldTickLoop.ts`'s own doc comment: polling order ≠ causal order).
 - `observe.ts` — `runObserve(runDir)` orchestrates the above and returns the
-  report plus artifact-integrity/parse-error diagnostics; `writeObserveReport`
-  writes `<runDir>/observe/report.json`.
+  report plus artifact-integrity/parse-error/spread-self-check diagnostics;
+  `writeObserveReport` writes `<runDir>/observe/report.json`.
 - `index.ts` — barrel.
 
 ## Rules
@@ -45,6 +71,9 @@ Spawnfile internals; the only cross-repo dependency is the narrow shared package
   must never be imported here.
 - `reconcile.ts`'s `reconcileEvents`/`traceCausesBackward` (from `@noopolis/stele`)
   stay pure; this folder's own I/O (manifest/artifact/stream reads) lives in
-  dedicated files so `compute.ts` stays a pure, easily-tested function of
-  already-loaded data.
+  dedicated files so `compute.ts`/`seedSpread.ts` stay pure, easily-tested
+  functions of already-loaded data.
+- Seed-spread re-derivation never trusts the live world loop's own
+  `marker.seen` events as evidence (poll order ≠ causal order) — it is only
+  ever a self-check diagnostic, never a source for `seed_spread` itself.
 - Keep files under 400 lines; split further before that limit.

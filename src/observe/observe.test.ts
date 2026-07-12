@@ -23,6 +23,15 @@ const LEDGER_WRITES_FIXTURE_DIR = path.resolve(
   "ledger-writes-synthetic"
 );
 
+const OFFICE_SECRET_GOLDEN_FIXTURE_DIR = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "..",
+  "..",
+  "fixtures",
+  "observe",
+  "office-secret-v0-golden"
+);
+
 /**
  * The seam-proving test (Slice B / Piece 2): `simfile observe` reads ONLY
  * files under the golden fixture (a real captured office-sim run — see
@@ -90,7 +99,13 @@ describe("runObserve — office-sim golden fixture (monolith-verdict reproductio
     const result = await runObserve(GOLDEN_FIXTURE_DIR);
     assert.equal(result.report.version, "simfile.observe.v1");
     assert.equal(result.report.seed_spread, undefined);
+    assert.equal(result.report.spread_summary, undefined);
     assert.equal(result.report.wake_diff, undefined);
+  });
+
+  it("computes no spread self-check for a manifest without seed_declaration (non-vacuity: no crash)", async () => {
+    const result = await runObserve(GOLDEN_FIXTURE_DIR);
+    assert.equal(result.spreadSelfCheck, undefined);
   });
 });
 
@@ -133,5 +148,78 @@ describe("runObserve — ledger-writes synthetic fixture (Slice B Piece 4b)", ()
         `expected ${eventId} to reconcile complete, not flagged incomplete`
       );
     }
+  });
+});
+
+/**
+ * Memetics increment (b)'s own golden fixture: a REAL captured
+ * `runWorldDrivenOfficeSim` run (real `spawnfile up`/Docker, scripted
+ * engine, no LLM auth) against `fixtures/sims/office-secret-v0/`. Eleanor's
+ * seeded `MEMORY.md` line ("Rosa Delgado is the referral client...") makes
+ * it into her own room utterance, which Sam echoes back — the transcript's
+ * own text carries exactly two "Rosa Delgado" occurrences (Eleanor's
+ * proposal, Sam's acceptance; the kickoff and Eleanor's closing line never
+ * mention it), which is the hand-count this suite reproduces.
+ */
+describe("runObserve — office-secret-v0 golden fixture (memetics increment (b))", () => {
+  it("verifies every manifest-declared artifact and parses every causal stream with zero errors", async () => {
+    const result = await runObserve(OFFICE_SECRET_GOLDEN_FIXTURE_DIR);
+    assert.ok(result.artifactIntegrity.length > 0);
+    for (const check of result.artifactIntegrity) {
+      assert.equal(check.ok, true, `artifact ${check.path} failed integrity check`);
+    }
+    assert.deepEqual(result.causalParseErrors, []);
+  });
+
+  it("reconciles every causal chain complete — never stitched", async () => {
+    const result = await runObserve(OFFICE_SECRET_GOLDEN_FIXTURE_DIR);
+    assert.deepEqual(result.report.chains.incomplete, []);
+    assert.ok(result.report.chains.complete > 0);
+  });
+
+  it("re-derives exactly the transcript's own hand-count: Eleanor and Sam each utter 'Rosa Delgado' once", async () => {
+    const result = await runObserve(OFFICE_SECRET_GOLDEN_FIXTURE_DIR);
+    const uttered = result.report.seed_spread?.filter((entry) => entry.channel === "uttered") ?? [];
+    assert.equal(uttered.length, 2, "the transcript carries exactly 2 'Rosa Delgado' occurrences");
+    assert.deepEqual(
+      uttered.map((entry) => entry.agent).sort(),
+      ["eleanor", "sam"]
+    );
+  });
+
+  it("carries exactly one doc-seeded entry, taken verbatim from the manifest's seed_declaration", async () => {
+    const result = await runObserve(OFFICE_SECRET_GOLDEN_FIXTURE_DIR);
+    const docSeeded = result.report.seed_spread?.filter((entry) => entry.channel === "doc-seeded") ?? [];
+    assert.equal(docSeeded.length, 1);
+    assert.equal(docSeeded[0]!.agent, result.manifest.seed_declaration!.seed_agent);
+  });
+
+  it("computes reach: 1 (Sam, the one non-seed agent) with a real tick-derived latency", async () => {
+    const result = await runObserve(OFFICE_SECRET_GOLDEN_FIXTURE_DIR);
+    assert.deepEqual(result.report.spread_summary, {
+      reach: 1,
+      latency: 1,
+      first_appearance: [
+        {
+          agent: "sam",
+          channel: "uttered",
+          event_id: "moltnet:msg_89afdb35-ee62-4256-b403-84eee53cb830",
+          tick: 1
+        }
+      ]
+    });
+  });
+
+  it("never counts an operator/world instrument hit as spread (none present, failures stay empty)", async () => {
+    const result = await runObserve(OFFICE_SECRET_GOLDEN_FIXTURE_DIR);
+    assert.deepEqual(result.report.failures, []);
+  });
+
+  it("matches the live world loop's own marker.seen self-check exactly", async () => {
+    const result = await runObserve(OFFICE_SECRET_GOLDEN_FIXTURE_DIR);
+    assert.ok(result.spreadSelfCheck);
+    assert.equal(result.spreadSelfCheck!.matches, true);
+    assert.deepEqual(result.spreadSelfCheck!.onlyLive, []);
+    assert.deepEqual(result.spreadSelfCheck!.onlyDerived, []);
   });
 });

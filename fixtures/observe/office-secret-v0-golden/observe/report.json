@@ -1,0 +1,110 @@
+{
+  "version": "simfile.observe.v1",
+  "run_id": "run-289dccce5595430e8e8e8e0faf48b4d3",
+  "contract_versions": {
+    "causal-event.v1": "noopolis.causal-event.v1",
+    "simfile.observe.v1": "simfile.observe.v1",
+    "simfile.run-manifest.v1": "simfile.run-manifest.v1"
+  },
+  "participants": [
+    "eleanor",
+    "sam"
+  ],
+  "agent_turns": {
+    "count": 3,
+    "sequence": [
+      "eleanor",
+      "sam",
+      "eleanor"
+    ]
+  },
+  "chains": {
+    "complete": 24,
+    "incomplete": []
+  },
+  "memory": [
+    {
+      "bank": "office-recall",
+      "events": 10,
+      "recalls": 2,
+      "memory_write_source": "events-fallback"
+    }
+  ],
+  "failures": [],
+  "seed_spread": [
+    {
+      "channel": "doc-seeded",
+      "event_id": "doc-seed:eleanor:2026-07-12T06:22:56.848Z",
+      "fidelity": 1,
+      "agent": "eleanor"
+    },
+    {
+      "channel": "uttered",
+      "event_id": "moltnet:msg_7623bed7-0c13-4b28-8682-9a2dd990ee6d",
+      "fidelity": 1,
+      "agent": "eleanor",
+      "tick": 1
+    },
+    {
+      "channel": "uttered",
+      "event_id": "moltnet:msg_89afdb35-ee62-4256-b403-84eee53cb830",
+      "fidelity": 1,
+      "agent": "sam",
+      "tick": 1
+    },
+    {
+      "channel": "registered",
+      "event_id": "evt_d415a13e-3eb8-4938-b91d-c4a3c3036b16",
+      "fidelity": 1,
+      "agent": "eleanor",
+      "memory_write_source": "events-fallback"
+    },
+    {
+      "channel": "registered",
+      "event_id": "evt_116efe80-9339-4437-964d-e2f1d970bd98",
+      "fidelity": 1,
+      "agent": "sam",
+      "memory_write_source": "events-fallback"
+    },
+    {
+      "channel": "registered",
+      "event_id": "evt_f3ae82c7-fae4-45d7-92fc-9953a004996d",
+      "fidelity": 1,
+      "agent": "sam",
+      "memory_write_source": "events-fallback"
+    },
+    {
+      "channel": "registered",
+      "event_id": "evt_44f8d714-65fc-418d-bb8a-9a5f57958538",
+      "fidelity": 1,
+      "agent": "eleanor",
+      "memory_write_source": "events-fallback"
+    },
+    {
+      "channel": "registered",
+      "event_id": "evt_5ed6c774-6f72-449b-a373-90fd4a9b6f1a",
+      "fidelity": 1,
+      "agent": "eleanor",
+      "memory_write_source": "events-fallback"
+    },
+    {
+      "channel": "recalled",
+      "event_id": "mneme:c645a6c3-cb74-4f26-a636-c40d63df7381",
+      "fidelity": 1,
+      "agent": "eleanor",
+      "tick": 1
+    }
+  ],
+  "spread_summary": {
+    "reach": 1,
+    "latency": 1,
+    "first_appearance": [
+      {
+        "agent": "sam",
+        "channel": "uttered",
+        "event_id": "moltnet:msg_89afdb35-ee62-4256-b403-84eee53cb830",
+        "tick": 1
+      }
+    ]
+  }
+}

@@ -12,6 +12,12 @@ import { collectMemoryBankCounts } from "./memoryBanks.js";
 import type { SimfileRunManifest } from "./manifest.js";
 import { parseRunManifest } from "./manifest.js";
 import type { SimfileObserveReport } from "./report.js";
+import { computeSeedSpread, diffSeedSpreadAgainstLiveMarkerSeen, type SeedSpreadSelfCheck } from "./seedSpread.js";
+import {
+  readSpreadTranscriptMessages,
+  readTickByIngestedMessageId,
+  readSpreadMnemeEventsByBank
+} from "./seedSpreadArtifacts.js";
 
 export interface ObserveResult {
   artifactIntegrity: ArtifactIntegrityCheck[];
@@ -19,6 +25,10 @@ export interface ObserveResult {
   manifest: SimfileRunManifest;
   report: SimfileObserveReport;
   streams: CausalStreamSource[];
+  /** Memetics increment (b): present only when `manifest.seed_declaration`
+   * exists — the live-`marker.seen` self-check, diagnostic only (never fed
+   * into `report.seed_spread`, see `seedSpread.ts`'s own doc comment). */
+  spreadSelfCheck?: SeedSpreadSelfCheck;
 }
 
 const loadRunManifest = async (runDir: string): Promise<SimfileRunManifest> => {
@@ -60,9 +70,36 @@ export const runObserve = async (runDir: string): Promise<ObserveResult> => {
   }
   const memoryBanks = await collectMemoryBankCounts(runDir, eventsByBank);
 
-  const report = buildObserveReport({ allEvents, manifest, memoryBanks, reconciled });
+  let seedSpread: ReturnType<typeof computeSeedSpread> | undefined;
+  let spreadSelfCheck: SeedSpreadSelfCheck | undefined;
+  if (manifest.seed_declaration) {
+    const [transcriptMessages, mnemeEventsByBank, tickByMoltnetMessageId] = await Promise.all([
+      readSpreadTranscriptMessages(runDir),
+      readSpreadMnemeEventsByBank(runDir),
+      readTickByIngestedMessageId(runDir)
+    ]);
+    const causalEventsById = new Map(allEvents.map((event) => [event.event_id, event] as const));
 
-  return { artifactIntegrity, causalParseErrors, manifest, report, streams };
+    seedSpread = computeSeedSpread({
+      seedDeclaration: manifest.seed_declaration,
+      causalEventsById,
+      transcriptMessages,
+      causalEventsByBank: eventsByBank,
+      mnemeEventsByBank,
+      tickByMoltnetMessageId
+    });
+
+    const worldEvents = streams.filter((stream) => stream.authority === "world").flatMap((stream) => stream.events);
+    spreadSelfCheck = diffSeedSpreadAgainstLiveMarkerSeen(
+      worldEvents,
+      transcriptMessages,
+      manifest.seed_declaration.token_set
+    );
+  }
+
+  const report = buildObserveReport({ allEvents, manifest, memoryBanks, reconciled, seedSpread });
+
+  return { artifactIntegrity, causalParseErrors, manifest, report, streams, spreadSelfCheck };
 };
 
 /** Writes `observe/report.json` under the run directory; returns its path. */
