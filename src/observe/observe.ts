@@ -93,7 +93,8 @@ export const runObserve = async (runDir: string): Promise<ObserveResult> => {
     spreadSelfCheck = diffSeedSpreadAgainstLiveMarkerSeen(
       worldEvents,
       transcriptMessages,
-      manifest.seed_declaration.token_set
+      manifest.seed_declaration.token_set,
+      manifest.seed_declaration.matcher_policy
     );
   }
 

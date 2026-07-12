@@ -29,11 +29,10 @@ const spawnfileRefSchema = z
 /**
  * The observer's ground truth for a seeded memetics secret (contracts.md
  * "measurement-critical contracts" section). `matcher_policy` is kept as a
- * documented free-form string rather than a tight enum: the four named
- * policies (`exact` / `edit-distance<=k` / `embedding>=tau` / `judge-model`)
- * are parameterized (the `k`/`tau` varies per experiment) and no experiment
- * has pinned one yet — narrowing this before Phase G actually uses it would
- * guess at a shape instead of freezing an observed one.
+ * documented free-form string rather than a tight enum: the named policies
+ * (`exact` / `edit-distance:<k>` / `embedding` / `judge`) may carry pinned
+ * experiment parameters. `spreadMatcher.ts` validates and dispatches this
+ * field; model-backed policies fail loudly in builds without those models.
  */
 const seedDeclarationSchema = z
   .object({

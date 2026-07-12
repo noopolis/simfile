@@ -1,10 +1,14 @@
 import type { CausalEvent } from "@noopolis/stele";
 
-import { containsAlias } from "../ledger/markers.js";
-
 import type { SeedDeclaration } from "./manifest.js";
 import type { SeedSpreadChannel, SeedSpreadEntry, SpreadSummary } from "./report.js";
 import type { SpreadMnemeEvent, SpreadTranscriptMessage } from "./seedSpreadArtifacts.js";
+import {
+  matchSeedSpread,
+  parseSpreadMatcherPolicy,
+  type ParsedSpreadMatcherPolicy,
+  type SpreadMatchResult
+} from "./spreadMatcher.js";
 
 /**
  * Memetics increment (b): re-derives `seed_spread` from sealed artifacts +
@@ -54,8 +58,11 @@ export interface SeedSpreadComputeResult {
 const isInstrumentOrOperatorActor = (actor: string | undefined): boolean =>
   actor === "world" || (actor?.startsWith("operator:") ?? false);
 
-const matchesTokenSet = (text: string, tokenSet: readonly string[]): boolean =>
-  tokenSet.some((token) => containsAlias(text, token));
+const matchTokenSet = (
+  text: string,
+  tokenSet: readonly string[],
+  matcherPolicy: ParsedSpreadMatcherPolicy
+): SpreadMatchResult => matchSeedSpread(text, tokenSet, matcherPolicy);
 
 const agentIdFromPrincipal = (principalId: string): string | undefined =>
   AGENT_PRINCIPAL_PATTERN.exec(principalId)?.[1];
@@ -129,7 +136,8 @@ const docSeededEntry = (seed: SeedDeclaration): SeedSpreadEntry => ({
 });
 
 const computeUtteredEntries = (
-  input: SeedSpreadComputeInput
+  input: SeedSpreadComputeInput,
+  matcherPolicy: ParsedSpreadMatcherPolicy
 ): { entries: SeedSpreadEntry[]; excluded: SeedSpreadExcluded[] } => {
   const entries: SeedSpreadEntry[] = [];
   const excluded: SeedSpreadExcluded[] = [];
@@ -142,7 +150,8 @@ const computeUtteredEntries = (
   }
 
   for (const message of input.transcriptMessages) {
-    if (!matchesTokenSet(message.text, input.seedDeclaration.token_set)) continue;
+    const match = matchTokenSet(message.text, input.seedDeclaration.token_set, matcherPolicy);
+    if (!match.matched) continue;
 
     const causal = messageAcceptedByMessageId.get(message.id);
     const eventId = causal?.event_id ?? message.id;
@@ -158,7 +167,7 @@ const computeUtteredEntries = (
     entries.push({
       channel: "uttered",
       event_id: eventId,
-      fidelity: 1,
+      fidelity: match.fidelity,
       ...(message.fromId ? { agent: message.fromId } : {}),
       ...(() => {
         const tick = deriveTick(causal, input.causalEventsById, input.tickByMoltnetMessageId);
@@ -171,7 +180,8 @@ const computeUtteredEntries = (
 };
 
 const computeRegisteredEntries = (
-  input: SeedSpreadComputeInput
+  input: SeedSpreadComputeInput,
+  matcherPolicy: ParsedSpreadMatcherPolicy
 ): { entries: SeedSpreadEntry[]; excluded: SeedSpreadExcluded[] } => {
   const entries: SeedSpreadEntry[] = [];
   const excluded: SeedSpreadExcluded[] = [];
@@ -189,7 +199,8 @@ const computeRegisteredEntries = (
       // Recalls get their own channel below, from the causal `memory.recalled`
       // stream — never double-counted here as a registration.
       if (bankEvent.type === "memory.recalled") continue;
-      if (!matchesTokenSet(bankEvent.text, input.seedDeclaration.token_set)) continue;
+      const match = matchTokenSet(bankEvent.text, input.seedDeclaration.token_set, matcherPolicy);
+      if (!match.matched) continue;
 
       const ledgerEvent = writtenByMemoryId.get(bankEvent.id);
       const eventId = ledgerEvent?.event_id ?? bankEvent.id;
@@ -206,7 +217,7 @@ const computeRegisteredEntries = (
       entries.push({
         channel: "registered",
         event_id: eventId,
-        fidelity: 1,
+        fidelity: match.fidelity,
         ...(bankEvent.agentId ? { agent: bankEvent.agentId } : {}),
         ...(tick === undefined ? {} : { tick }),
         memory_write_source: ledgerEvent ? "ledger" : "events-fallback"
@@ -218,7 +229,8 @@ const computeRegisteredEntries = (
 };
 
 const computeRecalledEntries = (
-  input: SeedSpreadComputeInput
+  input: SeedSpreadComputeInput,
+  matcherPolicy: ParsedSpreadMatcherPolicy
 ): { entries: SeedSpreadEntry[]; excluded: SeedSpreadExcluded[] } => {
   const entries: SeedSpreadEntry[] = [];
   const excluded: SeedSpreadExcluded[] = [];
@@ -231,7 +243,9 @@ const computeRecalledEntries = (
       if (event.type !== "memory.recalled") continue;
       const memoryId = stringPayloadField(event, "memory_id");
       const text = memoryId ? contentById.get(memoryId) : undefined;
-      if (text === undefined || !matchesTokenSet(text, input.seedDeclaration.token_set)) continue;
+      if (text === undefined) continue;
+      const match = matchTokenSet(text, input.seedDeclaration.token_set, matcherPolicy);
+      if (!match.matched) continue;
 
       const agent = agentIdFromPrincipal(event.principal_id);
       if (isInstrumentOrOperatorActor(agent ?? event.principal_id)) {
@@ -246,7 +260,7 @@ const computeRecalledEntries = (
       entries.push({
         channel: "recalled",
         event_id: event.event_id,
-        fidelity: 1,
+        fidelity: match.fidelity,
         ...(agent ? { agent } : {}),
         ...(tick === undefined ? {} : { tick })
       });
@@ -292,9 +306,12 @@ const computeSummary = (entries: readonly SeedSpreadEntry[], seedAgent: string):
 };
 
 export const computeSeedSpread = (input: SeedSpreadComputeInput): SeedSpreadComputeResult => {
-  const uttered = computeUtteredEntries(input);
-  const registered = computeRegisteredEntries(input);
-  const recalled = computeRecalledEntries(input);
+  // Resolve once before scanning so an unsupported pinned policy fails even
+  // when the run has no transcript messages or memory content.
+  const matcherPolicy = parseSpreadMatcherPolicy(input.seedDeclaration.matcher_policy);
+  const uttered = computeUtteredEntries(input, matcherPolicy);
+  const registered = computeRegisteredEntries(input, matcherPolicy);
+  const recalled = computeRecalledEntries(input, matcherPolicy);
 
   const entries = [docSeededEntry(input.seedDeclaration), ...uttered.entries, ...registered.entries, ...recalled.entries];
   const excluded = [...uttered.excluded, ...registered.excluded, ...recalled.excluded];
@@ -326,8 +343,10 @@ export interface SeedSpreadSelfCheck {
 export const diffSeedSpreadAgainstLiveMarkerSeen = (
   worldEvents: readonly CausalEvent[],
   transcriptMessages: readonly SpreadTranscriptMessage[],
-  tokenSet: readonly string[]
+  tokenSet: readonly string[],
+  matcherPolicy = "exact"
 ): SeedSpreadSelfCheck => {
+  const parsedMatcherPolicy = parseSpreadMatcherPolicy(matcherPolicy);
   const liveHitMessageIds = [
     ...new Set(
       worldEvents
@@ -339,7 +358,9 @@ export const diffSeedSpreadAgainstLiveMarkerSeen = (
 
   const derivedHitMessageIds = [
     ...new Set(
-      transcriptMessages.filter((message) => matchesTokenSet(message.text, tokenSet)).map((message) => message.id)
+      transcriptMessages
+        .filter((message) => matchTokenSet(message.text, tokenSet, parsedMatcherPolicy).matched)
+        .map((message) => message.id)
     )
   ].sort();
 

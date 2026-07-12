@@ -44,8 +44,8 @@ Spawnfile internals; the only cross-repo dependency is the narrow shared package
   -> tick` join; empty map for a non-world-driven run).
 - `seedSpread.ts` — memetics increment (b)'s pure `computeSeedSpread`: re-derives
   `seed_spread` from sealed artifacts + `manifest.seed_declaration`, applying
-  the `exact` matcher (`../ledger/markers.ts`'s `containsAlias`, word-boundary,
-  case-insensitive) to transcript messages (`uttered`), mneme bank content
+  the manifest-pinned matcher from `spreadMatcher.ts` to transcript messages
+  (`uttered`), mneme bank content
   joined to any `memory.written` ledger event (`registered`, ledger-first —
   same precedence as `memoryBanks.ts`), and `memory.recalled` causal events'
   joined content (`recalled`) — plus exactly one `doc-seeded` entry taken
@@ -58,6 +58,9 @@ Spawnfile internals; the only cross-repo dependency is the narrow shared package
   diagnostic-only self-check against the live world loop's own `marker.seen`
   events (`spreadSelfCheck` on `ObserveResult`, never fed into the report
   itself — `worldTickLoop.ts`'s own doc comment: polling order ≠ causal order).
+- `spreadMatcher.ts` — pure policy parser and matcher for seed spread. `exact`
+  reuses `../ledger/markers.ts`'s word-boundary matching; `edit-distance` uses
+  local Levenshtein scoring; model-backed policies fail loudly as unsupported.
 - `observe.ts` — `runObserve(runDir)` orchestrates the above and returns the
   report plus artifact-integrity/parse-error/spread-self-check diagnostics;
   `writeObserveReport` writes `<runDir>/observe/report.json`.

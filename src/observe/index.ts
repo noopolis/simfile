@@ -7,3 +7,4 @@ export * from "./observe.js";
 export * from "./report.js";
 export * from "./seedSpread.js";
 export * from "./seedSpreadArtifacts.js";
+export * from "./spreadMatcher.js";

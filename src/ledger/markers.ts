@@ -45,7 +45,7 @@ const normalizeAlias = (text: string): string => text.trim().toLocaleLowerCase()
 
 const escapeRegExp = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
 
-/** Exported for reuse by `../observe/seedSpread.ts`'s exact-matcher: the same
+/** Exported for reuse by `../observe/spreadMatcher.ts`'s exact matcher: the same
  * word-boundary, case-insensitive alias check `scanMarker` uses internally,
  * applied directly to already-joined content strings (transcript messages,
  * mneme bank content, recalled memory content) rather than `LedgerEvent`s. */
