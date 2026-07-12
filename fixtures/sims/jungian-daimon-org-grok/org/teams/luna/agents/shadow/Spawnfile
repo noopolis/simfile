@@ -1,0 +1,20 @@
+spawnfile_version: "0.1"
+kind: agent
+name: luna-shadow
+description: "luna-shadow (real grok archetype voice)"
+
+runtime:
+  name: pi
+  options:
+    engine: grok
+
+surfaces:
+  moltnet:
+    - network: luna_inner
+      rooms:
+        luna-council:
+          wake: mentions
+
+workspace:
+  docs:
+    system: AGENTS.md
