@@ -1,3 +1,4 @@
+export * from "./composedJungianSimDriver.js";
 export * from "./composedOfficeSimDriver.js";
 export * from "./composeRunManifest.js";
 export * from "./exchangeWait.js";

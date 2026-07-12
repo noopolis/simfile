@@ -1,0 +1,1336 @@
+{
+  "compile_fingerprint": "sf1:2ccac23d94a0",
+  "container": {
+    "dockerfile": "Dockerfile",
+    "entrypoint": "entrypoint.sh",
+    "env_example": ".env.example",
+    "internal_ports": [
+      19690,
+      19901,
+      19902,
+      19903
+    ],
+    "model_secrets_required": [],
+    "moltnet": {
+      "node_plans": [
+        {
+          "config_path": "/var/lib/spawnfile/moltnet/nodes/jungian-daimon-org-psyche-floor-luna-representative.json",
+          "network_id": "psyche-floor"
+        },
+        {
+          "config_path": "/var/lib/spawnfile/moltnet/nodes/jungian-daimon-org-psyche-floor-selene-representative.json",
+          "network_id": "psyche-floor"
+        },
+        {
+          "config_path": "/var/lib/spawnfile/moltnet/nodes/luna-luna_inner-luna-animus.json",
+          "network_id": "luna_inner"
+        },
+        {
+          "config_path": "/var/lib/spawnfile/moltnet/nodes/luna-luna_inner-luna-representative.json",
+          "network_id": "luna_inner"
+        },
+        {
+          "config_path": "/var/lib/spawnfile/moltnet/nodes/luna-luna_inner-luna-shadow.json",
+          "network_id": "luna_inner"
+        },
+        {
+          "config_path": "/var/lib/spawnfile/moltnet/nodes/selene-selene_inner-selene-animus.json",
+          "network_id": "selene_inner"
+        },
+        {
+          "config_path": "/var/lib/spawnfile/moltnet/nodes/selene-selene_inner-selene-representative.json",
+          "network_id": "selene_inner"
+        },
+        {
+          "config_path": "/var/lib/spawnfile/moltnet/nodes/selene-selene_inner-selene-shadow.json",
+          "network_id": "selene_inner"
+        }
+      ],
+      "server_plans": [
+        {
+          "auth_mode": "none",
+          "base_url": "http://127.0.0.1:19901",
+          "config_path": "/var/lib/spawnfile/moltnet/servers/jungian-daimon-org-psyche-floor/Moltnet.json",
+          "direct_messages": false,
+          "id": "jungian-daimon-org-psyche-floor",
+          "mode": "managed",
+          "network_id": "psyche-floor",
+          "port": 19901,
+          "rooms": [
+            {
+              "id": "commons",
+              "members": [
+                "luna-representative",
+                "selene-representative"
+              ],
+              "visibility": "public",
+              "write_policy": "registered_agents"
+            }
+          ],
+          "store_kind": "sqlite"
+        },
+        {
+          "auth_mode": "none",
+          "base_url": "http://127.0.0.1:19902",
+          "config_path": "/var/lib/spawnfile/moltnet/servers/luna-luna_inner/Moltnet.json",
+          "direct_messages": false,
+          "id": "luna-luna_inner",
+          "mode": "managed",
+          "network_id": "luna_inner",
+          "port": 19902,
+          "rooms": [
+            {
+              "id": "luna-council",
+              "members": [
+                "luna-animus",
+                "luna-representative",
+                "luna-shadow"
+              ],
+              "visibility": "public",
+              "write_policy": "registered_agents"
+            }
+          ],
+          "store_kind": "sqlite"
+        },
+        {
+          "auth_mode": "none",
+          "base_url": "http://127.0.0.1:19903",
+          "config_path": "/var/lib/spawnfile/moltnet/servers/selene-selene_inner/Moltnet.json",
+          "direct_messages": false,
+          "id": "selene-selene_inner",
+          "mode": "managed",
+          "network_id": "selene_inner",
+          "port": 19903,
+          "rooms": [
+            {
+              "id": "selene-council",
+              "members": [
+                "selene-animus",
+                "selene-representative",
+                "selene-shadow"
+              ],
+              "visibility": "public",
+              "write_policy": "registered_agents"
+            }
+          ],
+          "store_kind": "sqlite"
+        }
+      ]
+    },
+    "port_mappings": [],
+    "ports": [
+      19901,
+      19902,
+      19903
+    ],
+    "published_ports": [
+      19901,
+      19902,
+      19903
+    ],
+    "runtime_instances": [
+      {
+        "config_path": "/var/lib/spawnfile/instances/pi/pi-app/pi/pi-app.json",
+        "home_path": "/var/lib/spawnfile/instances/pi/pi-app/home",
+        "id": "pi-app",
+        "internal_port": 19690,
+        "model_auth_methods": {},
+        "model_secrets_required": [],
+        "engine_by_node_id": {
+          "agent:luna-animus": "scripted",
+          "agent:luna-representative": "scripted",
+          "agent:luna-shadow": "scripted",
+          "agent:selene-animus": "scripted",
+          "agent:selene-representative": "scripted",
+          "agent:selene-shadow": "scripted"
+        },
+        "node_ids": [
+          "agent:luna-animus",
+          "agent:luna-representative",
+          "agent:luna-shadow",
+          "agent:selene-animus",
+          "agent:selene-representative",
+          "agent:selene-shadow"
+        ],
+        "published_port": null,
+        "runtime": "pi",
+        "telemetry_mount_ids": {
+          "agent:luna-animus": "agent-luna-animus-daimon-telemetry",
+          "agent:luna-representative": "agent-luna-representative-daimon-telemetry",
+          "agent:luna-shadow": "agent-luna-shadow-daimon-telemetry",
+          "agent:selene-animus": "agent-selene-animus-daimon-telemetry",
+          "agent:selene-representative": "agent-selene-representative-daimon-telemetry",
+          "agent:selene-shadow": "agent-selene-shadow-daimon-telemetry"
+        },
+        "workspace_path": "/var/lib/spawnfile/instances/pi/pi-app/workspace"
+      }
+    ],
+    "runtime_homes": [
+      "/var/lib/spawnfile/instances/pi/pi-app/home"
+    ],
+    "runtime_secrets_required": [],
+    "runtimes_installed": [
+      "pi"
+    ],
+    "secrets_required": [],
+    "memory": [
+      {
+        "id": "luna-council",
+        "declaring_node_id": "team:luna",
+        "accessible_node_ids": [
+          "agent:luna-animus",
+          "agent:luna-representative",
+          "agent:luna-shadow"
+        ],
+        "store": {
+          "kind": "sqlite",
+          "path": "/var/lib/spawnfile/memory/jungian/luna/luna-council.sqlite",
+          "persistence": "durable",
+          "persistent_mount_id": "memory-var-lib-spawnfile-memory-jungian-luna"
+        },
+        "index": {
+          "graph": {
+            "enabled": false
+          },
+          "lexical": {
+            "enabled": true
+          },
+          "rerank": {
+            "enabled": false
+          },
+          "vector": {
+            "enabled": false
+          }
+        },
+        "consolidation": {
+          "mode": "disabled"
+        },
+        "retention": {
+          "forgetting": "manual"
+        },
+        "transport_by_node_id": {
+          "agent:luna-animus": "direct",
+          "agent:luna-representative": "direct",
+          "agent:luna-shadow": "direct"
+        }
+      },
+      {
+        "id": "selene-council",
+        "declaring_node_id": "team:selene",
+        "accessible_node_ids": [
+          "agent:selene-animus",
+          "agent:selene-representative",
+          "agent:selene-shadow"
+        ],
+        "store": {
+          "kind": "sqlite",
+          "path": "/var/lib/spawnfile/memory/jungian/selene/selene-council.sqlite",
+          "persistence": "durable",
+          "persistent_mount_id": "memory-var-lib-spawnfile-memory-jungian-selene"
+        },
+        "index": {
+          "graph": {
+            "enabled": false
+          },
+          "lexical": {
+            "enabled": true
+          },
+          "rerank": {
+            "enabled": false
+          },
+          "vector": {
+            "enabled": false
+          }
+        },
+        "consolidation": {
+          "mode": "disabled"
+        },
+        "retention": {
+          "forgetting": "manual"
+        },
+        "transport_by_node_id": {
+          "agent:selene-animus": "direct",
+          "agent:selene-representative": "direct",
+          "agent:selene-shadow": "direct"
+        }
+      }
+    ],
+    "persistent_mounts": [
+      {
+        "id": "agent-luna-animus-daimon-telemetry",
+        "mount_path": "/var/lib/spawnfile/instances/pi/pi-app/runtime/agents/luna-animus/telemetry",
+        "reason": "daimon turn/wake causal telemetry for luna-animus",
+        "volume_name": "spawnfile-org-agent-luna-animus-daimon-telemetry-run-cfacd018c2b849969384-f26d3d1f"
+      },
+      {
+        "id": "agent-luna-representative-daimon-telemetry",
+        "mount_path": "/var/lib/spawnfile/instances/pi/pi-app/runtime/agents/luna-representative/telemetry",
+        "reason": "daimon turn/wake causal telemetry for luna-representative",
+        "volume_name": "spawnfile-org-agent-luna-representative-daimon-telemetry-run-cfacd018c2b849969384-2cb584a1"
+      },
+      {
+        "id": "agent-luna-shadow-daimon-telemetry",
+        "mount_path": "/var/lib/spawnfile/instances/pi/pi-app/runtime/agents/luna-shadow/telemetry",
+        "reason": "daimon turn/wake causal telemetry for luna-shadow",
+        "volume_name": "spawnfile-org-agent-luna-shadow-daimon-telemetry-run-cfacd018c2b849969384-7dfa75c4"
+      },
+      {
+        "id": "agent-selene-animus-daimon-telemetry",
+        "mount_path": "/var/lib/spawnfile/instances/pi/pi-app/runtime/agents/selene-animus/telemetry",
+        "reason": "daimon turn/wake causal telemetry for selene-animus",
+        "volume_name": "spawnfile-org-agent-selene-animus-daimon-telemetry-run-cfacd018c2b849969384-7e93ba71"
+      },
+      {
+        "id": "agent-selene-representative-daimon-telemetry",
+        "mount_path": "/var/lib/spawnfile/instances/pi/pi-app/runtime/agents/selene-representative/telemetry",
+        "reason": "daimon turn/wake causal telemetry for selene-representative",
+        "volume_name": "spawnfile-org-agent-selene-representative-daimon-telemetry-run-cfacd018c2b849969384-faf713a6"
+      },
+      {
+        "id": "agent-selene-shadow-daimon-telemetry",
+        "mount_path": "/var/lib/spawnfile/instances/pi/pi-app/runtime/agents/selene-shadow/telemetry",
+        "reason": "daimon turn/wake causal telemetry for selene-shadow",
+        "volume_name": "spawnfile-org-agent-selene-shadow-daimon-telemetry-run-cfacd018c2b849969384-6466c56f"
+      },
+      {
+        "id": "memory-var-lib-spawnfile-memory-jungian-luna",
+        "mount_path": "/var/lib/spawnfile/memory/jungian/luna",
+        "reason": "durable memory stores under /var/lib/spawnfile/memory/jungian/luna",
+        "volume_name": "spawnfile-org-memory-var-lib-spawnfile-memory-jungian-luna-run-cfacd018c2b849969384-3f5c2adc"
+      },
+      {
+        "id": "memory-var-lib-spawnfile-memory-jungian-selene",
+        "mount_path": "/var/lib/spawnfile/memory/jungian/selene",
+        "reason": "durable memory stores under /var/lib/spawnfile/memory/jungian/selene",
+        "volume_name": "spawnfile-org-memory-var-lib-spawnfile-memory-jungian-selene-run-cfacd018c2b849969384-9b4814d9"
+      },
+      {
+        "id": "moltnet-luna_inner-causal",
+        "mount_path": "/var/lib/spawnfile/moltnet/servers/luna-luna_inner/causal",
+        "reason": "managed Moltnet causal event log for luna_inner",
+        "volume_name": "spawnfile-org-moltnet-luna-inner-causal-run-cfacd018c2b849969384-b271c63b"
+      },
+      {
+        "id": "moltnet-luna_inner-store",
+        "mount_path": "/var/lib/spawnfile/moltnet/networks/luna-inner",
+        "reason": "managed Moltnet sqlite store for luna_inner",
+        "volume_name": "spawnfile-org-moltnet-luna-inner-store-run-cfacd018c2b849969384-a1ee25c9"
+      },
+      {
+        "id": "moltnet-psyche-floor-causal",
+        "mount_path": "/var/lib/spawnfile/moltnet/servers/jungian-daimon-org-psyche-floor/causal",
+        "reason": "managed Moltnet causal event log for psyche-floor",
+        "volume_name": "spawnfile-org-moltnet-psyche-floor-causal-run-cfacd018c2b849969384-4bae340c"
+      },
+      {
+        "id": "moltnet-psyche-floor-store",
+        "mount_path": "/var/lib/spawnfile/moltnet/networks/psyche-floor",
+        "reason": "managed Moltnet sqlite store for psyche-floor",
+        "volume_name": "spawnfile-org-moltnet-psyche-floor-store-run-cfacd018c2b849969384-5db5ced8"
+      },
+      {
+        "id": "moltnet-selene_inner-causal",
+        "mount_path": "/var/lib/spawnfile/moltnet/servers/selene-selene_inner/causal",
+        "reason": "managed Moltnet causal event log for selene_inner",
+        "volume_name": "spawnfile-org-moltnet-selene-inner-causal-run-cfacd018c2b849969384-1f9123a5"
+      },
+      {
+        "id": "moltnet-selene_inner-store",
+        "mount_path": "/var/lib/spawnfile/moltnet/networks/selene-inner",
+        "reason": "managed Moltnet sqlite store for selene_inner",
+        "volume_name": "spawnfile-org-moltnet-selene-inner-store-run-cfacd018c2b849969384-52a5e39b"
+      }
+    ]
+  },
+  "diagnostics": [
+    {
+      "level": "info",
+      "message": "using local ecosystem/moltnet release (moltnet_linux_arm64.tar.gz) instead of downloading the published Moltnet release"
+    },
+    {
+      "level": "info",
+      "message": "using local ecosystem/daimon (dist) instead of the pinned npm release for @noopolis/daimon"
+    },
+    {
+      "level": "info",
+      "message": "using local ecosystem/mneme (dist) instead of the pinned npm release for @noopolis/mneme"
+    }
+  ],
+  "generated_at": "2026-07-12T07:36:23.291Z",
+  "nodes": [
+    {
+      "capabilities": [
+        {
+          "key": "team.members",
+          "message": "Team spans multiple runtimes and cannot lower to one native team artifact in v0.1",
+          "outcome": "degraded"
+        },
+        {
+          "key": "team.mode",
+          "message": "Team spans multiple runtimes and cannot lower to one native team artifact in v0.1",
+          "outcome": "degraded"
+        },
+        {
+          "key": "team.lead",
+          "message": "Team spans multiple runtimes and cannot lower to one native team artifact in v0.1",
+          "outcome": "degraded"
+        },
+        {
+          "key": "team.external",
+          "message": "Team spans multiple runtimes and cannot lower to one native team artifact in v0.1",
+          "outcome": "degraded"
+        },
+        {
+          "key": "team.shared",
+          "message": "Team spans multiple runtimes and cannot lower to one native team artifact in v0.1",
+          "outcome": "degraded"
+        },
+        {
+          "key": "team.nested",
+          "message": "Team spans multiple runtimes and cannot lower to one native team artifact in v0.1",
+          "outcome": "degraded"
+        },
+        {
+          "key": "team.roster",
+          "message": "Context-scoped team rosters were emitted",
+          "outcome": "supported"
+        },
+        {
+          "key": "team.context_orientation",
+          "message": "Team context orientation was surfaced through runtime system instructions",
+          "outcome": "supported"
+        },
+        {
+          "key": "team.active_environments",
+          "message": "Derived active environment bindings were emitted in team-contexts.yaml",
+          "outcome": "supported"
+        },
+        {
+          "key": "team.representatives",
+          "message": "Representative chains were resolved",
+          "outcome": "supported"
+        },
+        {
+          "key": "team.networks",
+          "message": "Team networks were lowered",
+          "outcome": "supported"
+        },
+        {
+          "key": "team.networks.moltnet",
+          "message": "Moltnet team networks were lowered",
+          "outcome": "supported"
+        },
+        {
+          "key": "team.networks.moltnet.psyche-floor",
+          "message": "Moltnet network psyche-floor was lowered",
+          "outcome": "supported"
+        }
+      ],
+      "diagnostics": [
+        {
+          "level": "warn",
+          "message": "Team jungian-daimon-org spans multiple runtimes and was not emitted as a native team artifact"
+        },
+        {
+          "level": "warn",
+          "message": "Policy warning: team.members is degraded for team:jungian-daimon-org: Team spans multiple runtimes and cannot lower to one native team artifact in v0.1"
+        },
+        {
+          "level": "warn",
+          "message": "Policy warning: team.mode is degraded for team:jungian-daimon-org: Team spans multiple runtimes and cannot lower to one native team artifact in v0.1"
+        },
+        {
+          "level": "warn",
+          "message": "Policy warning: team.lead is degraded for team:jungian-daimon-org: Team spans multiple runtimes and cannot lower to one native team artifact in v0.1"
+        },
+        {
+          "level": "warn",
+          "message": "Policy warning: team.external is degraded for team:jungian-daimon-org: Team spans multiple runtimes and cannot lower to one native team artifact in v0.1"
+        },
+        {
+          "level": "warn",
+          "message": "Policy warning: team.shared is degraded for team:jungian-daimon-org: Team spans multiple runtimes and cannot lower to one native team artifact in v0.1"
+        },
+        {
+          "level": "warn",
+          "message": "Policy warning: team.nested is degraded for team:jungian-daimon-org: Team spans multiple runtimes and cannot lower to one native team artifact in v0.1"
+        }
+      ],
+      "id": "team:jungian-daimon-org",
+      "kind": "team",
+      "output_dir": null,
+      "runtime": null,
+      "runtime_ref": null,
+      "runtime_status": null,
+      "source": "/Users/apresmoi/Documents/spawnfile/ecosystem/simfile/fixtures/sims/jungian-daimon-org/org/Spawnfile"
+    },
+    {
+      "capabilities": [
+        {
+          "key": "docs.system",
+          "message": "",
+          "outcome": "supported"
+        },
+        {
+          "key": "memory",
+          "message": "Daimon exposes Mneme memory through generated runtime turns",
+          "outcome": "supported"
+        },
+        {
+          "key": "memory.luna-council",
+          "message": "Daimon exposes Mneme memory through generated runtime turns",
+          "outcome": "supported"
+        },
+        {
+          "key": "execution.sandbox",
+          "message": "",
+          "outcome": "degraded"
+        },
+        {
+          "key": "surfaces.moltnet",
+          "message": "Pi generated runtime app exposes a control endpoint for Moltnet bridge wake delivery",
+          "outcome": "supported"
+        }
+      ],
+      "diagnostics": [
+        {
+          "level": "warn",
+          "message": "Pi runtime relies on container and workspace isolation; Pi itself is not a sandbox engine"
+        },
+        {
+          "level": "warn",
+          "message": "Policy warning: execution.sandbox is degraded for agent:luna-animus"
+        }
+      ],
+      "id": "agent:luna-animus",
+      "kind": "agent",
+      "output_dir": "runtimes/pi/agents/luna-animus",
+      "runtime": "pi",
+      "runtime_ref": "v0.79.10",
+      "runtime_status": "active",
+      "source": "/Users/apresmoi/Documents/spawnfile/ecosystem/simfile/fixtures/sims/jungian-daimon-org/org/teams/luna/agents/animus/Spawnfile",
+      "active_environments": {
+        "moltnet": {
+          "luna_inner": {
+            "rooms": {
+              "luna-council": {
+                "context_key": "luna",
+                "derivation": {
+                  "member_position": 1,
+                  "rule": "first_listed_room_member_containing_agent"
+                },
+                "member_slot": "luna-animus",
+                "roster": ".spawnfile/rosters/luna.yaml",
+                "team_id": "luna",
+                "team_doc": ".spawnfile/team-contexts/luna/TEAM.md",
+                "session_key": "luna-animus@moltnet:luna_inner:room:luna-council",
+                "memory": {
+                  "durable_scope": {
+                    "qualifier": "luna",
+                    "scope": "team"
+                  },
+                  "ephemeral_scope": {
+                    "qualifier": "luna_inner:luna-council",
+                    "scope": "room"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "dreams": {
+          "self": {
+            "context_key": "self",
+            "environment_key": "dream:self",
+            "memory": {
+              "durable_scope": {
+                "qualifier": "luna-animus",
+                "scope": "global"
+              }
+            },
+            "session_key_template": "luna-animus@dream:self:{run_id}"
+          },
+          "luna": {
+            "context_key": "luna",
+            "environment_key": "dream:luna",
+            "memory": {
+              "durable_scope": {
+                "qualifier": "luna",
+                "scope": "team"
+              }
+            },
+            "session_key_template": "luna-animus@dream:luna:{run_id}"
+          }
+        }
+      }
+    },
+    {
+      "capabilities": [
+        {
+          "key": "docs.system",
+          "message": "",
+          "outcome": "supported"
+        },
+        {
+          "key": "memory",
+          "message": "Daimon exposes Mneme memory through generated runtime turns",
+          "outcome": "supported"
+        },
+        {
+          "key": "memory.luna-council",
+          "message": "Daimon exposes Mneme memory through generated runtime turns",
+          "outcome": "supported"
+        },
+        {
+          "key": "execution.sandbox",
+          "message": "",
+          "outcome": "degraded"
+        },
+        {
+          "key": "surfaces.moltnet",
+          "message": "Pi generated runtime app exposes a control endpoint for Moltnet bridge wake delivery",
+          "outcome": "supported"
+        }
+      ],
+      "diagnostics": [
+        {
+          "level": "warn",
+          "message": "Pi runtime relies on container and workspace isolation; Pi itself is not a sandbox engine"
+        },
+        {
+          "level": "warn",
+          "message": "Policy warning: execution.sandbox is degraded for agent:luna-representative"
+        }
+      ],
+      "id": "agent:luna-representative",
+      "kind": "agent",
+      "output_dir": "runtimes/pi/agents/luna-representative",
+      "runtime": "pi",
+      "runtime_ref": "v0.79.10",
+      "runtime_status": "active",
+      "source": "/Users/apresmoi/Documents/spawnfile/ecosystem/simfile/fixtures/sims/jungian-daimon-org/org/teams/luna/agents/representative/Spawnfile",
+      "active_environments": {
+        "moltnet": {
+          "psyche-floor": {
+            "rooms": {
+              "commons": {
+                "context_key": "jungian-daimon-org--luna",
+                "derivation": {
+                  "member_position": 0,
+                  "rule": "first_listed_room_member_containing_agent"
+                },
+                "member_slot": "luna",
+                "roster": ".spawnfile/rosters/jungian-daimon-org--luna.yaml",
+                "team_id": "jungian-daimon-org--luna",
+                "team_doc": ".spawnfile/team-contexts/jungian-daimon-org--luna/TEAM.md",
+                "session_key": "luna-representative@moltnet:psyche-floor:room:commons",
+                "memory": {
+                  "durable_scope": {
+                    "qualifier": "jungian-daimon-org--luna",
+                    "scope": "team"
+                  },
+                  "ephemeral_scope": {
+                    "qualifier": "psyche-floor:commons",
+                    "scope": "room"
+                  }
+                }
+              }
+            }
+          },
+          "luna_inner": {
+            "rooms": {
+              "luna-council": {
+                "context_key": "luna",
+                "derivation": {
+                  "member_position": 0,
+                  "rule": "first_listed_room_member_containing_agent"
+                },
+                "member_slot": "luna-representative",
+                "roster": ".spawnfile/rosters/luna.yaml",
+                "team_id": "luna",
+                "team_doc": ".spawnfile/team-contexts/luna/TEAM.md",
+                "session_key": "luna-representative@moltnet:luna_inner:room:luna-council",
+                "memory": {
+                  "durable_scope": {
+                    "qualifier": "luna",
+                    "scope": "team"
+                  },
+                  "ephemeral_scope": {
+                    "qualifier": "luna_inner:luna-council",
+                    "scope": "room"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "dreams": {
+          "self": {
+            "context_key": "self",
+            "environment_key": "dream:self",
+            "memory": {
+              "durable_scope": {
+                "qualifier": "luna-representative",
+                "scope": "global"
+              }
+            },
+            "session_key_template": "luna-representative@dream:self:{run_id}"
+          },
+          "luna": {
+            "context_key": "luna",
+            "environment_key": "dream:luna",
+            "memory": {
+              "durable_scope": {
+                "qualifier": "luna",
+                "scope": "team"
+              }
+            },
+            "session_key_template": "luna-representative@dream:luna:{run_id}"
+          }
+        }
+      }
+    },
+    {
+      "capabilities": [
+        {
+          "key": "docs.system",
+          "message": "",
+          "outcome": "supported"
+        },
+        {
+          "key": "memory",
+          "message": "Daimon exposes Mneme memory through generated runtime turns",
+          "outcome": "supported"
+        },
+        {
+          "key": "memory.luna-council",
+          "message": "Daimon exposes Mneme memory through generated runtime turns",
+          "outcome": "supported"
+        },
+        {
+          "key": "execution.sandbox",
+          "message": "",
+          "outcome": "degraded"
+        },
+        {
+          "key": "surfaces.moltnet",
+          "message": "Pi generated runtime app exposes a control endpoint for Moltnet bridge wake delivery",
+          "outcome": "supported"
+        }
+      ],
+      "diagnostics": [
+        {
+          "level": "warn",
+          "message": "Pi runtime relies on container and workspace isolation; Pi itself is not a sandbox engine"
+        },
+        {
+          "level": "warn",
+          "message": "Policy warning: execution.sandbox is degraded for agent:luna-shadow"
+        }
+      ],
+      "id": "agent:luna-shadow",
+      "kind": "agent",
+      "output_dir": "runtimes/pi/agents/luna-shadow",
+      "runtime": "pi",
+      "runtime_ref": "v0.79.10",
+      "runtime_status": "active",
+      "source": "/Users/apresmoi/Documents/spawnfile/ecosystem/simfile/fixtures/sims/jungian-daimon-org/org/teams/luna/agents/shadow/Spawnfile",
+      "active_environments": {
+        "moltnet": {
+          "luna_inner": {
+            "rooms": {
+              "luna-council": {
+                "context_key": "luna",
+                "derivation": {
+                  "member_position": 2,
+                  "rule": "first_listed_room_member_containing_agent"
+                },
+                "member_slot": "luna-shadow",
+                "roster": ".spawnfile/rosters/luna.yaml",
+                "team_id": "luna",
+                "team_doc": ".spawnfile/team-contexts/luna/TEAM.md",
+                "session_key": "luna-shadow@moltnet:luna_inner:room:luna-council",
+                "memory": {
+                  "durable_scope": {
+                    "qualifier": "luna",
+                    "scope": "team"
+                  },
+                  "ephemeral_scope": {
+                    "qualifier": "luna_inner:luna-council",
+                    "scope": "room"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "dreams": {
+          "self": {
+            "context_key": "self",
+            "environment_key": "dream:self",
+            "memory": {
+              "durable_scope": {
+                "qualifier": "luna-shadow",
+                "scope": "global"
+              }
+            },
+            "session_key_template": "luna-shadow@dream:self:{run_id}"
+          },
+          "luna": {
+            "context_key": "luna",
+            "environment_key": "dream:luna",
+            "memory": {
+              "durable_scope": {
+                "qualifier": "luna",
+                "scope": "team"
+              }
+            },
+            "session_key_template": "luna-shadow@dream:luna:{run_id}"
+          }
+        }
+      }
+    },
+    {
+      "capabilities": [
+        {
+          "key": "team.members",
+          "message": "Runtime pi does not provide native team compilation in v0.1",
+          "outcome": "degraded"
+        },
+        {
+          "key": "team.mode",
+          "message": "Runtime pi does not provide native team compilation in v0.1",
+          "outcome": "degraded"
+        },
+        {
+          "key": "team.lead",
+          "message": "Runtime pi does not provide native team compilation in v0.1",
+          "outcome": "degraded"
+        },
+        {
+          "key": "team.external",
+          "message": "Runtime pi does not provide native team compilation in v0.1",
+          "outcome": "degraded"
+        },
+        {
+          "key": "team.shared",
+          "message": "Runtime pi does not provide native team compilation in v0.1",
+          "outcome": "degraded"
+        },
+        {
+          "key": "team.nested",
+          "message": "Runtime pi does not provide native team compilation in v0.1",
+          "outcome": "degraded"
+        },
+        {
+          "key": "team.roster",
+          "message": "Context-scoped team rosters were emitted",
+          "outcome": "supported"
+        },
+        {
+          "key": "team.context_orientation",
+          "message": "Team context orientation was surfaced through runtime system instructions",
+          "outcome": "supported"
+        },
+        {
+          "key": "team.active_environments",
+          "message": "Derived active environment bindings were emitted in team-contexts.yaml",
+          "outcome": "supported"
+        },
+        {
+          "key": "team.representatives",
+          "message": "Representative chains were resolved",
+          "outcome": "supported"
+        },
+        {
+          "key": "team.networks",
+          "message": "Team networks were lowered",
+          "outcome": "supported"
+        },
+        {
+          "key": "team.networks.moltnet",
+          "message": "Moltnet team networks were lowered",
+          "outcome": "supported"
+        },
+        {
+          "key": "team.networks.moltnet.luna_inner",
+          "message": "Moltnet network luna_inner was lowered",
+          "outcome": "supported"
+        }
+      ],
+      "diagnostics": [
+        {
+          "level": "warn",
+          "message": "Runtime pi did not emit a native team artifact for luna"
+        },
+        {
+          "level": "warn",
+          "message": "Policy warning: team.members is degraded for team:luna: Runtime pi does not provide native team compilation in v0.1"
+        },
+        {
+          "level": "warn",
+          "message": "Policy warning: team.mode is degraded for team:luna: Runtime pi does not provide native team compilation in v0.1"
+        },
+        {
+          "level": "warn",
+          "message": "Policy warning: team.lead is degraded for team:luna: Runtime pi does not provide native team compilation in v0.1"
+        },
+        {
+          "level": "warn",
+          "message": "Policy warning: team.external is degraded for team:luna: Runtime pi does not provide native team compilation in v0.1"
+        },
+        {
+          "level": "warn",
+          "message": "Policy warning: team.shared is degraded for team:luna: Runtime pi does not provide native team compilation in v0.1"
+        },
+        {
+          "level": "warn",
+          "message": "Policy warning: team.nested is degraded for team:luna: Runtime pi does not provide native team compilation in v0.1"
+        }
+      ],
+      "id": "team:luna",
+      "kind": "team",
+      "output_dir": null,
+      "runtime": "pi",
+      "runtime_ref": "v0.79.10",
+      "runtime_status": "active",
+      "source": "/Users/apresmoi/Documents/spawnfile/ecosystem/simfile/fixtures/sims/jungian-daimon-org/org/teams/luna/Spawnfile"
+    },
+    {
+      "capabilities": [
+        {
+          "key": "docs.system",
+          "message": "",
+          "outcome": "supported"
+        },
+        {
+          "key": "memory",
+          "message": "Daimon exposes Mneme memory through generated runtime turns",
+          "outcome": "supported"
+        },
+        {
+          "key": "memory.selene-council",
+          "message": "Daimon exposes Mneme memory through generated runtime turns",
+          "outcome": "supported"
+        },
+        {
+          "key": "execution.sandbox",
+          "message": "",
+          "outcome": "degraded"
+        },
+        {
+          "key": "surfaces.moltnet",
+          "message": "Pi generated runtime app exposes a control endpoint for Moltnet bridge wake delivery",
+          "outcome": "supported"
+        }
+      ],
+      "diagnostics": [
+        {
+          "level": "warn",
+          "message": "Pi runtime relies on container and workspace isolation; Pi itself is not a sandbox engine"
+        },
+        {
+          "level": "warn",
+          "message": "Policy warning: execution.sandbox is degraded for agent:selene-animus"
+        }
+      ],
+      "id": "agent:selene-animus",
+      "kind": "agent",
+      "output_dir": "runtimes/pi/agents/selene-animus",
+      "runtime": "pi",
+      "runtime_ref": "v0.79.10",
+      "runtime_status": "active",
+      "source": "/Users/apresmoi/Documents/spawnfile/ecosystem/simfile/fixtures/sims/jungian-daimon-org/org/teams/selene/agents/animus/Spawnfile",
+      "active_environments": {
+        "moltnet": {
+          "selene_inner": {
+            "rooms": {
+              "selene-council": {
+                "context_key": "selene",
+                "derivation": {
+                  "member_position": 1,
+                  "rule": "first_listed_room_member_containing_agent"
+                },
+                "member_slot": "selene-animus",
+                "roster": ".spawnfile/rosters/selene.yaml",
+                "team_id": "selene",
+                "team_doc": ".spawnfile/team-contexts/selene/TEAM.md",
+                "session_key": "selene-animus@moltnet:selene_inner:room:selene-council",
+                "memory": {
+                  "durable_scope": {
+                    "qualifier": "selene",
+                    "scope": "team"
+                  },
+                  "ephemeral_scope": {
+                    "qualifier": "selene_inner:selene-council",
+                    "scope": "room"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "dreams": {
+          "self": {
+            "context_key": "self",
+            "environment_key": "dream:self",
+            "memory": {
+              "durable_scope": {
+                "qualifier": "selene-animus",
+                "scope": "global"
+              }
+            },
+            "session_key_template": "selene-animus@dream:self:{run_id}"
+          },
+          "selene": {
+            "context_key": "selene",
+            "environment_key": "dream:selene",
+            "memory": {
+              "durable_scope": {
+                "qualifier": "selene",
+                "scope": "team"
+              }
+            },
+            "session_key_template": "selene-animus@dream:selene:{run_id}"
+          }
+        }
+      }
+    },
+    {
+      "capabilities": [
+        {
+          "key": "docs.system",
+          "message": "",
+          "outcome": "supported"
+        },
+        {
+          "key": "memory",
+          "message": "Daimon exposes Mneme memory through generated runtime turns",
+          "outcome": "supported"
+        },
+        {
+          "key": "memory.selene-council",
+          "message": "Daimon exposes Mneme memory through generated runtime turns",
+          "outcome": "supported"
+        },
+        {
+          "key": "execution.sandbox",
+          "message": "",
+          "outcome": "degraded"
+        },
+        {
+          "key": "surfaces.moltnet",
+          "message": "Pi generated runtime app exposes a control endpoint for Moltnet bridge wake delivery",
+          "outcome": "supported"
+        }
+      ],
+      "diagnostics": [
+        {
+          "level": "warn",
+          "message": "Pi runtime relies on container and workspace isolation; Pi itself is not a sandbox engine"
+        },
+        {
+          "level": "warn",
+          "message": "Policy warning: execution.sandbox is degraded for agent:selene-representative"
+        }
+      ],
+      "id": "agent:selene-representative",
+      "kind": "agent",
+      "output_dir": "runtimes/pi/agents/selene-representative",
+      "runtime": "pi",
+      "runtime_ref": "v0.79.10",
+      "runtime_status": "active",
+      "source": "/Users/apresmoi/Documents/spawnfile/ecosystem/simfile/fixtures/sims/jungian-daimon-org/org/teams/selene/agents/representative/Spawnfile",
+      "active_environments": {
+        "moltnet": {
+          "psyche-floor": {
+            "rooms": {
+              "commons": {
+                "context_key": "jungian-daimon-org--selene",
+                "derivation": {
+                  "member_position": 1,
+                  "rule": "first_listed_room_member_containing_agent"
+                },
+                "member_slot": "selene",
+                "roster": ".spawnfile/rosters/jungian-daimon-org--selene.yaml",
+                "team_id": "jungian-daimon-org--selene",
+                "team_doc": ".spawnfile/team-contexts/jungian-daimon-org--selene/TEAM.md",
+                "session_key": "selene-representative@moltnet:psyche-floor:room:commons",
+                "memory": {
+                  "durable_scope": {
+                    "qualifier": "jungian-daimon-org--selene",
+                    "scope": "team"
+                  },
+                  "ephemeral_scope": {
+                    "qualifier": "psyche-floor:commons",
+                    "scope": "room"
+                  }
+                }
+              }
+            }
+          },
+          "selene_inner": {
+            "rooms": {
+              "selene-council": {
+                "context_key": "selene",
+                "derivation": {
+                  "member_position": 0,
+                  "rule": "first_listed_room_member_containing_agent"
+                },
+                "member_slot": "selene-representative",
+                "roster": ".spawnfile/rosters/selene.yaml",
+                "team_id": "selene",
+                "team_doc": ".spawnfile/team-contexts/selene/TEAM.md",
+                "session_key": "selene-representative@moltnet:selene_inner:room:selene-council",
+                "memory": {
+                  "durable_scope": {
+                    "qualifier": "selene",
+                    "scope": "team"
+                  },
+                  "ephemeral_scope": {
+                    "qualifier": "selene_inner:selene-council",
+                    "scope": "room"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "dreams": {
+          "self": {
+            "context_key": "self",
+            "environment_key": "dream:self",
+            "memory": {
+              "durable_scope": {
+                "qualifier": "selene-representative",
+                "scope": "global"
+              }
+            },
+            "session_key_template": "selene-representative@dream:self:{run_id}"
+          },
+          "selene": {
+            "context_key": "selene",
+            "environment_key": "dream:selene",
+            "memory": {
+              "durable_scope": {
+                "qualifier": "selene",
+                "scope": "team"
+              }
+            },
+            "session_key_template": "selene-representative@dream:selene:{run_id}"
+          }
+        }
+      }
+    },
+    {
+      "capabilities": [
+        {
+          "key": "docs.system",
+          "message": "",
+          "outcome": "supported"
+        },
+        {
+          "key": "memory",
+          "message": "Daimon exposes Mneme memory through generated runtime turns",
+          "outcome": "supported"
+        },
+        {
+          "key": "memory.selene-council",
+          "message": "Daimon exposes Mneme memory through generated runtime turns",
+          "outcome": "supported"
+        },
+        {
+          "key": "execution.sandbox",
+          "message": "",
+          "outcome": "degraded"
+        },
+        {
+          "key": "surfaces.moltnet",
+          "message": "Pi generated runtime app exposes a control endpoint for Moltnet bridge wake delivery",
+          "outcome": "supported"
+        }
+      ],
+      "diagnostics": [
+        {
+          "level": "warn",
+          "message": "Pi runtime relies on container and workspace isolation; Pi itself is not a sandbox engine"
+        },
+        {
+          "level": "warn",
+          "message": "Policy warning: execution.sandbox is degraded for agent:selene-shadow"
+        }
+      ],
+      "id": "agent:selene-shadow",
+      "kind": "agent",
+      "output_dir": "runtimes/pi/agents/selene-shadow",
+      "runtime": "pi",
+      "runtime_ref": "v0.79.10",
+      "runtime_status": "active",
+      "source": "/Users/apresmoi/Documents/spawnfile/ecosystem/simfile/fixtures/sims/jungian-daimon-org/org/teams/selene/agents/shadow/Spawnfile",
+      "active_environments": {
+        "moltnet": {
+          "selene_inner": {
+            "rooms": {
+              "selene-council": {
+                "context_key": "selene",
+                "derivation": {
+                  "member_position": 2,
+                  "rule": "first_listed_room_member_containing_agent"
+                },
+                "member_slot": "selene-shadow",
+                "roster": ".spawnfile/rosters/selene.yaml",
+                "team_id": "selene",
+                "team_doc": ".spawnfile/team-contexts/selene/TEAM.md",
+                "session_key": "selene-shadow@moltnet:selene_inner:room:selene-council",
+                "memory": {
+                  "durable_scope": {
+                    "qualifier": "selene",
+                    "scope": "team"
+                  },
+                  "ephemeral_scope": {
+                    "qualifier": "selene_inner:selene-council",
+                    "scope": "room"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "dreams": {
+          "self": {
+            "context_key": "self",
+            "environment_key": "dream:self",
+            "memory": {
+              "durable_scope": {
+                "qualifier": "selene-shadow",
+                "scope": "global"
+              }
+            },
+            "session_key_template": "selene-shadow@dream:self:{run_id}"
+          },
+          "selene": {
+            "context_key": "selene",
+            "environment_key": "dream:selene",
+            "memory": {
+              "durable_scope": {
+                "qualifier": "selene",
+                "scope": "team"
+              }
+            },
+            "session_key_template": "selene-shadow@dream:selene:{run_id}"
+          }
+        }
+      }
+    },
+    {
+      "capabilities": [
+        {
+          "key": "team.members",
+          "message": "Runtime pi does not provide native team compilation in v0.1",
+          "outcome": "degraded"
+        },
+        {
+          "key": "team.mode",
+          "message": "Runtime pi does not provide native team compilation in v0.1",
+          "outcome": "degraded"
+        },
+        {
+          "key": "team.lead",
+          "message": "Runtime pi does not provide native team compilation in v0.1",
+          "outcome": "degraded"
+        },
+        {
+          "key": "team.external",
+          "message": "Runtime pi does not provide native team compilation in v0.1",
+          "outcome": "degraded"
+        },
+        {
+          "key": "team.shared",
+          "message": "Runtime pi does not provide native team compilation in v0.1",
+          "outcome": "degraded"
+        },
+        {
+          "key": "team.nested",
+          "message": "Runtime pi does not provide native team compilation in v0.1",
+          "outcome": "degraded"
+        },
+        {
+          "key": "team.roster",
+          "message": "Context-scoped team rosters were emitted",
+          "outcome": "supported"
+        },
+        {
+          "key": "team.context_orientation",
+          "message": "Team context orientation was surfaced through runtime system instructions",
+          "outcome": "supported"
+        },
+        {
+          "key": "team.active_environments",
+          "message": "Derived active environment bindings were emitted in team-contexts.yaml",
+          "outcome": "supported"
+        },
+        {
+          "key": "team.representatives",
+          "message": "Representative chains were resolved",
+          "outcome": "supported"
+        },
+        {
+          "key": "team.networks",
+          "message": "Team networks were lowered",
+          "outcome": "supported"
+        },
+        {
+          "key": "team.networks.moltnet",
+          "message": "Moltnet team networks were lowered",
+          "outcome": "supported"
+        },
+        {
+          "key": "team.networks.moltnet.selene_inner",
+          "message": "Moltnet network selene_inner was lowered",
+          "outcome": "supported"
+        }
+      ],
+      "diagnostics": [
+        {
+          "level": "warn",
+          "message": "Runtime pi did not emit a native team artifact for selene"
+        },
+        {
+          "level": "warn",
+          "message": "Policy warning: team.members is degraded for team:selene: Runtime pi does not provide native team compilation in v0.1"
+        },
+        {
+          "level": "warn",
+          "message": "Policy warning: team.mode is degraded for team:selene: Runtime pi does not provide native team compilation in v0.1"
+        },
+        {
+          "level": "warn",
+          "message": "Policy warning: team.lead is degraded for team:selene: Runtime pi does not provide native team compilation in v0.1"
+        },
+        {
+          "level": "warn",
+          "message": "Policy warning: team.external is degraded for team:selene: Runtime pi does not provide native team compilation in v0.1"
+        },
+        {
+          "level": "warn",
+          "message": "Policy warning: team.shared is degraded for team:selene: Runtime pi does not provide native team compilation in v0.1"
+        },
+        {
+          "level": "warn",
+          "message": "Policy warning: team.nested is degraded for team:selene: Runtime pi does not provide native team compilation in v0.1"
+        }
+      ],
+      "id": "team:selene",
+      "kind": "team",
+      "output_dir": null,
+      "runtime": "pi",
+      "runtime_ref": "v0.79.10",
+      "runtime_status": "active",
+      "source": "/Users/apresmoi/Documents/spawnfile/ecosystem/simfile/fixtures/sims/jungian-daimon-org/org/teams/selene/Spawnfile"
+    }
+  ],
+  "output_directory": "/private/tmp/claude-501/-Users-apresmoi-Documents-spawnfile/6cce8caa-2301-440b-b6b1-fe090c6d6968/scratchpad/jung-golden-compiled",
+  "project_name": "jungian-daimon-org",
+  "root": "/Users/apresmoi/Documents/spawnfile/ecosystem/simfile/fixtures/sims/jungian-daimon-org/org/Spawnfile",
+  "spawnfile_version": "0.1"
+}

@@ -1,0 +1,94 @@
+{
+  "version": "simfile.run-manifest.v1",
+  "run_id": "run-cfacd018c2b8499693845b427cef92e0",
+  "created_at": "2026-07-12T07:36:52.858Z",
+  "contract_versions": {
+    "causal-event.v1": "noopolis.causal-event.v1",
+    "simfile.observe.v1": "simfile.observe.v1",
+    "simfile.run-manifest.v1": "simfile.run-manifest.v1"
+  },
+  "spawnfile": {
+    "fingerprint": "sf1:2ccac23d94a0"
+  },
+  "artifacts": [
+    {
+      "path": "raw/daimon/luna-animus/causal.jsonl",
+      "sha256": "46cdf17a8f6f9464ee3bfbefb8827867a6a64cc4cea87d5e42d1127f6cf173d6"
+    },
+    {
+      "path": "raw/daimon/luna-representative/causal.jsonl",
+      "sha256": "001902b60a16f204e0d4c3d15fb3c470cd6767e2f4c60c61ed9aa56f596ba54a"
+    },
+    {
+      "path": "raw/daimon/luna-shadow/causal.jsonl",
+      "sha256": "83233b08c19a6cafbbc4ea0b1d111a9856dfad3effd8a58b103507f981a0beb1"
+    },
+    {
+      "path": "raw/mneme/luna-council/causal.jsonl",
+      "sha256": "45800d75098cb0990615649af71cf8664941dbd2ca57a5448a313d7ada5c47ae"
+    },
+    {
+      "path": "raw/mneme/luna-council/events.jsonl",
+      "sha256": "3a5de58d8435e4a17509b79f843048da4d66edb69bd4d580dc0cc1704af875ae"
+    },
+    {
+      "path": "raw/moltnet/luna_inner/causal.jsonl",
+      "sha256": "39798a71d08b3899edb7bcbeeb1d4061ac04f3e8dd1998b6a71e06dfe65904df"
+    },
+    {
+      "path": "raw/moltnet/luna_inner/transcript.json",
+      "sha256": "ff6dd05c00c0ca9f69b0d7719bd9292a81d594e5d9c52ae7f41044d5383ae8d5"
+    },
+    {
+      "path": "raw/moltnet/psyche-floor/causal.jsonl",
+      "sha256": "524c8c458f4953fb617870b08bf4454ee5eaedd3dee89ac7343fe85d370ac158"
+    },
+    {
+      "path": "raw/moltnet/psyche-floor/transcript.json",
+      "sha256": "461ea3425469bfcdc841076880c5a3140c7e9242a6871aabefcb802f051ce5db"
+    },
+    {
+      "path": "raw/moltnet/selene_inner/causal.jsonl",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "raw/moltnet/selene_inner/transcript.json",
+      "sha256": "653f6f9462977bb0ef56dcba4579e6f039d1e584ff554df0a83fb4831075a12c"
+    },
+    {
+      "path": "spawnfile-report.json",
+      "sha256": "f7980a4eea71c24d43110c4aa7367e1643f08eb0e32b7b17ddc63e8fa5bb6e3e"
+    }
+  ],
+  "engine": "scripted",
+  "world": {
+    "rooms": [
+      {
+        "network_id": "psyche-floor",
+        "room_id": "commons",
+        "members": [
+          "luna-representative",
+          "selene-representative"
+        ]
+      },
+      {
+        "network_id": "luna_inner",
+        "room_id": "luna-council",
+        "members": [
+          "luna-animus",
+          "luna-representative",
+          "luna-shadow"
+        ]
+      },
+      {
+        "network_id": "selene_inner",
+        "room_id": "selene-council",
+        "members": [
+          "selene-animus",
+          "selene-representative",
+          "selene-shadow"
+        ]
+      }
+    ]
+  }
+}

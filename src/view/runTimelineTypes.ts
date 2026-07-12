@@ -77,16 +77,28 @@ export interface RunTimelineElement {
   label: string;
 }
 
+/**
+ * An interior self-team (the "descend into a mind" structure): a team that
+ * owns its own Moltnet network (`interiorRooms`) and is represented on a
+ * parent floor by one of its members (`representative`). Derived from the
+ * run's `spawnfile-report.json` by `membranes.ts`'s `deriveMembranes`.
+ */
+export interface RunTimelineMembrane {
+  /** `team:<id>`. */
+  ref: string;
+  label: string;
+  /** `agent:<id>` of the team's parent-floor representative (its lead/external face). */
+  representative: string;
+  /** `room:<network>:<room>` refs for the team's own interior council room(s). */
+  interiorRooms: string[];
+  /** `agent:<id>` refs for every member of the interior room(s). */
+  members: string[];
+}
+
 export interface RunTimeline {
   version: "simfile.run-timeline.v1";
   runId: string;
   events: TimelineEvent[];
   elements: RunTimelineElement[];
-  membranes?: Array<{
-    ref: string;
-    label: string;
-    representative: string;
-    interiorRooms: string[];
-    members: string[];
-  }>;
+  membranes?: RunTimelineMembrane[];
 }

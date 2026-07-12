@@ -1,0 +1,42 @@
+{
+  "version": "simfile.observe.v1",
+  "run_id": "run-cfacd018c2b8499693845b427cef92e0",
+  "contract_versions": {
+    "causal-event.v1": "noopolis.causal-event.v1",
+    "simfile.observe.v1": "simfile.observe.v1",
+    "simfile.run-manifest.v1": "simfile.run-manifest.v1"
+  },
+  "participants": [
+    "luna-animus",
+    "luna-representative",
+    "luna-shadow"
+  ],
+  "agent_turns": {
+    "count": 4,
+    "sequence": [
+      "luna-animus",
+      "luna-representative",
+      "luna-shadow",
+      "luna-representative"
+    ]
+  },
+  "chains": {
+    "complete": 22,
+    "incomplete": []
+  },
+  "memory": [
+    {
+      "bank": "luna-council",
+      "events": 8,
+      "recalls": 0,
+      "memory_write_source": "events-fallback"
+    },
+    {
+      "bank": "selene-council",
+      "events": 0,
+      "recalls": 0,
+      "memory_write_source": "events-fallback"
+    }
+  ],
+  "failures": []
+}

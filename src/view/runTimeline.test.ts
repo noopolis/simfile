@@ -374,3 +374,39 @@ describe("buildRunTimeline — world stream wake.recommended (synthetic fixture)
     }
   });
 });
+
+const JUNGIAN_GOLDEN_DIR = path.resolve(here, "..", "..", "fixtures", "observe", "jungian-daimon-org-golden");
+
+describe("buildRunTimeline — jungian psyche golden (multi-network membranes)", () => {
+  it("derives a membrane per interior self-team from the run's compile report", async () => {
+    const timeline = await buildRunTimeline(JUNGIAN_GOLDEN_DIR);
+    assert.deepEqual((timeline.membranes ?? []).map((m) => m.ref), ["team:luna", "team:selene"]);
+    const luna = (timeline.membranes ?? []).find((m) => m.ref === "team:luna");
+    assert.equal(luna?.representative, "agent:luna-representative");
+    assert.deepEqual(luna?.interiorRooms, ["room:luna_inner:luna-council"]);
+  });
+
+  it("enumerates team elements alongside each network's room element", async () => {
+    const timeline = await buildRunTimeline(JUNGIAN_GOLDEN_DIR);
+    const byKind = (kind: RunTimelineElementKind) => timeline.elements.filter((e) => e.kind === kind).map((e) => e.ref).sort();
+    assert.deepEqual(byKind("team"), ["team:luna", "team:selene"]);
+    assert.ok(byKind("room").includes("room:luna_inner:luna-council"));
+    assert.ok(byKind("room").includes("room:psyche-floor:commons"));
+  });
+
+  it("attributes an inner-council message to its own network room, not the floor (the multi-network subject fix)", async () => {
+    const timeline = await buildRunTimeline(JUNGIAN_GOLDEN_DIR);
+    const councilMessages = timeline.events.filter(
+      (e) => e.viewClass === "message" && e.subjects.includes("room:luna_inner:luna-council"),
+    );
+    // The representative's inward convene + the animus + the shadow replies all live in the council room.
+    assert.ok(councilMessages.length >= 3, `expected >=3 council messages, got ${councilMessages.length}`);
+    // No council message ever leaks onto the floor room.
+    assert.ok(!councilMessages.some((e) => e.subjects.includes("room:psyche-floor:commons")));
+    // The floor carries the representative's synthesis answer, not the council chatter.
+    const floorSynthesis = timeline.events.find(
+      (e) => e.viewClass === "message" && e.actor === "luna-representative" && e.subjects.includes("room:psyche-floor:commons") && (e.text ?? "").includes("council has spoken"),
+    );
+    assert.ok(floorSynthesis, "expected the representative's synthesis on the floor");
+  });
+});

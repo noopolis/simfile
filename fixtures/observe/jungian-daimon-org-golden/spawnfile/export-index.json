@@ -1,0 +1,80 @@
+{
+  "deployment": "jung-scripted-golden",
+  "exported_at": "2026-07-12T07:36:52.084Z",
+  "files": [
+    {
+      "bytes": 1864,
+      "path": "raw/daimon/luna-animus/causal.jsonl",
+      "sha256": "46cdf17a8f6f9464ee3bfbefb8827867a6a64cc4cea87d5e42d1127f6cf173d6",
+      "source": {
+        "kind": "volume",
+        "ref": "spawnfile-org-agent-luna-animus-daimon-telemetry-run-cfacd018c2b849969384-f26d3d1f:/causal.jsonl"
+      }
+    },
+    {
+      "bytes": 3665,
+      "path": "raw/daimon/luna-representative/causal.jsonl",
+      "sha256": "001902b60a16f204e0d4c3d15fb3c470cd6767e2f4c60c61ed9aa56f596ba54a",
+      "source": {
+        "kind": "volume",
+        "ref": "spawnfile-org-agent-luna-representative-daimon-telemetry-run-cfacd018c2b849969384-2cb584a1:/causal.jsonl"
+      }
+    },
+    {
+      "bytes": 1865,
+      "path": "raw/daimon/luna-shadow/causal.jsonl",
+      "sha256": "83233b08c19a6cafbbc4ea0b1d111a9856dfad3effd8a58b103507f981a0beb1",
+      "source": {
+        "kind": "volume",
+        "ref": "spawnfile-org-agent-luna-shadow-daimon-telemetry-run-cfacd018c2b849969384-7dfa75c4:/causal.jsonl"
+      }
+    },
+    {
+      "bytes": 2056,
+      "path": "raw/mneme/luna-council/causal.jsonl",
+      "sha256": "45800d75098cb0990615649af71cf8664941dbd2ca57a5448a313d7ada5c47ae",
+      "source": {
+        "kind": "volume",
+        "ref": "spawnfile-org-memory-var-lib-spawnfile-memory-jungian-luna-run-cfacd018c2b849969384-3f5c2adc:/memory/causal.jsonl"
+      }
+    },
+    {
+      "bytes": 12309,
+      "path": "raw/mneme/luna-council/events.jsonl",
+      "sha256": "3a5de58d8435e4a17509b79f843048da4d66edb69bd4d580dc0cc1704af875ae",
+      "source": {
+        "kind": "volume",
+        "ref": "spawnfile-org-memory-var-lib-spawnfile-memory-jungian-luna-run-cfacd018c2b849969384-3f5c2adc:/memory/events.jsonl"
+      }
+    },
+    {
+      "bytes": 1864,
+      "path": "raw/moltnet/luna_inner/causal.jsonl",
+      "sha256": "39798a71d08b3899edb7bcbeeb1d4061ac04f3e8dd1998b6a71e06dfe65904df",
+      "source": {
+        "kind": "volume",
+        "ref": "spawnfile-org-moltnet-luna-inner-causal-run-cfacd018c2b849969384-b271c63b:/causal.jsonl"
+      }
+    },
+    {
+      "bytes": 1738,
+      "path": "raw/moltnet/psyche-floor/causal.jsonl",
+      "sha256": "524c8c458f4953fb617870b08bf4454ee5eaedd3dee89ac7343fe85d370ac158",
+      "source": {
+        "kind": "volume",
+        "ref": "spawnfile-org-moltnet-psyche-floor-causal-run-cfacd018c2b849969384-4bae340c:/causal.jsonl"
+      }
+    },
+    {
+      "bytes": 0,
+      "path": "raw/moltnet/selene_inner/causal.jsonl",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "source": {
+        "kind": "volume",
+        "ref": "spawnfile-org-moltnet-selene-inner-causal-run-cfacd018c2b849969384-1f9123a5:/causal.jsonl"
+      }
+    }
+  ],
+  "run_id": "run-cfacd018c2b8499693845b427cef92e0",
+  "version": "spawnfile.export-index.v1"
+}

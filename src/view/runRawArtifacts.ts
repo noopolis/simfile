@@ -73,9 +73,38 @@ export const normalizeRawTranscript = (raw: unknown): RawTranscript => {
   return { seedMessageText: golden.seedMessageText, transcript: golden.transcript ?? [] };
 };
 
+/**
+ * Reads every moltnet transcript in a run-dir and merges them into one
+ * chronologically-sorted message list. A single-network run writes the flat
+ * `raw/moltnet/transcript.json` (the golden/office-sim shape); a multi-network
+ * composed run (the jungian psyche) writes one per network under
+ * `raw/moltnet/<network_id>/transcript.json`. Both are read and unioned so the
+ * timeline's `messagesById` spans every room across every network — the join
+ * an interior-council membrane needs. Message ids are globally-unique UUIDs, so
+ * a flat re-sort of the union is a correct chronological interleave.
+ */
 export const readTranscript = async (runDir: string): Promise<RawTranscript> => {
-  const raw = JSON.parse(await readFile(path.join(runDir, "raw", "moltnet", "transcript.json"), "utf8")) as unknown;
-  return normalizeRawTranscript(raw);
+  const moltnetDir = path.join(runDir, "raw", "moltnet");
+  const files: string[] = [path.join(moltnetDir, "transcript.json")];
+  const entries = await readdir(moltnetDir, { withFileTypes: true }).catch(() => []);
+  for (const entry of entries) {
+    if (entry.isDirectory()) files.push(path.join(moltnetDir, entry.name, "transcript.json"));
+  }
+
+  let seedMessageText: string | undefined;
+  const merged: RawTranscriptMessage[] = [];
+  for (const file of files) {
+    const text = await readFile(file, "utf8").catch(() => null);
+    if (text === null) continue;
+    const normalized = normalizeRawTranscript(JSON.parse(text) as unknown);
+    if (seedMessageText === undefined && normalized.seedMessageText !== undefined) {
+      seedMessageText = normalized.seedMessageText;
+    }
+    merged.push(...normalized.transcript);
+  }
+
+  merged.sort((left, right) => Date.parse(left.created_at) - Date.parse(right.created_at));
+  return { seedMessageText, transcript: merged };
 };
 
 /** The `world/telemetry.json` shape written by `src/runtime/run-record.ts`'s `TelemetryArtifact`. */

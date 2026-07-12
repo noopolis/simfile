@@ -92,6 +92,14 @@ const worldEventIdFromMessage = (message: RawTranscriptMessage): string | undefi
 };
 
 const buildMoltnetRecord = (event: CausalEvent, base: Omit<RawRecord, "subjects" | "actor" | "text">, ctx: JoinContext): RawRecord => {
+  // A message.accepted names its OWN room from its network stream_id +
+  // target.room_id (`roomForMoltnetMessage`), never the run's single primary
+  // room — the fix that keeps an inner-council message under
+  // `room:<inner_net>:<room>` in a multi-network run instead of collapsing
+  // every network's messages onto the floor room. Falls back to `ctx.room`
+  // only when the event carries no resolvable target (never, for a
+  // message.accepted).
+  const messageRoom = roomForMoltnetMessage(event) ?? ctx.room;
   if (event.type !== "message.accepted") {
     return { ...base, subjects: [ctx.room].filter(isDefined) };
   }
@@ -101,7 +109,7 @@ const buildMoltnetRecord = (event: CausalEvent, base: Omit<RawRecord, "subjects"
   return {
     ...base,
     actor: authorId,
-    subjects: [ctx.room, authorId ? agentRef(authorId) : undefined].filter(isDefined),
+    subjects: [messageRoom, authorId ? agentRef(authorId) : undefined].filter(isDefined),
     text: message ? messageText(message) : undefined,
     worldEventId: message ? worldEventIdFromMessage(message) : undefined,
   };

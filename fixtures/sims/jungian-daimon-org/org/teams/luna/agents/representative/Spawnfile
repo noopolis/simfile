@@ -1,0 +1,21 @@
+spawnfile_version: "0.1"
+kind: agent
+name: luna-representative
+description: "luna representative (scripted screenplay voice)"
+
+runtime:
+  name: pi
+  options:
+    engine: scripted
+    engine_command: ../../../../../harness/jungian-engine.mjs
+
+surfaces:
+  moltnet:
+    - network: luna_inner
+      rooms:
+        luna-council:
+          wake: mentions
+
+workspace:
+  docs:
+    system: AGENTS.md

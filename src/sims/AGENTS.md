@@ -51,6 +51,27 @@ right choice for a plain (non-memetics) composed office-sim run.
   the exchange concludes -> `artifacts export` -> fetch the moltnet
   transcript while the container is still live -> `down` -> write
   `manifest.json` LAST). Returns the sealed run-dir path.
+- `composedJungianSimDriver.ts` — `runComposedJungianSim`: the MULTI-NETWORK
+  generalization for the recursive jungian psyche
+  (`fixtures/sims/jungian-daimon-org/org`) — a floor network whose members are
+  self-teams, each owning its own inner Moltnet council network. Reads the
+  compile report's `server_plans[]` for each managed network's host base url +
+  room membership (its ONE structured report read; everything else is HTTP
+  polling), polls EVERY network ready, seeds the floor ONCE
+  (`@luna-representative` into `commons`), then waits for the representative's
+  floor-facing SYNTHESIS to reappear — a completion gate that can only be
+  satisfied after the interior council deliberated and the representative
+  crossed the membrane back out, so it proves the whole wake-across-membranes
+  chain closed without ever coaxing it. Exports one transcript PER network
+  (`raw/moltnet/<network_id>/transcript.json`), copies `spawnfile-report.json`
+  into the run-dir (the viewer's named feed #1, the source of the derived
+  membranes), and writes `manifest.json` with `world.rooms[]` (every room
+  across every network) LAST. The cross-membrane posting itself is the
+  scripted engine's own `moltnet send --network <inner> --target room:<council>`
+  from its staged `.moltnet/config.json` — the pi bridge only ever
+  auto-publishes a reply back to the room that woke an agent, so an inner-network
+  post is an explicit send the agent (scripted or real) makes, never a driver
+  action.
 - `index.ts` — barrel (not re-exported from the package root barrel,
   mirroring `../observe`: this is a dev/ops driver, not public library API).
 

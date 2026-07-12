@@ -20,11 +20,13 @@ const CONTRACT_VERSIONS: Record<string, string> = {
 
 export const sha256HexOfBuffer = (buffer: Buffer): string => createHash("sha256").update(buffer).digest("hex");
 
-export interface ComposeRunManifestWorld {
+/** A type alias (not an interface) so it stays assignable to the manifest's
+ * genre-neutral `Record<string, unknown>` world slot. */
+export type ComposeRunManifestWorld = {
   network_id: string;
   room_id: string;
   members: string[];
-}
+};
 
 export interface ComposeRunManifestInput {
   runId: string;
@@ -39,7 +41,14 @@ export interface ComposeRunManifestInput {
    * (e.g. derived by collapsing the up-receipt's `engines[]` to its one
    * distinct value). */
   engine: string;
-  world: ComposeRunManifestWorld;
+  /**
+   * The run's declared world. A single-network run passes a
+   * `ComposeRunManifestWorld` (`{network_id, room_id, members}`); a
+   * multi-network composed run (the jungian psyche) passes `{rooms: [...]}`.
+   * Stored verbatim on the manifest (the schema's `world` is genre-neutral
+   * free-form), so either shape is accepted.
+   */
+  world: Record<string, unknown>;
   /** `{path, sha256}` entries folded straight from `spawnfile artifacts
    * export --json`'s `index.files` (per that contract's own docstring: "so
    * a future `simfile.run-manifest.v1` can fold `files` straight into its
@@ -78,8 +87,7 @@ export const composeRunManifest = (input: ComposeRunManifestInput): SimfileRunMa
     engine: input.engine,
     ...(input.seedDeclaration ? { seed_declaration: input.seedDeclaration } : {}),
     // `SimfileRunManifest.world` is a free-form `Record<string, unknown>`
-    // (genre-neutral schema); this composer's own `ComposeRunManifestWorld`
-    // is the concrete shape it always writes.
-    world: input.world as unknown as Record<string, unknown>
+    // (genre-neutral schema); the driver's world shape is stored verbatim.
+    world: input.world
   };
 };

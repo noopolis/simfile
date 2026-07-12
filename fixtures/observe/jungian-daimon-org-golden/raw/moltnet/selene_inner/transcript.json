@@ -1,0 +1,14 @@
+{
+  "conversations": [
+    {
+      "messages": [],
+      "target": {
+        "kind": "room",
+        "id": "selene-council",
+        "scope": "room:selene_inner:selene-council"
+      }
+    }
+  ],
+  "source": "moltnet-exported",
+  "version": "simfile.moltnet.transcript.v1"
+}

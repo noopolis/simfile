@@ -64,6 +64,31 @@ a bespoke page.
   `web/src/viewer/ReplayPanes.tsx`'s `ChatPane` use to suppress a
   `world.message`'s moltnet twin and badge the survivor "world". Split
   three ways so no one file passes 400 lines (`AGENTS.md`).
+  **Multi-network attribution:** `buildMoltnetRecord` names each
+  `message.accepted`'s room from its OWN network stream_id + `target.room_id`
+  (`roomForMoltnetMessage`), never the run's single primary room — so an
+  inner-council message in a recursive-psyche run stays under
+  `room:<inner_net>:<room>` instead of collapsing onto the floor room. Paired
+  with codex's daimon per-causing-message room fix (`buildDaimonRecord`), the
+  representative's two turns land under the DIFFERENT rooms that woke them
+  (`room:psyche-floor:commons` inbound, `room:<inner>:<council>` after the
+  council concludes). `buildRunTimeline` parses `manifest.world` as either the
+  single `{network_id, room_id, members}` shape (office-sim) or the
+  multi-network `{rooms: [...]}` shape (the jungian psyche), and enumerates a
+  `kind: "team"` element per derived membrane.
+- `membranes.ts` — `deriveMembranes(report)` / `readRunMembranes(runDir)`:
+  derives `RunTimeline.membranes` (the "descend into a mind" structure) from
+  the run's `spawnfile-report.json` compile report (loose local parse — never a
+  Spawnfile TS import). A membrane is an interior self-team: a team owning its
+  own Moltnet network, represented on a parent floor by one of its members. The
+  definitive interior-vs-parent signal is the compile report's
+  `nodes[].active_environments.moltnet[network][room].member_slot` — in the
+  parent room a representative's slot is the TEAM it stands in for (not its own
+  id), in its own council room it is its own id — which no `server_plans`-only
+  read can tell apart. Interior rooms + members come from the team-owned
+  `server_plans[]` (matched by the compiler's `id === `${team}-${network}``
+  convention). Absent/unparseable report or no interior self-teams -> `[]`
+  (the office-sim golden legitimately yields none).
 - `runWorldTrace.ts` — `buildRunWorldTrace`: adapts a `RunTimeline` plus the
   run's `world` (network/room/members) into the same `viewer.trace.v1` shape
   `web/src/viewer/worldModel.ts`'s `buildViewerWorld` already renders (one

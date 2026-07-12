@@ -6,8 +6,9 @@ import { collectCausalStreams } from "../observe/causalStreams.js";
 import { parseRunManifest } from "../observe/manifest.js";
 import { readMnemeEventsByBank, readTranscript } from "./runRawArtifacts.js";
 import type { RawMnemeEvent } from "./runViewModelTypes.js";
-import type { ElementRef, RunTimeline, RunTimelineElement, TimelineEvent } from "./runTimelineTypes.js";
+import type { ElementRef, RunTimeline, RunTimelineElement, RunTimelineMembrane, TimelineEvent } from "./runTimelineTypes.js";
 import { agentIdFromStreamId, agentRef, bankFromRelativePath, bankRef, roomRef, stringField } from "./runTimelineRefs.js";
+import { readRunMembranes } from "./membranes.js";
 import { buildBankLogRecord, buildCausalRecord, roomForMoltnetMessage, type JoinContext, type RawRecord } from "./runTimelineRecords.js";
 
 /**
@@ -69,22 +70,31 @@ const causalRepair = (records: readonly RawRecord[]): RawRecord[] => {
   return order;
 };
 
+/** One room the run declares (`manifest.world`): a `room:<network>:<room>` ref, its bare room id (label), and its member agent ids. */
+interface WorldRoom {
+  ref: ElementRef;
+  roomId: string;
+  members: string[];
+}
+
 const buildElements = (params: {
-  members: readonly string[];
-  room?: ElementRef;
-  roomId?: string;
+  rooms: readonly WorldRoom[];
+  membranes: readonly RunTimelineMembrane[];
   streams: readonly CausalStreamSource[];
   mnemeByBank: ReadonlyMap<string, readonly RawMnemeEvent[]>;
 }): RunTimelineElement[] => {
   const elements = new Map<ElementRef, RunTimelineElement>();
 
-  if (params.room && params.roomId) {
-    elements.set(params.room, { ref: params.room, kind: "room", label: params.roomId });
+  for (const room of params.rooms) {
+    elements.set(room.ref, { ref: room.ref, kind: "room", label: room.roomId });
+    for (const member of room.members) {
+      const ref = agentRef(member);
+      if (!elements.has(ref)) elements.set(ref, { ref, kind: "agent", label: member });
+    }
   }
 
-  for (const member of params.members) {
-    const ref = agentRef(member);
-    elements.set(ref, { ref, kind: "agent", label: member });
+  for (const membrane of params.membranes) {
+    if (!elements.has(membrane.ref)) elements.set(membrane.ref, { ref: membrane.ref, kind: "team", label: membrane.label });
   }
 
   for (const stream of params.streams) {
@@ -105,19 +115,45 @@ const buildElements = (params: {
   return [...elements.values()];
 };
 
+const stringMembers = (value: unknown): string[] =>
+  Array.isArray(value) ? value.filter((member): member is string => typeof member === "string") : [];
+
+/**
+ * Parses `manifest.world` into the run's rooms, supporting both shapes: a
+ * single-network run's flat `{network_id, room_id, members}` (office-sim
+ * golden) and a multi-network composed run's `{rooms: [{network_id, room_id,
+ * members}, ...]}` (the jungian psyche, one entry per network's room).
+ */
+const parseWorldRooms = (worldRecord: Record<string, unknown> | undefined): WorldRoom[] => {
+  const toRoom = (record: Record<string, unknown> | undefined): WorldRoom | undefined => {
+    const networkId = stringField(record, "network_id");
+    const roomId = stringField(record, "room_id");
+    if (!networkId || !roomId) return undefined;
+    return { ref: roomRef(networkId, roomId), roomId, members: stringMembers(record?.members) };
+  };
+
+  const roomsRaw = worldRecord?.rooms;
+  if (Array.isArray(roomsRaw)) {
+    return roomsRaw
+      .map((entry) => toRoom(typeof entry === "object" && entry !== null ? (entry as Record<string, unknown>) : undefined))
+      .filter((room): room is WorldRoom => room !== undefined);
+  }
+
+  const single = toRoom(worldRecord);
+  return single ? [single] : [];
+};
+
 export const buildRunTimeline = async (runDir: string): Promise<RunTimeline> => {
   const manifest = parseRunManifest(JSON.parse(await readFile(path.join(runDir, "manifest.json"), "utf8")));
   const worldRecord = manifest.world as Record<string, unknown> | undefined;
-  const networkId = stringField(worldRecord, "network_id");
-  const roomId = stringField(worldRecord, "room_id");
-  const room = networkId && roomId ? roomRef(networkId, roomId) : undefined;
-  const membersRaw = worldRecord?.members;
-  const members = Array.isArray(membersRaw) ? membersRaw.filter((member): member is string => typeof member === "string") : [];
+  const rooms = parseWorldRooms(worldRecord);
+  const room = rooms[0]?.ref;
 
-  const [streams, mnemeByBank, transcript] = await Promise.all([
+  const [streams, mnemeByBank, transcript, membranes] = await Promise.all([
     collectCausalStreams(runDir),
     readMnemeEventsByBank(runDir),
     readTranscript(runDir),
+    readRunMembranes(runDir),
   ]);
 
   const messagesById = new Map(transcript.transcript.map((message) => [message.id, message] as const));
@@ -165,7 +201,7 @@ export const buildRunTimeline = async (runDir: string): Promise<RunTimeline> => 
     payload: record.payload,
   }));
 
-  const elements = buildElements({ members, room, roomId, streams, mnemeByBank });
+  const elements = buildElements({ rooms, membranes, streams, mnemeByBank });
 
-  return { version: "simfile.run-timeline.v1", runId: manifest.run_id, events, elements, membranes: [] };
+  return { version: "simfile.run-timeline.v1", runId: manifest.run_id, events, elements, membranes };
 };
