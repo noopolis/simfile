@@ -7,8 +7,8 @@ a portal).
 ## Structure
 
 - `StorylinePortal.tsx` — the ONE storyline portal for every element kind
-  (`agent:` | `room:` | `bank:` | `team:` refs all render through this same
-  component — no per-kind portal code): opened by
+  (`agent:` | `room:` | `bank:` | `team:` | `variable:` refs all render
+  through this same component — no per-kind portal code): opened by
   `../store/timeline.ts`'s `focusAndOpenPortal`, called from the map
   (room anchor, agent body, and now the synthesized `team:` node), the chat
   pane (author name), and the minds rail (bank header, per-agent
@@ -28,7 +28,19 @@ a portal).
   membrane portal (e.g. clicking `luna-shadow`) recurses through this exact
   path again. The breadcrumb (`breadcrumbSegments`) shows the real nested
   path, computed from `openPortals` + `timeline.membranes` — no portal
-  tracks its own "path" prop.
+  tracks its own "path" prop. **Variable storyline (increment 4):** a
+  `variable:<id>` ref (never a membrane) renders `VariableTrajectoryPanel`
+  (defined in this file) ABOVE the shared `StorylineRows` strip — the
+  value-at-cursor + a `../viewer/RunMetaPanels.tsx`-exported
+  `VariableSparkline` of the trajectory (`../viewer/variableModel.ts`'s
+  `sampleAtTick`/`trajectoryUpToTick`, fed by the `variableSamples`/
+  `variableTick` props `RunReplayShell.tsx` passes to every open portal),
+  plus a scrollable tick→value list. The samples themselves are RECORDS
+  from `world/telemetry.json`, not `TimelineEvent`s, so they render here
+  rather than through `StorylineRows`; the "caused" rule-firing/message
+  events still come from the ordinary `eventsForElement` slice below them
+  (`buildWorldRecord`'s `variable:<id>` subjects put them there) — one
+  storyline, two record sources, no special-casing of the open mechanism.
 - `MembraneView.tsx` — the membrane interior view rendered inside a
   membrane's `StorylinePortal`: a mini interior map (built from
   `membrane.interiorWorld`, the same `buildViewerWorld`/`AsciiMap` the outer

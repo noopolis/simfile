@@ -49,7 +49,7 @@ export interface TimelineEvent {
   payload: unknown;
 }
 
-export type RunTimelineElementKind = "agent" | "room" | "bank" | "team";
+export type RunTimelineElementKind = "agent" | "room" | "bank" | "team" | "variable";
 
 export interface RunTimelineElement {
   ref: ElementRef;

@@ -11,6 +11,7 @@ import type { RunTimeline, RunTimelineElementKind } from "./runTimelineTypes.js"
 const here = path.dirname(fileURLToPath(import.meta.url));
 const GOLDEN_DIR = path.resolve(here, "..", "..", "fixtures", "observe", "office-sim-golden");
 const WORLD_GOLDEN_DIR = path.resolve(here, "..", "..", "fixtures", "observe", "office-secret-v0-golden");
+const VARIABLE_GOLDEN_DIR = path.resolve(here, "..", "..", "fixtures", "observe", "office-pressure-v0-golden");
 const REAL_RUN_DIR = path.resolve(
   here,
   "..",
@@ -372,6 +373,52 @@ describe("buildRunTimeline — world stream wake.recommended (synthetic fixture)
     } finally {
       await rm(runDir, { recursive: true, force: true });
     }
+  });
+});
+
+describe("buildRunTimeline — variable storyline (buildWorldRecord, increment 4)", () => {
+  it("enumerates a variable element for filing_pressure, derived from its own records (not a separate schema/telemetry read)", async () => {
+    const timeline = await buildRunTimeline(VARIABLE_GOLDEN_DIR);
+    const variableElement = timeline.elements.find((element) => element.ref === "variable:filing_pressure");
+    assert.ok(variableElement, "expected a variable:filing_pressure element");
+    assert.equal(variableElement!.kind, "variable");
+    assert.equal(variableElement!.label, "filing_pressure");
+  });
+
+  it("attributes the threshold rule's rule.fired and its resulting world.message to variable:filing_pressure, alongside the room", async () => {
+    const timeline = await buildRunTimeline(VARIABLE_GOLDEN_DIR);
+    const pressureFired = timeline.events.find(
+      (event) => event.type === "rule.fired" && (event.payload as { rule?: string }).rule === "pressure_alert",
+    );
+    assert.ok(pressureFired, "expected pressure_alert's rule.fired event");
+    assert.ok(pressureFired!.subjects.includes("variable:filing_pressure"));
+    assert.ok(pressureFired!.subjects.includes("room:office_lab:office-room"));
+
+    const pressureMessage = timeline.events.find(
+      (event) => event.viewClass === "message" && event.authority === "world" && (event.text ?? "").includes("Deadline pressure is high"),
+    );
+    assert.ok(pressureMessage, "expected the pressure_alert world.message event");
+    assert.ok(pressureMessage!.subjects.includes("variable:filing_pressure"));
+  });
+
+  it("never attributes a plain clock.sync tick (or the unrelated kickoff rule) to the variable — no fabricated subject", async () => {
+    const timeline = await buildRunTimeline(VARIABLE_GOLDEN_DIR);
+    const clockEvents = timeline.events.filter((event) => event.type === "clock.sync");
+    assert.ok(clockEvents.length > 0);
+    for (const event of clockEvents) {
+      assert.equal(event.subjects.includes("variable:filing_pressure"), false);
+    }
+
+    const kickoffFired = timeline.events.find(
+      (event) => event.type === "rule.fired" && (event.payload as { rule?: string }).rule === "kickoff",
+    );
+    assert.ok(kickoffFired, "expected kickoff's rule.fired event");
+    assert.equal(kickoffFired!.subjects.includes("variable:filing_pressure"), false);
+  });
+
+  it("has no variable elements at all for a run with no world stream (office-sim-golden, graceful absence)", async () => {
+    const timeline = await buildRunTimeline(GOLDEN_DIR);
+    assert.equal(timeline.elements.some((element) => element.kind === "variable"), false);
   });
 });
 

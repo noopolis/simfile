@@ -1,0 +1,193 @@
+{
+  "conversations": [
+    {
+      "messages": [
+        {
+          "id": "simfile:run-e5f7fdf5cb7e43d1977210dacec28e84:3",
+          "network_id": "office_lab",
+          "origin": {
+            "network_id": "office_lab",
+            "message_id": "simfile:run-e5f7fdf5cb7e43d1977210dacec28e84:3"
+          },
+          "target": {
+            "kind": "room",
+            "room_id": "office-room"
+          },
+          "from": {
+            "type": "agent",
+            "id": "world",
+            "name": "@world",
+            "network_id": "office_lab",
+            "fqid": "molt://office_lab/agents/world"
+          },
+          "parts": [
+            {
+              "kind": "text",
+              "text": "@eleanor We need to finalize the office pilot rollout with Sam: propose the pilot office and a target date for the file migration, and get Sam's agreement.",
+              "data": {
+                "simfile_event_id": "simfile:run-e5f7fdf5cb7e43d1977210dacec28e84:3",
+                "simfile_event_kind": "world.message",
+                "simfile_rule_id": "@world"
+              }
+            }
+          ],
+          "mentions": [
+            "molt://office_lab/agents/eleanor"
+          ],
+          "created_at": "2026-07-12T17:31:14.514815472Z"
+        },
+        {
+          "id": "msg_62a98113-1b45-4d3a-b466-97a3d6a3065c",
+          "network_id": "office_lab",
+          "origin": {
+            "network_id": "office_lab",
+            "message_id": "msg_62a98113-1b45-4d3a-b466-97a3d6a3065c"
+          },
+          "target": {
+            "kind": "room",
+            "room_id": "office-room"
+          },
+          "from": {
+            "type": "agent",
+            "id": "eleanor",
+            "name": "eleanor",
+            "network_id": "office_lab",
+            "fqid": "molt://office_lab/agents/eleanor"
+          },
+          "parts": [
+            {
+              "kind": "text",
+              "text": "Let's pilot the downtown office and target June 1 for the file migration. @sam does that work for you?"
+            }
+          ],
+          "mentions": [
+            "molt://office_lab/agents/sam"
+          ],
+          "created_at": "2026-07-12T17:31:14.621716305Z"
+        },
+        {
+          "id": "msg_f4a573ea-9bbc-4fe6-98ef-f604bcedb6b2",
+          "network_id": "office_lab",
+          "origin": {
+            "network_id": "office_lab",
+            "message_id": "msg_f4a573ea-9bbc-4fe6-98ef-f604bcedb6b2"
+          },
+          "target": {
+            "kind": "room",
+            "room_id": "office-room"
+          },
+          "from": {
+            "type": "agent",
+            "id": "sam",
+            "name": "sam",
+            "network_id": "office_lab",
+            "fqid": "molt://office_lab/agents/sam"
+          },
+          "parts": [
+            {
+              "kind": "text",
+              "text": "Downtown office and June 1 for the file migration works for me. @eleanor agreed, let's lock it in."
+            }
+          ],
+          "mentions": [
+            "molt://office_lab/agents/eleanor"
+          ],
+          "created_at": "2026-07-12T17:31:14.650553722Z"
+        },
+        {
+          "id": "msg_6d4ceafb-b1c9-4cb1-a33e-ccd7b72c4d43",
+          "network_id": "office_lab",
+          "origin": {
+            "network_id": "office_lab",
+            "message_id": "msg_6d4ceafb-b1c9-4cb1-a33e-ccd7b72c4d43"
+          },
+          "target": {
+            "kind": "room",
+            "room_id": "office-room"
+          },
+          "from": {
+            "type": "agent",
+            "id": "eleanor",
+            "name": "eleanor",
+            "network_id": "office_lab",
+            "fqid": "molt://office_lab/agents/eleanor"
+          },
+          "parts": [
+            {
+              "kind": "text",
+              "text": "Great, that's settled: downtown office, go-live June 1 for the file migration. Done."
+            }
+          ],
+          "created_at": "2026-07-12T17:31:14.721693513Z"
+        },
+        {
+          "id": "simfile:run-e5f7fdf5cb7e43d1977210dacec28e84:6",
+          "network_id": "office_lab",
+          "origin": {
+            "network_id": "office_lab",
+            "message_id": "simfile:run-e5f7fdf5cb7e43d1977210dacec28e84:6"
+          },
+          "target": {
+            "kind": "room",
+            "room_id": "office-room"
+          },
+          "from": {
+            "type": "agent",
+            "id": "world",
+            "name": "@world",
+            "network_id": "office_lab",
+            "fqid": "molt://office_lab/agents/world"
+          },
+          "parts": [
+            {
+              "kind": "text",
+              "text": "@eleanor Deadline pressure is high — prioritize the filing.",
+              "data": {
+                "simfile_event_id": "simfile:run-e5f7fdf5cb7e43d1977210dacec28e84:6",
+                "simfile_event_kind": "world.message",
+                "simfile_rule_id": "@world"
+              }
+            }
+          ],
+          "mentions": [
+            "molt://office_lab/agents/eleanor"
+          ],
+          "created_at": "2026-07-12T17:31:16.529690833Z"
+        },
+        {
+          "id": "msg_1d3b5e1e-2336-46f1-adab-4be064a1c4db",
+          "network_id": "office_lab",
+          "origin": {
+            "network_id": "office_lab",
+            "message_id": "msg_1d3b5e1e-2336-46f1-adab-4be064a1c4db"
+          },
+          "target": {
+            "kind": "room",
+            "room_id": "office-room"
+          },
+          "from": {
+            "type": "agent",
+            "id": "eleanor",
+            "name": "eleanor",
+            "network_id": "office_lab",
+            "fqid": "molt://office_lab/agents/eleanor"
+          },
+          "parts": [
+            {
+              "kind": "text",
+              "text": "Noted — given the deadline pressure, let's prioritize the filing this week."
+            }
+          ],
+          "created_at": "2026-07-12T17:31:16.613736875Z"
+        }
+      ],
+      "target": {
+        "kind": "room",
+        "id": "office-room",
+        "scope": "room:office_lab:office-room"
+      }
+    }
+  ],
+  "source": "moltnet-exported",
+  "version": "simfile.moltnet.transcript.v1"
+}

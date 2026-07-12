@@ -110,4 +110,36 @@ describe("buildRunViewModel — office-sim golden fixture", () => {
     const entry = model.provenance.entries.find((row) => row.key === "contract");
     assert.equal(entry?.value, "simfile.observe.v1");
   });
+
+  it("omits variableSamples entirely for a run with no world variables (graceful absence, never a fabricated empty gauge)", async () => {
+    const model = await buildRunViewModel(GOLDEN_FIXTURE_DIR);
+    assert.equal(model.variableSamples, undefined);
+  });
+});
+
+describe("buildRunViewModel — office-pressure-v0 golden fixture (variable storyline)", () => {
+  const VARIABLE_GOLDEN_FIXTURE_DIR = path.resolve(
+    path.dirname(fileURLToPath(import.meta.url)),
+    "..",
+    "..",
+    "fixtures",
+    "observe",
+    "office-pressure-v0-golden"
+  );
+
+  it("passes through world/telemetry.json's real, ramping filing_pressure samples", async () => {
+    const model = await buildRunViewModel(VARIABLE_GOLDEN_FIXTURE_DIR);
+    assert.ok(model.variableSamples);
+    assert.equal(model.variableSamples!.length, 3);
+    assert.deepEqual(
+      model.variableSamples!.map((sample) => sample.variables.filing_pressure),
+      [0.7, 1, 1],
+    );
+  });
+
+  it("is healthy with no reconciliation failures despite the empty seed token_set (this fixture carries no doc-seeded secret)", async () => {
+    const model = await buildRunViewModel(VARIABLE_GOLDEN_FIXTURE_DIR);
+    assert.equal(model.verdict.healthy, true);
+    assert.equal(model.verdict.failures, 0);
+  });
 });

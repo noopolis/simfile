@@ -1,6 +1,6 @@
 import { parseRange } from "../kernel/range.js";
 import type { Simfile, SimfileGenerator, SimfileRule, SimfileRuleAction, SimfileVariable } from "../schema/model.js";
-import { ConditionEvaluator, type ConditionNode } from "./condition.js";
+import { conditionVariableIds, ConditionEvaluator, type ConditionNode } from "./condition.js";
 import { compileExpression, type CompiledExpression } from "./expression.js";
 
 interface RangeSpec {
@@ -38,6 +38,8 @@ export interface RuleRuntime {
   fireMode: "once" | "per_crossing";
   previousMatch: boolean;
   hasFired: boolean;
+  /** Every variable id this rule's own `when:` condition references (`conditionVariableIds`) — `[]` for a rule gated on a phase/event condition instead. Threaded onto this rule's `rule.fired` event and every world-effect event it emits, so the viewer can attribute them to that variable's storyline. */
+  variableIds: string[];
 }
 
 export interface CompiledTraceRuntime {
@@ -196,7 +198,8 @@ export const compileRules = (simfile: Simfile): RuleRuntime[] => {
       when: compileWhen(rule.when),
       fireMode: rule.fire,
       previousMatch: false,
-      hasFired: false
+      hasFired: false,
+      variableIds: conditionVariableIds(rule.when as ConditionNode)
     }));
 };
 

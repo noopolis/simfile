@@ -12,8 +12,9 @@ import type { RunWorldTrace } from "./runWorldTrace.js";
  */
 
 /**
- * `agent:<id>` | `room:<network>:<room>` | `bank:<bank>`. Reserved for a
- * later increment: `variable:` and `object:` (no data to back them yet).
+ * `agent:<id>` | `room:<network>:<room>` | `bank:<bank>` | `variable:<id>`
+ * (increment 4's variable storyline). `object:` remains reserved — no data
+ * to back it yet.
  */
 export type ElementRef = string;
 
@@ -71,7 +72,7 @@ export interface TimelineEvent {
   payload: unknown;
 }
 
-export type RunTimelineElementKind = "agent" | "room" | "bank" | "team";
+export type RunTimelineElementKind = "agent" | "room" | "bank" | "team" | "variable";
 
 export interface RunTimelineElement {
   ref: ElementRef;

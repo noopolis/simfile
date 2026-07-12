@@ -3,7 +3,12 @@
 This folder contains deterministic Simfile runtime helpers.
 
 - `clock.ts` resolves tick, simulated time, and phases.
-- `condition.ts` evaluates the shared `when:` condition tree.
+- `condition.ts` evaluates the shared `when:` condition tree. Also exports
+  `conditionVariableIds` (variable storyline increment): every variable id a
+  condition tree references, deduped — `[]` for a phase/event condition.
+  `trace-compile.ts`'s `compileRules` precomputes this per rule
+  (`RuleRuntime.variableIds`) so `step-tick.ts`/`rule-actions.ts` can thread
+  it onto that rule's own emitted events without re-walking the tree.
 - `expression.ts` evaluates the closed arithmetic `eq` subset.
 - `numeric.ts` is the shared `RangeSpec`/`clampAndRound` primitive used by both
   `trace-run.ts` and `rule-actions.ts`.
@@ -15,7 +20,12 @@ This folder contains deterministic Simfile runtime helpers.
   events (`world.message`, `world.dm`, `wake.recommended`) or variable
   mutations. Every world-effect event is a world.act variant and carries the
   payload minimum `{sim_time, provenance, actor, target, scope, act_id,
-  action, value}`.
+  action, value}`. `runRuleActions`/`emitRuleActionEvents` additionally
+  accept the firing rule's own `variableIds` and fold them into each emitted
+  event's payload as `variables: string[]` (omitted, never an empty array,
+  when the rule's `when:` referenced no variable) — the viewer's join
+  surface for "this event was caused by evaluating a condition on variable
+  X" (`src/view/runTimelineRecords.ts`'s `buildWorldRecord`).
 - `world-act.ts` is the generic `world.act` protocol: the single act surface
   is `variable:set` on a declared `fed_by` variable. `validateWorldAct`
   applies the six-code ingestion order (dedup, run_closed, unknown_variable,
@@ -36,7 +46,9 @@ This folder contains deterministic Simfile runtime helpers.
   simfile-native trace event (batch or live) is stamped through. This is the
   seam a live driver calls once per wall-clock tick
   (`../sims/worldTickLoop.ts`) instead of only ever inside one big batch
-  loop; the batch loop below is now a thin caller of it.
+  loop; the batch loop below is now a thin caller of it. `runRule` also
+  stamps `variables: rule.variableIds` onto that rule's own `rule.fired`
+  payload (when non-empty) and threads the same list into `runRuleActions`.
 - `trace-run.ts` loops `stepSimfileTick` once per tick over the whole bounded
   run, then does the one thing a live per-tick call can't: a post-hoc
   `scanMarkers` pass over the whole run's events, minting `marker.seen`

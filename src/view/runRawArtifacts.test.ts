@@ -3,10 +3,12 @@ import path from "node:path";
 import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 
-import { normalizeRawTranscript, readTranscript } from "./runRawArtifacts.js";
+import { hasVariableSamples, normalizeRawTranscript, readTranscript, readWorldTelemetry } from "./runRawArtifacts.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const GOLDEN_DIR = path.resolve(here, "..", "..", "fixtures", "observe", "office-sim-golden");
+const WORLD_GOLDEN_DIR = path.resolve(here, "..", "..", "fixtures", "observe", "office-secret-v0-golden");
+const VARIABLE_GOLDEN_DIR = path.resolve(here, "..", "..", "fixtures", "observe", "office-pressure-v0-golden");
 const REAL_RUN_DIR = path.resolve(
   here,
   "..",
@@ -76,5 +78,38 @@ describe("readTranscript — normalizes both raw/moltnet/transcript.json shapes"
       ],
     });
     assert.deepEqual(result.transcript.map((message) => message.id), ["a", "b"]);
+  });
+});
+
+describe("readWorldTelemetry / hasVariableSamples (increment 3/4: the variable gauge's data source)", () => {
+  it("returns null for a run with no world/telemetry.json at all (office-sim-golden)", async () => {
+    const samples = await readWorldTelemetry(GOLDEN_DIR);
+    assert.equal(samples, null);
+    assert.equal(hasVariableSamples(samples), false);
+  });
+
+  it("parses office-secret-v0-golden's telemetry but reports no real variable samples (every sample's variables map is empty)", async () => {
+    const samples = await readWorldTelemetry(WORLD_GOLDEN_DIR);
+    assert.ok(samples);
+    assert.equal(samples!.length, 2);
+    assert.deepEqual(samples![0]!.variables, {});
+    assert.equal(hasVariableSamples(samples), false);
+  });
+
+  it("parses office-pressure-v0-golden's telemetry and reports a real, ramping filing_pressure sample set", async () => {
+    const samples = await readWorldTelemetry(VARIABLE_GOLDEN_DIR);
+    assert.ok(samples);
+    assert.equal(hasVariableSamples(samples), true);
+    assert.deepEqual(
+      samples!.map((sample) => ({ tick: sample.tick, filing_pressure: sample.variables.filing_pressure })),
+      [
+        { tick: 0, filing_pressure: 0.7 },
+        { tick: 1, filing_pressure: 1 },
+        { tick: 2, filing_pressure: 1 },
+      ],
+    );
+    // Never a fabricated/rounded value — real numbers straight off the run's
+    // own world/telemetry.json, ramping strictly (0.7 -> 1.0) before it clamps.
+    assert.ok(samples![0]!.variables.filing_pressure! < samples![1]!.variables.filing_pressure!);
   });
 });

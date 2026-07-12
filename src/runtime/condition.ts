@@ -130,6 +130,46 @@ const asNotNode = (node: ConditionNode): node is ConditionNotNode => {
   return "not" in node;
 };
 
+/**
+ * Every `variable` id referenced anywhere in a condition tree, deduped, in
+ * first-seen order — read straight off the compiled `when:` tree, never
+ * invented. The grounding for "this rule/event is about variable X": a
+ * caller (`trace-compile.ts`'s `compileRules`) uses this to precompute
+ * `RuleRuntime.variableIds`, which `step-tick.ts` then threads onto the
+ * rule's own `rule.fired` event and every world-effect event it emits, so
+ * the viewer can attribute those events to the variable's own storyline
+ * (`src/view/runTimelineRecords.ts`'s `buildWorldRecord`) without this
+ * package importing anything view-specific.
+ */
+export const conditionVariableIds = (node: ConditionNode): string[] => {
+  const ids: string[] = [];
+  const seen = new Set<string>();
+
+  const visit = (current: ConditionNode): void => {
+    if (asVariableNode(current)) {
+      if (!seen.has(current.variable)) {
+        seen.add(current.variable);
+        ids.push(current.variable);
+      }
+      return;
+    }
+    if (asAllNode(current)) {
+      current.all.forEach(visit);
+      return;
+    }
+    if (asAnyNode(current)) {
+      current.any.forEach(visit);
+      return;
+    }
+    if (asNotNode(current)) {
+      visit(current.not);
+    }
+  };
+
+  visit(node);
+  return ids;
+};
+
 export class ConditionEvaluator {
   private readonly holdState: HoldState = { startTimeByCondition: new Map() };
 

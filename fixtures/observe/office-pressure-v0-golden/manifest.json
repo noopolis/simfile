@@ -1,0 +1,60 @@
+{
+  "version": "simfile.run-manifest.v1",
+  "run_id": "run-e5f7fdf5cb7e43d1977210dacec28e84",
+  "created_at": "2026-07-12T17:31:12.469Z",
+  "contract_versions": {
+    "causal-event.v1": "noopolis.causal-event.v1",
+    "simfile.observe.v1": "simfile.observe.v1",
+    "simfile.run-manifest.v1": "simfile.run-manifest.v1"
+  },
+  "spawnfile": {
+    "fingerprint": "sf1:b94fdbc6a283"
+  },
+  "artifacts": [
+    {
+      "path": "raw/daimon/eleanor/causal.jsonl",
+      "sha256": "d7deeed4cb53a2b41419bc562c9f36f12117a7e7f34ed859d4ffb870657d0fcd"
+    },
+    {
+      "path": "raw/daimon/sam/causal.jsonl",
+      "sha256": "5c86dbb87e2a04609928f2339db57b019e2e822b226e4f04f0045b660cfffdea"
+    },
+    {
+      "path": "raw/moltnet/causal.jsonl",
+      "sha256": "d255878a60083ca718fd4fe96c32a83213c047a39f43bec47f605d87679afcf0"
+    },
+    {
+      "path": "raw/moltnet/transcript.json",
+      "sha256": "e0d561486fab35fbee9cc09f8cde286d8176945885b22ff53ad1128a72103283"
+    },
+    {
+      "path": "raw/world/causal.jsonl",
+      "sha256": "7c4295f8a21c095e786756bcc77feab7f4e38ebe6194c43b8c0692e3371079b5"
+    },
+    {
+      "path": "world/ingested-messages.jsonl",
+      "sha256": "c1a69009089f4510f174c27e0d11be5ed0ed18c276dc06dc393beb36c465270c"
+    },
+    {
+      "path": "world/telemetry.json",
+      "sha256": "c58cdb336abfb854281891d4f5e43474dcdc315fdec73c9b60e164c86b9629bf"
+    }
+  ],
+  "engine": "scripted",
+  "seed_declaration": {
+    "content_hash": "65b1e22425f60907164d0d0a9872fccecf78e977351249146c6a27482bc9f79e",
+    "token_set": [],
+    "matcher_policy": "exact",
+    "seed_agent": "eleanor",
+    "seed_epoch": "2026-07-12T17:31:12.469Z",
+    "entry_channel": "doc-seeded"
+  },
+  "world": {
+    "network_id": "office_lab",
+    "room_id": "office-room",
+    "members": [
+      "eleanor",
+      "sam"
+    ]
+  }
+}

@@ -1,0 +1,34 @@
+spawnfile_version: "0.1"
+kind: team
+name: office-pressure-v0
+description: "Variable storyline fixture: Eleanor and Sam negotiate the office rollout while the Simfile world ramps a filing_pressure variable and posts a threshold alert once it crosses ~0.85 — the scripted screenplay's closing line reacts to that alert."
+
+members:
+  - id: eleanor
+    ref: ./agents/eleanor
+  - id: sam
+    ref: ./agents/sam
+
+mode: swarm
+
+networks:
+  - id: office_lab
+    name: Office Lab
+    provider: moltnet
+    server:
+      mode: managed
+      listen:
+        bind: 0.0.0.0
+        port: 19953
+      store:
+        kind: memory
+      auth:
+        mode: none
+      human_ingress: true
+    rooms:
+      - id: office-room
+        members: [eleanor, sam]
+
+policy:
+  mode: warn
+  on_degrade: warn

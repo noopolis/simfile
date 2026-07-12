@@ -1,6 +1,9 @@
 import { useState } from "react";
 
 import type { SeedSpreadEntry, SpreadSummary } from "./spreadModel.js";
+import { sampleAtTick, trajectoryUpToTick, type RunMetaVariableSample } from "./variableModel.js";
+
+export type { RunMetaVariableSample } from "./variableModel.js";
 
 /**
  * Verdict + provenance, ported into the React run-replay shell so it reaches
@@ -39,14 +42,6 @@ export interface RunMetaProvenanceArtifact {
 export interface RunMetaProvenanceEntry {
   key: string;
   value: string;
-}
-
-/** One `world/telemetry.json` sample row — mirrors `src/view/runViewModelTypes.ts`'s `RunTelemetrySample`. */
-export interface RunMetaVariableSample {
-  tick: number;
-  simTime: number;
-  phase?: string;
-  variables: Record<string, number>;
 }
 
 export interface RunMeta {
@@ -158,24 +153,94 @@ export function SpreadReadout({
 }
 
 /**
- * Variable gauge seam (increment 3): `office-secret-v0` drives no
- * variable, so `variableSamples` is undefined there and this renders
- * nothing — do not fake a gauge. Wired for the day a run's
- * `world/telemetry.json` actually carries variable samples: shows each
- * variable's latest value from the last sample.
+ * A minimal, dependency-free sparkline: a single 2px polyline (the app's
+ * `--cyan` accent, matching the spread readout's own use of that color for
+ * "a live-ish signal") plus a small dot marking the current (rightmost, "as
+ * of cursor") value — the dataviz skill's single-series guidance: no axis,
+ * no legend (the numeric value already renders as text beside it), normalized
+ * to the trajectory's own min/max so a flat run still reads as a flat line
+ * rather than dividing by zero.
  */
-export function VariableGaugeRail({ samples }: { samples: RunMetaVariableSample[] | undefined }) {
-  const latest = samples?.[samples.length - 1];
-  const variableIds = latest ? Object.keys(latest.variables) : [];
-  if (!latest || variableIds.length === 0) return null;
+export function VariableSparkline({ values }: { values: readonly number[] }) {
+  const width = 56;
+  const height = 16;
+  const pad = 2;
+  if (values.length < 2) return null;
+
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const span = max - min || 1;
+  const stepX = (width - pad * 2) / (values.length - 1);
+  const points = values.map((value, index) => {
+    const x = pad + index * stepX;
+    const y = height - pad - ((value - min) / span) * (height - pad * 2);
+    return [x, y] as const;
+  });
+  const last = points[points.length - 1]!;
+
+  return (
+    <svg
+      aria-hidden="true"
+      className="variable-sparkline"
+      height={height}
+      viewBox={`0 0 ${width} ${height}`}
+      width={width}
+    >
+      <polyline
+        fill="none"
+        points={points.map(([x, y]) => `${x},${y}`).join(" ")}
+        stroke="var(--cyan)"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={1.5}
+      />
+      <circle cx={last[0]} cy={last[1]} fill="var(--accent-hi)" r={1.6} />
+    </svg>
+  );
+}
+
+/**
+ * Variable gauge rail (increment 4): reads `world/telemetry.json`'s
+ * per-tick samples (`variableSamples`, passed through unmodified from
+ * `/api/run-meta`) at `tick` — the world clock's own tick "as of" the
+ * scrub cursor (`variableModel.ts`'s `tickAtCursor`, computed by the
+ * caller since this component stays free of a `RunTimeline`/store
+ * dependency, matching `SpreadReadout`'s existing plain-props shape).
+ * Renders nothing when the run has no non-empty variable samples at all
+ * (`office-sim-golden`/`office-secret-v0-golden`) or the cursor is before
+ * the run's first `clock.sync` (`tick` is `undefined`) — never a fabricated
+ * gauge. Each variable is a clickable chip (`onSelectVariable`) that opens
+ * its own storyline portal, the same `focusAndOpenPortal` mechanism every
+ * other element kind uses — wired by the caller, not here, so this
+ * component never imports the timeline store directly.
+ */
+export function VariableGaugeRail({
+  samples,
+  tick,
+  onSelectVariable,
+}: {
+  samples: RunMetaVariableSample[] | undefined;
+  tick: number | undefined;
+  onSelectVariable: (variableId: string) => void;
+}) {
+  const asOf = sampleAtTick(samples, tick);
+  const variableIds = asOf ? Object.keys(asOf.variables) : [];
+  if (!asOf || variableIds.length === 0) return null;
 
   return (
     <div className="variable-gauge-rail" aria-label="World variables">
       {variableIds.map((id) => (
-        <span className="variable-gauge" key={id}>
+        <button
+          aria-label={`Open ${id} storyline`}
+          className="variable-gauge"
+          key={id}
+          onClick={() => onSelectVariable(id)}
+          type="button"
+        >
           <span className="variable-gauge-label">{id}</span>
-          <span className="variable-gauge-value">{latest.variables[id]!.toFixed(2)}</span>
-        </span>
+          <span className="variable-gauge-value">{asOf.variables[id]!.toFixed(2)}</span>
+          <VariableSparkline values={trajectoryUpToTick(samples, id, tick)} />
+        </button>
       ))}
     </div>
   );

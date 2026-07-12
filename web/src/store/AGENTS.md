@@ -27,7 +27,12 @@ clocks).
   world/moltnet dedup join (a `world`-authority message id is "echoed" when
   some `moltnet` message's own `worldEventId` names it), read by
   `../viewer/ReplayPanes.tsx`'s `ChatPane` to suppress a `world.message`'s
-  echoed twin and badge the survivor.
+  echoed twin and badge the survivor. Increment 4 adds `"variable"` to
+  `RunTimelineElementKind` — a `variable:<id>` ref opens through the exact
+  same `focusAndOpenPortal` every other kind uses; this store holds no
+  variable-specific state at all (the telemetry samples themselves live in
+  `/api/run-meta`'s `variableSamples`, joined by `../viewer/variableModel.ts`,
+  never duplicated into this store).
 - `deepLink.ts` — pure `parseDeepLink`/`serializeDeepLink`/`currentDeepLink`/
   `applyDeepLink` over the `?at=<event_id>&sel=<elementRef>&portals=<comma-refs>`
   URL shape (anchored on `event_id`, never the dense index `t`, so a link

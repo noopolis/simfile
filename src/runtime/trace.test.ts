@@ -371,6 +371,55 @@ rules:
     assert.equal(messagePayload.value, "hi");
   });
 
+  it("threads the referenced variable id onto rule.fired and every world-effect event a variable-gated rule emits (viewer's variable storyline join)", () => {
+    const simfile = parse(`
+simfile_version: "0.1"
+name: variable-storyline-world
+clock:
+  seed: variable-storyline
+  tick: 1m
+variables:
+  filing_pressure:
+    scope: room:office-floor:case-warroom
+    initial: 0.9
+    range: 0..1
+rules:
+  pressure_alert:
+    fire: once
+    when:
+      variable: filing_pressure
+      above: 0.85
+    do:
+      - action: moltnet:message
+        to: room:office-floor:case-warroom
+        content: "Deadline pressure is high."
+  kickoff:
+    fire: once
+    when:
+      event: clock.sync
+    do:
+      - action: wake:recommend
+        to: room:office-floor:case-warroom
+`);
+
+    const result = runSimfileTrace(simfile, { runId: "run-var-storyline", seed: "seed", ticks: 1 });
+
+    const pressureFired = result.events.find((event) => event.kind === "rule.fired" && event.actor === "pressure_alert")!;
+    assert.deepEqual(payloadObject(pressureFired.payload).variables, ["filing_pressure"]);
+
+    const pressureMessage = result.events.find((event) => event.kind === "world.message")!;
+    assert.deepEqual(payloadObject(pressureMessage.payload).variables, ["filing_pressure"]);
+
+    // A rule gated on a phase/event condition (no variable in its `when:`)
+    // must not grow a `variables` key at all — never a fabricated empty
+    // array, and byte-identical to every rule.fired/wake.recommended event
+    // emitted before this field existed.
+    const kickoffFired = result.events.find((event) => event.kind === "rule.fired" && event.actor === "kickoff")!;
+    assert.equal("variables" in payloadObject(kickoffFired.payload), false);
+    const wake = result.events.find((event) => event.kind === "wake.recommended")!;
+    assert.equal("variables" in payloadObject(wake.payload), false);
+  });
+
   it("builds viewer traces with canonical event kinds and heuristic agent labels", () => {
     const simfile = parse(`
 simfile_version: "0.1"

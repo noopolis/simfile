@@ -23,6 +23,7 @@ import {
 import { defaultRenderSettings } from "./renderSettings.js";
 import { membraneMapNodes } from "./membraneMapNodes.js";
 import { firstAppearanceGlowScopes, seedSpreadEventIds, utteredEventIds } from "./spreadModel.js";
+import { tickAtCursor } from "./variableModel.js";
 import { buildViewerWorld, viewerSkins } from "./worldModel.js";
 import type { ViewerContractTrace, ViewerWorldResponse } from "./types.js";
 import "../styles-replay.css";
@@ -126,6 +127,13 @@ export function RunReplayShell() {
     [timeline, runMeta, cursor, roomScope],
   );
 
+  // Increment 4: the world clock's own tick "as of" the scrub cursor — the
+  // one join `VariableGaugeRail`'s value-at-cursor readout and
+  // `StorylinePortal`'s variable trajectory both need, computed once here
+  // (never re-derived per-consumer) and `undefined` before the run's first
+  // `clock.sync` or on a run with no world stream at all.
+  const variableTick = useMemo(() => (timeline ? tickAtCursor(timeline, cursor) : undefined), [timeline, cursor]);
+
   if (loadError) {
     return (
       <main className="viewer-shell replay-shell">
@@ -155,7 +163,11 @@ export function RunReplayShell() {
         {runMeta?.spreadSummary ? (
           <SpreadReadout participants={runMeta.participants} seedSpread={runMeta.seedSpread ?? []} summary={runMeta.spreadSummary} />
         ) : null}
-        <VariableGaugeRail samples={runMeta?.variableSamples} />
+        <VariableGaugeRail
+          onSelectVariable={(variableId) => focusAndOpenPortal(`variable:${variableId}`)}
+          samples={runMeta?.variableSamples}
+          tick={variableTick}
+        />
       </header>
 
       <div className="replay-grid">
@@ -187,7 +199,13 @@ export function RunReplayShell() {
       </div>
 
       {openPortals.map((ref, index) => (
-        <StorylinePortal elementRef={ref} key={ref} stackIndex={index} />
+        <StorylinePortal
+          elementRef={ref}
+          key={ref}
+          stackIndex={index}
+          variableSamples={runMeta?.variableSamples}
+          variableTick={variableTick}
+        />
       ))}
 
       {runMeta && provenancePanel.open ? <ProvenancePanel meta={runMeta} onClose={provenancePanel.close} /> : null}

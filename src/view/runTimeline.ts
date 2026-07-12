@@ -90,6 +90,7 @@ const buildElements = (params: {
   membranes: readonly RunTimelineMembrane[];
   streams: readonly CausalStreamSource[];
   mnemeByBank: ReadonlyMap<string, readonly RawMnemeEvent[]>;
+  records: readonly RawRecord[];
 }): RunTimelineElement[] => {
   const elements = new Map<ElementRef, RunTimelineElement>();
 
@@ -118,6 +119,19 @@ const buildElements = (params: {
   for (const bankName of params.mnemeByBank.keys()) {
     const ref = bankRef(bankName);
     if (!elements.has(ref)) elements.set(ref, { ref, kind: "bank", label: bankName });
+  }
+
+  // Increment 4: a variable element per distinct `variable:<id>` subject
+  // that actually appears somewhere in this run's own world-authority
+  // records (`buildWorldRecord`'s `variable:<id>` subjects, joined from a
+  // `rule.fired`/`world.message`/`world.act` event's own `payload.variables`
+  // or `payload.target`) — derived purely from what this run's own records
+  // name, never from a separate schema/telemetry read.
+  for (const record of params.records) {
+    for (const subject of record.subjects) {
+      if (!subject.startsWith("variable:") || elements.has(subject)) continue;
+      elements.set(subject, { ref: subject, kind: "variable", label: subject.slice("variable:".length) });
+    }
   }
 
   return [...elements.values()];
@@ -220,7 +234,7 @@ export const buildRunTimeline = async (runDir: string): Promise<RunTimeline> => 
     payload: record.payload,
   }));
 
-  const elements = buildElements({ rooms, membranes, streams, mnemeByBank });
+  const elements = buildElements({ rooms, membranes, streams, mnemeByBank, records });
 
   return { version: "simfile.run-timeline.v1", runId: manifest.run_id, events, elements, membranes };
 };

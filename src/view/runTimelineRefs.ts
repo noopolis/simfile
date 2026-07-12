@@ -14,6 +14,7 @@ import type { ElementRef } from "./runTimelineTypes.js";
 export const agentRef = (id: string): ElementRef => `agent:${id}`;
 export const roomRef = (network: string, room: string): ElementRef => `room:${network}:${room}`;
 export const bankRef = (bank: string): ElementRef => `bank:${bank}`;
+export const variableRef = (id: string): ElementRef => `variable:${id}`;
 
 /** Inverse of `roomRef`: splits a `room:<network>:<room>` ref back into its parts. `undefined` for anything else. */
 export const parseRoomRef = (ref: ElementRef): { networkId: string; roomId: string } | undefined => {

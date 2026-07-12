@@ -138,7 +138,8 @@ const runRule = (
     rule: rule.id,
     tick,
     sim_time: simTime,
-    phase
+    phase,
+    ...(rule.variableIds.length > 0 ? { variables: [...rule.variableIds] } : {})
   }, [clockSyncEventId]);
   emitTickEvent(fired);
   candidates.push({ kind: fired.kind, actor: fired.actor, target: fired.target, scope: fired.scope });
@@ -156,6 +157,7 @@ const runRule = (
     ranges,
     nextVariables,
     [fired.event_id],
+    rule.variableIds,
     emitTickEvent
   );
 };

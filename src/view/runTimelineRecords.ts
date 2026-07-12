@@ -2,7 +2,7 @@ import type { CausalEvent } from "@noopolis/stele";
 
 import type { RawMnemeEvent, RawTranscriptMessage } from "./runViewModelTypes.js";
 import type { ElementRef, TimelineViewClass } from "./runTimelineTypes.js";
-import { agentIdFromStreamId, agentRef, bankRef, isDefined, messageText, networkIdFromStreamId, roomRef, stringField } from "./runTimelineRefs.js";
+import { agentIdFromStreamId, agentRef, bankRef, isDefined, messageText, networkIdFromStreamId, roomRef, stringField, variableRef } from "./runTimelineRefs.js";
 
 /**
  * Per-authority (`moltnet`/`daimon`/`mneme`/`world`/mneme-bank-log) raw
@@ -177,6 +177,24 @@ const worldTargetRef = (payload: Record<string, unknown> | undefined): ElementRe
 };
 
 /**
+ * Increment 4's variable storyline join: the `variables: string[]` payload
+ * field `src/runtime/step-tick.ts`'s `runRule` (and `rule-actions.ts`'s
+ * `emitRuleActionEvents`) stamps onto a `rule.fired` event and every
+ * world-effect event it emits, whenever that rule's own `when:` condition
+ * references at least one variable (`conditionVariableIds`). Read straight
+ * off the event's own payload — never invented — and turned into
+ * `variable:<id>` subjects so the variable's storyline
+ * (`eventsForElement(timeline, "variable:<id>")`) includes the rule firing
+ * and the message/dm/wake it caused. Absent on a `clock.sync` (every tick,
+ * not this rule's own event) and on any rule with no variable condition.
+ */
+const variableRefsFromPayload = (payload: Record<string, unknown> | undefined): ElementRef[] => {
+  const raw = payload?.variables;
+  if (!Array.isArray(raw)) return [];
+  return raw.filter((id): id is string => typeof id === "string").map(variableRef);
+};
+
+/**
  * World-authority records (`raw/world/causal.jsonl`, increment 3): the
  * mechanical clock/marker/message/wake stream a world-driven run emits
  * alongside the agents' own moltnet/daimon/mneme streams.
@@ -190,38 +208,55 @@ const worldTargetRef = (payload: Record<string, unknown> | undefined): ElementRe
  * - `world.message`/`world.dm` are attributed to the room/agent the action
  *   targeted, with `text` joined from the event's own `content` field (the
  *   same text moltnet re-delivers as the echo message this dedups against).
+ * - `world.act` is attributed directly to the fed variable it wrote
+ *   (`payload.target` IS the variable id for this event type, unlike every
+ *   other world event kind where `target` is a room/agent ref).
  * - `wake.recommended` and any other world event type (`rule.fired`, ...)
  *   fall back to the event's own `target` ref, or the run's single room
  *   when `target` doesn't resolve to one.
+ * - Every branch additionally folds in `variable:<id>` subjects from the
+ *   event's own `payload.variables` (`variableRefsFromPayload`) when
+ *   present — increment 4's variable storyline join.
  */
 const buildWorldRecord = (event: CausalEvent, base: Omit<RawRecord, "subjects" | "actor" | "text">, ctx: JoinContext): RawRecord => {
   const payload = event.payload as Record<string, unknown> | undefined;
   const targetRef = worldTargetRef(payload);
+  const variableSubjects = variableRefsFromPayload(payload);
+  const withVariableSubjects = (record: RawRecord): RawRecord =>
+    variableSubjects.length === 0 ? record : { ...record, subjects: [...new Set([...record.subjects, ...variableSubjects])] };
 
   if (event.type === "clock.sync") {
-    return { ...base, subjects: [globalClockRef] };
+    return withVariableSubjects({ ...base, subjects: [globalClockRef] });
   }
 
   if (event.type === "marker.seen") {
     const sourceEventId = stringField(payload, "source_event_id");
     const sourceMessage = sourceEventId ? ctx.messagesById.get(sourceEventId) : undefined;
     const authorId = sourceMessage?.from.id;
-    return {
+    return withVariableSubjects({
       ...base,
       actor: authorId,
       subjects: [ctx.room ?? targetRef, authorId ? agentRef(authorId) : undefined].filter(isDefined),
-    };
+    });
   }
 
   if (event.type === "world.message" || event.type === "world.dm") {
-    return {
+    return withVariableSubjects({
       ...base,
       subjects: [ctx.room ?? targetRef].filter(isDefined),
       text: stringField(payload, "content"),
-    };
+    });
   }
 
-  return { ...base, subjects: [targetRef ?? ctx.room].filter(isDefined) };
+  if (event.type === "world.act") {
+    const fedVariableId = stringField(payload, "target");
+    return withVariableSubjects({
+      ...base,
+      subjects: [fedVariableId ? variableRef(fedVariableId) : (targetRef ?? ctx.room)].filter(isDefined),
+    });
+  }
+
+  return withVariableSubjects({ ...base, subjects: [targetRef ?? ctx.room].filter(isDefined) });
 };
 
 /** The one dispatcher every `raw/<authority>/causal.jsonl` record goes through. */

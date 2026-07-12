@@ -1,0 +1,35 @@
+{
+  "deployment": "simfile-office-pressure-v0-cap",
+  "exported_at": "2026-07-12T17:31:19.250Z",
+  "files": [
+    {
+      "bytes": 5606,
+      "path": "raw/daimon/eleanor/causal.jsonl",
+      "sha256": "d7deeed4cb53a2b41419bc562c9f36f12117a7e7f34ed859d4ffb870657d0fcd",
+      "source": {
+        "kind": "volume",
+        "ref": "spawnfile-org-agent-eleanor-daimon-telemetry-run-e5f7fdf5cb7e43d19772-65c3810b:/causal.jsonl"
+      }
+    },
+    {
+      "bytes": 1808,
+      "path": "raw/daimon/sam/causal.jsonl",
+      "sha256": "5c86dbb87e2a04609928f2339db57b019e2e822b226e4f04f0045b660cfffdea",
+      "source": {
+        "kind": "volume",
+        "ref": "spawnfile-org-agent-sam-daimon-telemetry-run-e5f7fdf5cb7e43d19772-e105c58d:/causal.jsonl"
+      }
+    },
+    {
+      "bytes": 3756,
+      "path": "raw/moltnet/causal.jsonl",
+      "sha256": "d255878a60083ca718fd4fe96c32a83213c047a39f43bec47f605d87679afcf0",
+      "source": {
+        "kind": "volume",
+        "ref": "spawnfile-org-moltnet-office-lab-causal-run-e5f7fdf5cb7e43d19772-29c25175:/causal.jsonl"
+      }
+    }
+  ],
+  "run_id": "run-e5f7fdf5cb7e43d1977210dacec28e84",
+  "version": "spawnfile.export-index.v1"
+}

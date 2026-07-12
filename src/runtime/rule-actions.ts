@@ -75,6 +75,10 @@ const worldActPayload = (
   ...extra
 });
 
+/** `{ variables: variableIds }` when non-empty, else `{}` — spread into a payload's `extra` so a rule with no variable condition emits byte-identical payloads to before this field existed (never a fabricated empty array). */
+const variablesExtra = (variableIds: readonly string[]): { variables?: string[] } =>
+  variableIds.length > 0 ? { variables: [...variableIds] } : {};
+
 const emitRuleActionEvents = (
   runId: string,
   seq: number,
@@ -86,6 +90,7 @@ const emitRuleActionEvents = (
   templateVariables: Readonly<Record<string, number>>,
   precision: number,
   causeEventIds: readonly string[],
+  variableIds: readonly string[],
   emit: (event: RuntimeTraceEvent) => void
 ): number => {
   if (action.action === "variable:set" || action.action === "variable:delta") {
@@ -96,7 +101,7 @@ const emitRuleActionEvents = (
     const content = replaceTemplateValues(action.content, templateVariables, precision);
     emit(createActionEvent(runId, seq, "world.message", simTime, WORLD_ACTOR, action.to, action.to, worldActPayload(
       { simTime, actor: WORLD_ACTOR, target: action.to, scope: action.to, seq, runId, action: action.action, value: content },
-      { rule: ruleId, content, tick, phase }
+      { rule: ruleId, content, tick, phase, ...variablesExtra(variableIds) }
     ), causeEventIds));
     return seq + 1;
   }
@@ -105,14 +110,14 @@ const emitRuleActionEvents = (
     const content = replaceTemplateValues(action.content, templateVariables, precision);
     emit(createActionEvent(runId, seq, "world.dm", simTime, WORLD_ACTOR, action.to, action.to, worldActPayload(
       { simTime, actor: WORLD_ACTOR, target: action.to, scope: action.to, seq, runId, action: action.action, value: content },
-      { rule: ruleId, content, tick, phase }
+      { rule: ruleId, content, tick, phase, ...variablesExtra(variableIds) }
     ), causeEventIds));
     return seq + 1;
   }
 
   emit(createActionEvent(runId, seq, "wake.recommended", simTime, ruleId, action.to, action.to, worldActPayload(
     { simTime, actor: ruleId, target: action.to, scope: action.to, seq, runId, action: action.action, value: null },
-    { reason: ruleId, target: action.to, tick, phase }
+    { reason: ruleId, target: action.to, tick, phase, ...variablesExtra(variableIds) }
   ), causeEventIds));
   return seq + 1;
 };
@@ -130,6 +135,7 @@ export const runRuleActions = (
   ranges: Map<string, RangeSpec>,
   nextVariables: Record<string, number>,
   causeEventIds: readonly string[],
+  variableIds: readonly string[],
   emit: (event: RuntimeTraceEvent) => void
 ): number => {
   let nextSeq = seq;
@@ -163,6 +169,7 @@ export const runRuleActions = (
       templateVariables,
       precision,
       causeEventIds,
+      variableIds,
       emit
     );
   }

@@ -38,7 +38,8 @@ a bespoke page.
   `hasVariableSamples` — reads `world/telemetry.json` when present and
   gates whether its variable samples are real (never a fabricated empty
   gauge when every sample's `variables` map is empty, as in
-  `office-secret-v0-golden`).
+  `office-secret-v0-golden`; a real ramp lives in
+  `fixtures/observe/office-pressure-v0-golden/`, increment 4).
 - `runTimelineTypes.ts` / `runTimelineRefs.ts` / `runTimelineRecords.ts` /
   `runTimeline.ts` — `buildRunTimeline(runDir)` merges every `causal.jsonl`
   stream (`../observe/causalStreams.ts`) and every mneme bank's
@@ -64,6 +65,23 @@ a bespoke page.
   `web/src/viewer/ReplayPanes.tsx`'s `ChatPane` use to suppress a
   `world.message`'s moltnet twin and badge the survivor "world". Split
   three ways so no one file passes 400 lines (`AGENTS.md`).
+  **Variable storyline (increment 4):** every world-authority branch
+  additionally folds `variable:<id>` refs (`runTimelineRefs.ts`'s
+  `variableRef`) into its `subjects`, read from the event's own
+  `payload.variables` (`variableRefsFromPayload`) — the array
+  `src/runtime/step-tick.ts`/`rule-actions.ts` stamp onto a `rule.fired`
+  event and every world-effect event it emits, whenever that rule's `when:`
+  condition references a variable. This is how a `rule.fired`/`world.message`
+  ends up on `variable:filing_pressure`'s own storyline
+  (`eventsForElement(timeline, "variable:filing_pressure")`) without this
+  file re-deriving anything from the Simfile schema itself — it only reads a
+  field the runtime already put on the event. `world.act` is attributed
+  directly to the fed variable it wrote (`payload.target` IS the variable id
+  for that one event kind). `buildRunTimeline` also enumerates a `kind:
+  "variable"` element per distinct `variable:<id>` subject actually present
+  in the run's own records (never a separate schema/telemetry read) —
+  absent entirely for a run with no world stream (`office-sim-golden`) or
+  one whose rules never reference a variable (`office-secret-v0-golden`).
   **Multi-network attribution:** `buildMoltnetRecord` names each
   `message.accepted`'s room from its OWN network stream_id + `target.room_id`
   (`roomForMoltnetMessage`), never the run's single primary room — so an

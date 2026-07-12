@@ -1,0 +1,40 @@
+{
+  "version": "simfile.observe.v1",
+  "run_id": "run-e5f7fdf5cb7e43d1977210dacec28e84",
+  "contract_versions": {
+    "causal-event.v1": "noopolis.causal-event.v1",
+    "simfile.observe.v1": "simfile.observe.v1",
+    "simfile.run-manifest.v1": "simfile.run-manifest.v1"
+  },
+  "participants": [
+    "eleanor",
+    "sam"
+  ],
+  "agent_turns": {
+    "count": 4,
+    "sequence": [
+      "eleanor",
+      "sam",
+      "eleanor",
+      "eleanor"
+    ]
+  },
+  "chains": {
+    "complete": 25,
+    "incomplete": []
+  },
+  "memory": [],
+  "failures": [],
+  "seed_spread": [
+    {
+      "channel": "doc-seeded",
+      "event_id": "doc-seed:eleanor:2026-07-12T17:31:12.469Z",
+      "fidelity": 1,
+      "agent": "eleanor"
+    }
+  ],
+  "spread_summary": {
+    "reach": 0,
+    "first_appearance": []
+  }
+}

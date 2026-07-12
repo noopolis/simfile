@@ -1,0 +1,72 @@
+simfile_version: "0.1"
+name: office-pressure-v0-world
+spawnfile: ../org/Spawnfile
+
+# Variable storyline increment (viewer capability 4): a world VARIABLE that
+# ramps over the run, driven live tick-by-tick by the world-driven composed
+# driver (`src/sims/worldDrivenOfficeSimDriver.ts`) — the same "memetics
+# increment (a)" mechanics office-secret-v0 exercises for markers, applied
+# here to a generator-driven variable + a threshold rule instead. `workday`
+# starts at the day boundary so `kickoff` fires on the very first tick, same
+# as office-secret-v0.
+clock:
+  seed: office-pressure-v0-seed
+  tick: 1m
+  phases:
+    workday: "00:00"
+    evening: "17:00"
+
+variables:
+  # Scoped to the room (not global) so the viewer's variable storyline reads
+  # as "this room's filing pressure" — the same room the negotiation and the
+  # threshold alert both land in.
+  filing_pressure:
+    scope: room:office_lab:office-room
+    initial: 0.4
+    range: 0..1
+
+generators:
+  # Ramps filing_pressure during the workday phase only. delta 0.3/tick
+  # (rather than the smaller everyday value a longer-running world might
+  # use) so the threshold below reliably crosses within this fixture's own
+  # short live window — the same handful of ticks office-secret-v0's own
+  # kickoff-to-conclusion exchange takes to run its course.
+  pressure_ramp:
+    kind: deterministic
+    variable: filing_pressure
+    when:
+      phase: workday
+    delta: 0.3
+
+rules:
+  # The KICKOFF: same shape as office-secret-v0's — absorbs the operator's
+  # seed message into the world ledger itself, fires once at workday-start,
+  # @mentions eleanor (this room only wakes on mentions) so she is the one
+  # who opens the negotiation.
+  kickoff:
+    fire: once
+    when:
+      phase: workday
+    do:
+      - action: moltnet:message
+        to: room:office_lab:office-room
+        content: "@eleanor We need to finalize the office pilot rollout with Sam: propose the pilot office and a target date for the file migration, and get Sam's agreement."
+
+  # The THRESHOLD rule this increment exists to exercise: fires exactly once,
+  # the first tick filing_pressure crosses above 0.85, and posts a room
+  # message that @mentions eleanor — a genuine wake trigger (this room only
+  # wakes on mentions), not just an FYI post, so the scripted screenplay
+  # (harness/office-engine.mjs) gets an actual extra turn in reaction to it,
+  # deterministically, rather than racing to see the message land before her
+  # already-in-flight close reply. The driver never nudges or resends
+  # anything — the reaction is the screenplay's own scripted reply to a real
+  # wake, same mechanism as every other turn in this room.
+  pressure_alert:
+    fire: once
+    when:
+      variable: filing_pressure
+      above: 0.85
+    do:
+      - action: moltnet:message
+        to: room:office_lab:office-room
+        content: "@eleanor Deadline pressure is high — prioritize the filing."
