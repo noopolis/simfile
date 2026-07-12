@@ -2,6 +2,7 @@ export * from "./clock.js";
 export * from "./condition.js";
 export * from "./expression.js";
 export * from "./run-record.js";
+export * from "./step-tick.js";
 export * from "./trace-export.js";
 export * from "./trace-run.js";
 export * from "./viewer-trace.js";

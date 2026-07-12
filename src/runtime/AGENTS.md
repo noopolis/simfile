@@ -27,14 +27,28 @@ This folder contains deterministic Simfile runtime helpers.
   shared var/tick) and mints each as a canonical `world.act` ledger event with
   `provenance: "agentic"`. Live agent tool binding is a later item — this
   module is the mechanics only.
-- `trace-run.ts` executes a bounded deterministic trace and stamps every
-  event's causal envelope (`run_id`, `emitter{system:"simfile",
-  stream_id:"world",seq}`, `principal_id:"system:simfile.world"`, `recorded_at`,
-  `cause_event_ids`) — see `src/ledger/stable.ts`. Rule-fired events cause
-  from that tick's `clock.sync` event; rule-emitted world-effect events cause
-  from their rule's `rule.fired` event. Queued world.acts (`RuntimeOptions.
-  worldActs`) are applied at the start of each tick, after that tick's
-  `clock.sync` and before generators/derived/rules, via `world-act.ts`.
+- `step-tick.ts` is the per-tick engine extracted out of `trace-run.ts`
+  (memetics increment (a)): `stepSimfileTick(tick, ctx)` resolves the clock,
+  applies that tick's queued world.acts, runs generators, recomputes derived
+  variables, and evaluates rules — mutating `ctx.state` in place and
+  returning the tick's events + variable sample + next seq. It also owns
+  `createTraceEvent`, the one canonical-envelope constructor every
+  simfile-native trace event (batch or live) is stamped through. This is the
+  seam a live driver calls once per wall-clock tick
+  (`../sims/worldTickLoop.ts`) instead of only ever inside one big batch
+  loop; the batch loop below is now a thin caller of it.
+- `trace-run.ts` loops `stepSimfileTick` once per tick over the whole bounded
+  run, then does the one thing a live per-tick call can't: a post-hoc
+  `scanMarkers` pass over the whole run's events, minting `marker.seen`
+  events causing from the marker hit's own source event. Every event's
+  causal envelope (`run_id`, `emitter{system:"simfile", stream_id:"world",
+  seq}`, `principal_id:"system:simfile.world"`, `recorded_at`,
+  `cause_event_ids`) is stamped by `step-tick.ts`'s `createTraceEvent` — see
+  `src/ledger/stable.ts`. Rule-fired events cause from that tick's
+  `clock.sync` event; rule-emitted world-effect events cause from their
+  rule's `rule.fired` event. Queued world.acts (`RuntimeOptions.worldActs`)
+  are applied at the start of each tick, after that tick's `clock.sync` and
+  before generators/derived/rules, via `world-act.ts`.
 - `causal-fixture.ts` maps a runtime trace event onto the
   `noopolis.causal-event.v1` wire shape (root `specs/causal-event.v1.schema.json`
   — referenced, never imported). This is B92's real conformance target.

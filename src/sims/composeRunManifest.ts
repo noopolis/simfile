@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import {
   RUN_MANIFEST_VERSION,
   type RunManifestArtifactEntry,
+  type SeedDeclaration,
   type SimfileRunManifest
 } from "../observe/manifest.js";
 import { OBSERVE_REPORT_VERSION } from "../observe/report.js";
@@ -47,6 +48,10 @@ export interface ComposeRunManifestInput {
   /** Artifacts this driver itself writes after export (e.g.
    * `raw/moltnet/transcript.json`), each already hashed by the caller. */
   extraArtifacts?: readonly RunManifestArtifactEntry[];
+  /** Decision-13 ground truth for a doc-seeded memetics secret (memetics
+   * increment (a) — the world-driven driver). Omitted for a plain office-sim
+   * run, which has no seeded secret. */
+  seedDeclaration?: SeedDeclaration;
 }
 
 /**
@@ -71,6 +76,7 @@ export const composeRunManifest = (input: ComposeRunManifestInput): SimfileRunMa
     ...(input.fingerprint ? { spawnfile: { fingerprint: input.fingerprint } } : {}),
     artifacts,
     engine: input.engine,
+    ...(input.seedDeclaration ? { seed_declaration: input.seedDeclaration } : {}),
     // `SimfileRunManifest.world` is a free-form `Record<string, unknown>`
     // (genre-neutral schema); this composer's own `ComposeRunManifestWorld`
     // is the concrete shape it always writes.

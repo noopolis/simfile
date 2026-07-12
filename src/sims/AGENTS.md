@@ -8,6 +8,14 @@ the assembled run directory to `../observe` for reconciliation — this is the
 path that retires the bespoke `src/e2e/officeSim.ts`-style harness in
 Spawnfile once it is fully proven.
 
+Memetics increment (a) adds a second driver alongside the original: instead
+of one operator-authored seed message, the Simfile WORLD itself runs as a
+live tick loop between "org ready" and "concluded" — see
+`worldDrivenOfficeSimDriver.ts` below. Both drivers share this folder's
+charter (seed/kickoff-once semantics, poll-read-only, CLI-only Spawnfile
+access); the original `composedOfficeSimDriver.ts` is unchanged and still the
+right choice for a plain (non-memetics) composed office-sim run.
+
 ## Files
 
 - `spawnfileReceipts.ts` — local zod schemas + parsers for the three
@@ -46,15 +54,62 @@ Spawnfile once it is fully proven.
 - `index.ts` — barrel (not re-exported from the package root barrel,
   mirroring `../observe`: this is a dev/ops driver, not public library API).
 
+### Memetics increment (a): the world-driven variant
+
+- `worldTickIngest.ts` — `ingestNewRoomMessages` (the tick's ONE read: GET the
+  room, return only messages not yet in the cursor — the cursor mutation is
+  the whole determinism contract) and `moltnetMessageToLedgerEvent` (lowers a
+  room message to the `LedgerEvent` shape `scanMarkers` expects).
+- `worldLedgerWriter.ts` — `createWorldLedgerWriter`: appends every tick's
+  minted events to `raw/world/causal.jsonl` (via `../runtime/causal-fixture.ts`'s
+  wire mapping — the same one B92's conformance harness validates), grows
+  `world/telemetry.json` with each tick's variable sample, and appends the
+  tick's ingested-message-id list to `world/ingested-messages.jsonl`.
+- `worldSeedLint.ts` — `lintWorldRuleContentAgainstTokenSet` /
+  `assertWorldRuleContentClean` (fails the run if any world rule's message
+  content would itself contain a memetics seed token — the world must never
+  speak the secret it is trying to observe spreading) and
+  `buildSeedDeclarationFromMemoryDoc` (derives the manifest's
+  `seed_declaration` — content hash, token set, matcher policy, seed agent,
+  seed epoch, `entry_channel: "doc-seeded"` — from the seed agent's own
+  `workspace.docs.memory` file, never hand-typed twice).
+- `worldTickLoop.ts` — `runLiveTickLoop`: one iteration per wall-clock
+  `clock.tick`. Ingest -> `stepSimfileTick` -> scan the tick's own newly
+  ingested messages for marker tokens (never the whole transcript, never the
+  world's own minted events) -> deliver any rule-emitted
+  `world.message`/`world.dm`/`wake.recommended` -> append to the world
+  ledger -> decide stop/continue with the same pure
+  `evaluateExchangeCompletion` the batch driver uses. A `marker.seen` hit's
+  `cause_event_ids` is that tick's own `clock.sync` ONLY — the Moltnet
+  message id that carried the token rides along as `source_event_id` in
+  payload, a display/measurement join, never a synthesized causal parent —
+  so stele reconciliation over the world stream stays complete.
+- `worldDrivenOfficeSimDriver.ts` — `runWorldDrivenOfficeSim`: `up` ->
+  poll-read-only -> `runLiveTickLoop` (replaces the old driver's "seed once,
+  then wait" step entirely — the room's opening message is the world's own
+  `kickoff` rule now, not a driver-authored string) -> `artifacts export` ->
+  fetch transcript -> `down` -> compose `manifest.json` (with
+  `seed_declaration`) LAST.
+
 ## Rules
 
 - Seed-once + poll-read-only, always. Every retry loop in this folder is a
-  read (`pollUntilReady`, `waitForConversationExchange`); the only write is
-  the single `sendWorldEventToMoltnet` seed call in
-  `composedOfficeSimDriver.ts`. If a real run needs a second seed/mention/nudge
-  to complete, that is a platform gap in the layer that owns it (Phase B) —
-  file it, never code around it here by resending.
+  read (`pollUntilReady`, `waitForConversationExchange`); the only write in
+  `composedOfficeSimDriver.ts` is its single `sendWorldEventToMoltnet` seed
+  call. If a real run needs a second seed/mention/nudge to complete, that is
+  a platform gap in the layer that owns it (Phase B) — file it, never code
+  around it here by resending.
 - No Docker, no runtime auth, no Spawnfile TS imports. Every Spawnfile
   interaction goes through `spawnfileCli.ts`'s three shelled subcommands and
   their versioned receipts.
 - Keep files under 400 lines; split further before that limit.
+- **Charter amendment (memetics increment (a)):** the driver performs no
+  ad-hoc writes; every write is a world-ledger-recorded kernel action
+  delivered through the world-participant, capped at nudge; wake coalescing
+  (supersede-never-queue) is mechanics; coaxing (re-sending because an agent
+  didn't reply) remains a Phase-B defect to file, not code. This extends the
+  seed-once rule above to the live world-driven loop: `worldTickLoop.ts`
+  never re-sends a world event and never re-polls with an altered request
+  hoping for a different answer — every event it delivers came from stepping
+  the world exactly once, and every stop decision is the same read-only
+  `evaluateExchangeCompletion` the batch driver already uses.

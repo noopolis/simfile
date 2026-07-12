@@ -5,3 +5,8 @@ export * from "./moltnetRoomClient.js";
 export * from "./poll.js";
 export * from "./spawnfileCli.js";
 export * from "./spawnfileReceipts.js";
+export * from "./worldDrivenOfficeSimDriver.js";
+export * from "./worldLedgerWriter.js";
+export * from "./worldSeedLint.js";
+export * from "./worldTickIngest.js";
+export * from "./worldTickLoop.js";
