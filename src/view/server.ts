@@ -244,7 +244,7 @@ const loadRunReplay = async (config: ViewerServerConfig): Promise<RunReplayBundl
   // interior council room — for a recursive-psyche run that is the parent
   // floor (`commons`) alone; for a flat run (no membranes) it is every room
   // the manifest declares, unchanged from before this parameterization
-  // (`runWorldTrace.ts`'s `rooms` param, `VIEW_DESIGN.md` rule 5).
+  // (`runWorldTrace.ts`'s `rooms` param, `docs/VIEW_DESIGN.md` rule 5).
   const interiorRoomRefs = new Set(timeline.membranes?.flatMap((membrane) => membrane.interiorRooms) ?? []);
   const outerRooms = worldRooms.filter((room) => !interiorRoomRefs.has(room.ref));
   const world = buildRunWorldTrace({

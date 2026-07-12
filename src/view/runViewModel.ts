@@ -22,7 +22,7 @@ const stringField = (world: Record<string, unknown>, key: string): string | unde
  * moltnet transcript for message text, and reads each mneme bank's
  * `events.jsonl` for the per-agent memory portals. Pure orchestration —
  * every field this returns traces back to one of those three
- * already-audited sources (`observe/AGENTS.md`, `VIEW_DESIGN.md` rule 2:
+ * already-audited sources (`observe/AGENTS.md`, `docs/VIEW_DESIGN.md` rule 2:
  * observer tier only, no invented state). `server.ts`'s `/api/run-meta`
  * serves this model's `verdict`/`provenance` fields to the React shell
  * (`web/src/viewer/RunMetaPanels.tsx`); `thread`/`minds` are computed too

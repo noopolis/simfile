@@ -143,7 +143,7 @@ const buildTrace = (
  * Builds the conversation timeline: the seed message (transcript[0], no
  * trace) followed by every reply, each carrying the causal trace
  * `message -> wake -> turn -> reply` when the reconciled daimon stream for
- * that reply's author resolves one (real ids only — VIEW_DESIGN.md rule 3).
+ * that reply's author resolves one (real ids only — docs/VIEW_DESIGN.md rule 3).
  */
 export const computeThread = (
   transcript: RawTranscript,

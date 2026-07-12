@@ -16,7 +16,7 @@ const extractSystemViewTopLevelKeys = (systemsView: string): string[] => {
 
   const startIndex = systemsView.indexOf(startMarker);
   const endIndex = systemsView.indexOf(endMarker, startIndex);
-  assert.ok(startIndex >= 0 && endIndex > startIndex, "SYSTEMS_VIEW.md section markers were not found");
+  assert.ok(startIndex >= 0 && endIndex > startIndex, "docs/SYSTEMS_VIEW.md section markers were not found");
 
   const section = systemsView.slice(startIndex + startMarker.length, endIndex);
   const keys = new Set<string>();
@@ -53,9 +53,9 @@ describe("coverage matrix grammar", () => {
   });
 });
 
-describe("coverage matrix parity with SYSTEMS_VIEW.md", () => {
+describe("coverage matrix parity with docs/SYSTEMS_VIEW.md", () => {
   it("covers every authored top-level key by exact set parity", async () => {
-    const systemsView = await readFile(new URL("../../SYSTEMS_VIEW.md", import.meta.url), "utf8");
+    const systemsView = await readFile(new URL("../../docs/SYSTEMS_VIEW.md", import.meta.url), "utf8");
 
     assert.deepEqual(
       [...new Set(
@@ -68,7 +68,7 @@ describe("coverage matrix parity with SYSTEMS_VIEW.md", () => {
   });
 
   it("keeps the checked-in top-level key constant from drifting off the document", async () => {
-    const systemsView = await readFile(new URL("../../SYSTEMS_VIEW.md", import.meta.url), "utf8");
+    const systemsView = await readFile(new URL("../../docs/SYSTEMS_VIEW.md", import.meta.url), "utf8");
 
     assert.deepEqual(
       [...systemViewTopLevelKeys].sort(),
@@ -104,10 +104,10 @@ describe("coverage matrix planned statuses", () => {
   });
 });
 
-describe("generated COVERAGE.md", () => {
+describe("generated docs/COVERAGE.md", () => {
   it("matches the manifest renderer byte-for-byte", async () => {
     const rendered = renderCoverageMarkdown(matrix);
-    const checkedIn = await readFile(new URL("../../COVERAGE.md", import.meta.url), "utf8");
+    const checkedIn = await readFile(new URL("../../docs/COVERAGE.md", import.meta.url), "utf8");
 
     assert.equal(checkedIn, rendered);
   });

@@ -14,5 +14,5 @@ This folder contains the public Simfile website and documentation.
 
 - Keep this site separate from the package viewer in `../web/`.
 - The site explains Simfile and links to the live viewer; it does not implement runtime UI.
-- Use short, direct docs. Avoid inventing schema keys that are not in `../DESIGN.md`.
+- Use short, direct docs. Avoid inventing schema keys that are not in `../docs/DESIGN.md`.
 - Build with `npm run build` before considering changes complete.

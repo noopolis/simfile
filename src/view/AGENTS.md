@@ -173,7 +173,7 @@ to keep the standalone page in the tree.
   merged records, and the raw run-dir artifacts, never a privileged API,
   and never stitches an incomplete chain or invents a cause.
 - Every field `runTimeline.ts`/`runWorldTrace.ts` emits must trace to a real
-  record id (`VIEW_DESIGN.md` rule 3) — no derived/invented text or causes,
+  record id (`docs/VIEW_DESIGN.md` rule 3) — no derived/invented text or causes,
   only real event ids, message ids, and memory ids already present in the
   raw data.
 - Named exports only.

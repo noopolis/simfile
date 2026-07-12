@@ -5,7 +5,7 @@ import type { SeedSpreadEntry, SpreadSummary } from "../observe/report.js";
 
 /**
  * `RunViewModel` — the data-driven model the run-reader page renders
- * (`VIEW_DESIGN.md` rule 3: every rendered element traces to a record id).
+ * (`docs/VIEW_DESIGN.md` rule 3: every rendered element traces to a record id).
  * Built once per `simfile view <run-dir>` invocation by
  * `buildRunViewModel` (`runViewModel.ts`) from a sealed compose-and-observe
  * run directory: the reconciled `simfile.observe.v1` report, the raw
@@ -87,7 +87,7 @@ export interface RunViewModel {
   createdAt: string;
   engine?: string;
   /**
-   * The honesty-critical disclosure (VIEW_DESIGN.md / the run-replay badge):
+   * The honesty-critical disclosure (docs/VIEW_DESIGN.md / the run-replay badge):
    * whether this run's dialogue came from a deterministic scripted
    * screenplay or a real engine, derived by `engineProvenance.ts` from
    * `spawnfile/up-receipt.json`'s per-agent `engines[]` when present, else

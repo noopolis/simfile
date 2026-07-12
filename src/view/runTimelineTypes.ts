@@ -2,7 +2,7 @@ import type { RunWorldTrace } from "./runWorldTrace.js";
 
 /**
  * `RunTimeline` — the single merged, dense, causally-repaired event
- * timeline `simfile view <run-dir>`'s run-replay mode scrubs (`VIEW_DESIGN.md`
+ * timeline `simfile view <run-dir>`'s run-replay mode scrubs (`docs/VIEW_DESIGN.md`
  * rule 7: time is one axis everywhere). Built once per run by
  * `buildRunTimeline` (`runTimeline.ts`) from every `causal.jsonl` stream
  * (`../observe/causalStreams.ts`'s `collectCausalStreams`) plus every mneme

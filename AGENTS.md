@@ -8,8 +8,9 @@ of the Simfile v0.1 world mechanics package.
 ```text
 .
 ├── README.md              # Package overview and quickstart
-├── DESIGN.md              # Current product and architecture design
-├── VIEW_DESIGN.md         # Viewer (`simfile view`) design: cosmos, portals, lenses
+├── docs/                  # Design and research docs: DESIGN, VIEW_DESIGN,
+│                          # VIEW_STYLEGUIDE, SITE_DESIGN, SYSTEMS_VIEW,
+│                          # RESEARCH, COVERAGE
 ├── package.json           # npm package metadata and CLI scripts
 ├── tsconfig.json          # Typecheck config
 ├── tsconfig.build.json    # Build-only emit config
@@ -18,7 +19,7 @@ of the Simfile v0.1 world mechanics package.
 
 ## Rules
 
-- Keep Simfile aligned with `DESIGN.md`.
+- Keep Simfile aligned with `docs/DESIGN.md`.
 - Keep the schema genre-neutral. Domain concepts belong in fixtures, not keys.
 - Named exports only.
 - Add nested `AGENTS.md` files for implementation folders and compatibility `CLAUDE.md` symlinks pointing to them.

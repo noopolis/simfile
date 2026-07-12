@@ -14,7 +14,7 @@ import { buildBankLogRecord, buildCausalRecord, roomForMoltnetMessage, type Join
 /**
  * `buildRunTimeline` merges every causal record in a sealed run directory
  * into one deterministic, scrubbable `RunTimeline` (see `runTimelineTypes.ts`
- * for the shape and `VIEW_DESIGN.md` rule 7). This is the only file that
+ * for the shape and `docs/VIEW_DESIGN.md` rule 7). This is the only file that
  * assigns the scrub key `t`; everything downstream (the world-trace adapter,
  * the web store, the chat/minds/portal views) treats `t` as ground truth.
  *

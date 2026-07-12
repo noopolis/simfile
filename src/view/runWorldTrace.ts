@@ -5,7 +5,7 @@ import { parseRoomRef, stripRefPrefix } from "./runTimelineRefs.js";
  * Adapts a run-replay `RunTimeline` into the same `viewer.trace.v1` shape
  * `web/src/viewer/worldModel.ts`'s `buildViewerWorld` already consumes, so
  * the existing `AsciiMap`/`worldModel`/`renderSettings` render this run's
- * map unchanged (`VIEW_DESIGN.md`'s two-layer rule). This type is a
+ * map unchanged (`docs/VIEW_DESIGN.md`'s two-layer rule). This type is a
  * structural mirror of `web/src/viewer/types.ts`'s `ViewerContractTrace` —
  * a deliberate duplicate, not a cross-package import, matching this
  * package's existing src/web boundary: the contract is the JSON shape on
@@ -97,7 +97,7 @@ export interface BuildRunWorldTraceParams {
   world?: { networkId?: string; roomId?: string; members?: string[] };
   /**
    * Explicit room list — the parameterization the recursive membrane portal
-   * needs (`VIEW_DESIGN.md` rule 5): the outer map's rooms (every
+   * needs (`docs/VIEW_DESIGN.md` rule 5): the outer map's rooms (every
    * `manifest.world` room that is NOT some membrane's interior room) and a
    * membrane's own `interiorRooms` both go through this same param, laid out
    * side by side (`ROOM_SPACING` apart) rather than stacked at one origin.
@@ -171,7 +171,7 @@ export const buildRunWorldTrace = ({ runId, runName, world, rooms: roomInputs, t
 /**
  * Builds a `viewer.trace.v1` mini-map for every membrane, scoped to exactly
  * its own `interiorRooms` — the recursive membrane portal's interior map
- * (`VIEW_DESIGN.md` rule 5, "descend into a mind"). Called once by
+ * (`docs/VIEW_DESIGN.md` rule 5, "descend into a mind"). Called once by
  * `server.ts` after the full `RunTimeline` (interior events included)
  * exists; membranes with no parseable interior room ref pass through
  * unchanged rather than throwing (defensive — every membrane

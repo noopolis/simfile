@@ -5,7 +5,7 @@ const GENERATED_HEADER = [
   "",
   "> Generated from `src/coverage/matrix.ts`. Run `npm run coverage:render` after changing the manifest.",
   "",
-  "This matrix uses the seven audit buckets requested by B40. In `DESIGN.md`, telemetry and markers are configuration, probes are a primitive, and entity lifecycle is the dormant seventh design primitive.",
+  "This matrix uses the seven audit buckets requested by B40. In `docs/DESIGN.md`, telemetry and markers are configuration, probes are a primitive, and entity lifecycle is the dormant seventh design primitive.",
   ""
 ].join("\n");
 
