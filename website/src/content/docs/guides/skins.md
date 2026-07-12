@@ -1,37 +1,17 @@
 ---
-title: Skins
-description: How Simfile worlds become maps without changing the schema.
+title: Presentation Packs
+description: A short appendix on viewer-owned presentation that never changes Simfile semantics.
 ---
 
-Skins are presentation packs for the viewer. They can render the same run as a dense ASCII console, office floorplan, city, factory, abstract organization map, or later a non-flat world surface.
+Presentation belongs to the viewer, not the Simfile schema. The same run can be arranged as a compact glyph map, office floor, abstract organization map, or another visual surface without changing one world fact.
 
-Skins never add simulation semantics. They map recorded scopes and entities to visual anchors.
+The current viewer ships a small built-in skin list and deterministic auto-layout. Rooms, agents, variables, and membranes are keyed by stable artifact IDs; no schema field sets colors, models, camera positions, or embodiment.
 
-## First Skin
+This boundary protects two properties:
 
-The default replay console is viewer-owned and tile-first:
+- a run with no presentation pack still renders;
+- changing presentation cannot change the clock, rules, causal record, observation result, or replay.
 
-- rooms become wall and floor glyph regions,
-- corridors become routed tile paths,
-- agents become glyph occupants,
-- variables, markers, and probes become colored overlays,
-- panels and legends stay outside the Simfile schema.
+The renderer may derive layout and synthesize visual anchors—for example, a `team:<id>` node next to its representative when a mind membrane is present. Those are labeled presentation choices, not ledger events.
 
-The tile world is built from run artifacts first, then painted into the flat console. That keeps the data model portable if the viewer later projects the same world onto another surface.
-
-## Possible Viewer Tooling
-
-This is not part of the v0.1 CLI. A later viewer-owned workflow could look like:
-
-```bash
-simfile skin init office-floor
-simfile skin validate skins/office-floor
-simfile skin preview skins/office-floor --run runs/latest
-simfile skin pack skins/office-floor
-```
-
-Those commands would validate presentation assets and references only. They would not add Simfile keys or change the simulation schema.
-
-## Asset Sources
-
-Visual assets should be explicit, licensed, and replaceable. ASCII/glyph maps, floorplan drawings, low-poly packs, and generated bitmap assets can all be valid skins as long as the source and license are tracked.
+There is no `simfile skin` command and no public skin manifest flag in v0.1. Treat custom presentation packs as an appendix and future viewer surface, not as world-authoring keys or the headline capability. The shipped instrument is described in the [viewer guide](/guides/viewer/).

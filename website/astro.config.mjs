@@ -30,10 +30,11 @@ export default defineConfig({
         {
           label: 'Guides',
           items: [
+            { label: 'Run-Replay Viewer', slug: 'guides/viewer' },
             { label: 'Memetics Experiment', slug: 'guides/memetics' },
-            { label: 'Live Viewer', slug: 'guides/live-viewer' },
-            { label: 'Skins', slug: 'guides/skins' },
+            { label: 'Observe', slug: 'guides/observe' },
             { label: 'Spawnfile Integration', slug: 'guides/spawnfile-integration' },
+            { label: 'Presentation Packs', slug: 'guides/skins' },
           ],
         },
         {
