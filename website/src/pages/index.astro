@@ -13,7 +13,7 @@ import '../styles/landing.css';
     />
     <link rel="canonical" href="https://simfile.org/" />
     <link rel="sitemap" href="/sitemap-0.xml" />
-    <meta name="theme-color" content="#0b0b0b" />
+    <meta name="theme-color" content="#0b0d10" />
     <meta name="author" content="Noopolis" />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Simfile" />
@@ -27,12 +27,6 @@ import '../styles/landing.css';
     <meta property="og:image:alt" content="The Simfile viewer showing a seeded idea reaching a second AI agent." />
     <meta property="og:locale" content="en_US" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..650&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=JetBrains+Mono:wght@400;600;800&display=swap"
-      rel="stylesheet"
-    />
   </head>
   <body>
     <header class="nav">
@@ -58,6 +52,7 @@ import '../styles/landing.css';
           </p>
 
           <aside class="result-callout" aria-label="First experiment result">
+            <div class="term-cmd-bar" aria-hidden="true"><span>signal / first-result</span><span>verified</span></div>
             <p><strong>First result</strong> — a secret seeded in one agent's private memory reached a second agent, with no scripted handoff, in 5/5 runs. Swap the seed and the replacement spreads. Leave it unseeded and it never appears.</p>
           </aside>
 
@@ -65,10 +60,14 @@ import '../styles/landing.css';
             <a class="btn" href="/quickstart/">Run your first experiment</a>
             <a class="btn secondary" href="/guides/memetics/">Inspect the experiment</a>
           </div>
-          <code class="install-chip">npm install simfile</code>
+          <div class="term-cmd-frame install-chip" aria-label="Install Simfile">
+            <div class="term-cmd-bar"><span>install</span><span>shell</span></div>
+            <pre><code><span class="prompt">$</span> npm install simfile</code></pre>
+          </div>
         </div>
 
         <figure class="evidence-plate">
+          <figcaption>Captured from sealed run run-0928df7f… · 🧠 REAL ENGINE · grok · the seed reaching the second agent</figcaption>
           <div class="image-frame">
             <img
               src="/shots/viewer-memetics.png"
@@ -77,11 +76,10 @@ import '../styles/landing.css';
               alt="Simfile's run-replay viewer showing the seeded Rosa Delgado reference moving from Eleanor to Sam."
             />
           </div>
-          <figcaption>Captured from sealed run run-0928df7f… · 🧠 REAL ENGINE · grok · the seed reaching the second agent</figcaption>
         </figure>
       </section>
 
-      <section class="band" id="result" aria-labelledby="result-title">
+      <section class="band term-section-rule" id="result" aria-labelledby="result-title">
         <div class="inner">
           <div class="section-copy">
             <p class="section-label">01 / Result</p>
@@ -92,7 +90,8 @@ import '../styles/landing.css';
           </div>
 
           <div class="result-layout">
-            <div class="table-wrap">
+            <div class="table-wrap term-cmd-frame">
+              <div class="term-cmd-bar"><span>control matrix</span><span>sealed ledger</span></div>
               <table>
                 <thead>
                   <tr><th>Condition</th><th>Private seed</th><th>Result</th></tr>
@@ -104,7 +103,8 @@ import '../styles/landing.css';
                 </tbody>
               </table>
             </div>
-            <div class="run-count" aria-label="Five out of five runs">
+            <div class="run-count term-cmd-frame" aria-label="Five out of five runs">
+              <div class="term-cmd-bar"><span>run count</span><span>observed</span></div>
               <div class="run-count-value">5/5</div>
               <div class="run-count-label">In this experiment</div>
             </div>
@@ -113,7 +113,7 @@ import '../styles/landing.css';
         </div>
       </section>
 
-      <section class="band" id="world" aria-labelledby="world-title">
+      <section class="band term-section-rule" id="world" aria-labelledby="world-title">
         <div class="inner">
           <div class="section-copy">
             <p class="section-label">02 / World</p>
@@ -124,8 +124,8 @@ import '../styles/landing.css';
           </div>
 
           <div class="world-layout">
-            <div class="code-block">
-              <div class="block-label">Simfile.yaml · one valid world</div>
+            <div class="code-block term-cmd-frame">
+              <div class="block-label term-cmd-bar"><span>Simfile.yaml · one valid world</span><span>yaml</span></div>
               <pre><code>simfile_version: "0.1"
 name: autonomous-office-world
 spawnfile: ./Spawnfile
@@ -172,19 +172,19 @@ probes:
       at_least: 1</code></pre>
             </div>
 
-            <div class="command-block" aria-label="Simfile commands">
-              <div class="block-label">Run it</div>
-              <pre><code>npm install simfile
-simfile validate ./Simfile.yaml
-simfile run ./Simfile.yaml --out runs/latest
-simfile observe runs/latest        # causal chains + spread → report.json
-simfile view runs/latest           # scrub, descend, watch spread</code></pre>
+            <div class="command-block term-cmd-frame" aria-label="Simfile commands">
+              <div class="block-label term-cmd-bar"><span>Run it</span><span>shell</span></div>
+              <pre><code><span class="prompt">$</span> npm install simfile
+<span class="prompt">$</span> simfile validate ./Simfile.yaml
+<span class="prompt">$</span> simfile run ./Simfile.yaml --out runs/latest
+<span class="prompt">$</span> simfile observe runs/latest        # causal chains + spread → report.json
+<span class="prompt">$</span> simfile view runs/latest           # scrub, descend, watch spread</code></pre>
             </div>
           </div>
         </div>
       </section>
 
-      <section class="band" id="viewer" aria-labelledby="viewer-title">
+      <section class="band term-section-rule" id="viewer" aria-labelledby="viewer-title">
         <div class="inner">
           <div class="section-copy">
             <p class="section-label">03 / Viewer</p>
@@ -209,6 +209,7 @@ simfile view runs/latest           # scrub, descend, watch spread</code></pre>
               </p>
             </div>
             <figure class="evidence-plate inset-plate">
+              <figcaption>Captured from sealed run run-b12c9a7d… · 🧠 REAL ENGINE · grok · the inner council</figcaption>
               <div class="image-frame">
                 <img
                   src="/shots/viewer-psyche.png"
@@ -218,13 +219,12 @@ simfile view runs/latest           # scrub, descend, watch spread</code></pre>
                   alt="Simfile's run-replay viewer showing a Shadow and Anima deliberating inside an agent organization."
                 />
               </div>
-              <figcaption>Captured from sealed run run-b12c9a7d… · 🧠 REAL ENGINE · grok · the inner council</figcaption>
             </figure>
           </div>
         </div>
       </section>
 
-      <section class="stack" aria-label="The observer stack">
+      <section class="stack term-section-rule" aria-label="The observer stack">
         <div class="inner stack-grid">
           <a href="https://spawnfile.com"><strong>Spawnfile</strong><span>runs the agents</span></a>
           <a href="https://moltnet.dev"><strong>Moltnet</strong><span>carries the rooms</span></a>
@@ -232,15 +232,16 @@ simfile view runs/latest           # scrub, descend, watch spread</code></pre>
         </div>
       </section>
 
-      <section class="cta-band" aria-labelledby="cta-title">
+      <section class="cta-band term-section-rule" aria-labelledby="cta-title">
         <div class="inner cta-layout">
           <h2 id="cta-title">Run your own experiment.</h2>
-          <div class="command-block compact" aria-label="Simfile quickstart commands">
-            <pre><code>npm install simfile
-simfile validate ./Simfile.yaml
-simfile run ./Simfile.yaml --out runs/latest
-simfile observe runs/latest        # causal chains + spread → report.json
-simfile view runs/latest           # scrub, descend, watch spread</code></pre>
+          <div class="command-block term-cmd-frame compact" aria-label="Simfile quickstart commands">
+            <div class="term-cmd-bar"><span>quickstart</span><span>shell</span></div>
+            <pre><code><span class="prompt">$</span> npm install simfile
+<span class="prompt">$</span> simfile validate ./Simfile.yaml
+<span class="prompt">$</span> simfile run ./Simfile.yaml --out runs/latest
+<span class="prompt">$</span> simfile observe runs/latest        # causal chains + spread → report.json
+<span class="prompt">$</span> simfile view runs/latest           # scrub, descend, watch spread</code></pre>
           </div>
           <div class="actions">
             <a class="btn" href="/quickstart/">Quickstart</a>
