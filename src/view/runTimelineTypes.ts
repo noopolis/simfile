@@ -15,9 +15,19 @@
  */
 export type ElementRef = string;
 
+/**
+ * `clock` (`clock.sync`) and `marker` (`marker.seen`) are increment 3's
+ * world-authority additions (`buildWorldRecord` in `runTimeline.ts`);
+ * `wake` is shared between `daimon`'s `control.wake.accepted` (already
+ * existed) and the world's `wake.recommended` — both name "an agent was
+ * recommended/accepted a wake," so one view class serves both authorities
+ * rather than forking it per-authority.
+ */
 export type TimelineViewClass =
   | "message"
   | "wake"
+  | "clock"
+  | "marker"
   | "turn.input"
   | "turn.output"
   | "memory.claimed"
@@ -45,6 +55,17 @@ export interface TimelineEvent {
   causes: string[];
   /** Joined from the transcript or a mneme bank log by id — never invented. */
   text?: string;
+  /**
+   * Increment 3 dedup join: on a `moltnet` `message.accepted` record, the
+   * `simfile_event_id` breadcrumb read from the transcript message's own
+   * `parts[].data` (`src/moltnet/world-participant.ts`'s
+   * `metadataFromEvent`) — the real `world.message`/`world.dm`/
+   * `wake.recommended` event this message echoes, when this message
+   * originated from a world action. Undefined for a message with no such
+   * breadcrumb (a genuine agent-authored message). The chat pane uses this
+   * to badge the echo "world" and to suppress its `world`-authority twin.
+   */
+  worldEventId?: string;
   payload: unknown;
 }
 

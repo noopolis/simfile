@@ -1,6 +1,6 @@
 import { runObserve } from "../observe/index.js";
 import { computeMinds, computeProvenance, computeThread, computeVerdict } from "./runViewModelCompute.js";
-import { readMnemeEventsByBank, readTranscript } from "./runRawArtifacts.js";
+import { hasVariableSamples, readMnemeEventsByBank, readTranscript, readWorldTelemetry } from "./runRawArtifacts.js";
 import type { RunViewModel } from "./runViewModelTypes.js";
 
 const stringField = (world: Record<string, unknown>, key: string): string | undefined => {
@@ -20,12 +20,17 @@ const stringField = (world: Record<string, unknown>, key: string): string | unde
  * serves this model's `verdict`/`provenance` fields to the React shell
  * (`web/src/viewer/RunMetaPanels.tsx`); `thread`/`minds` are computed too
  * but no longer served whole — the shell gets chat/minds content from
- * `/api/timeline` instead.
+ * `/api/timeline` instead. Increment 3 additionally passes through
+ * `runObserve`'s own `seed_spread`/`spread_summary` (never recomputed) and,
+ * only when the run has a non-empty `world/telemetry.json` variable
+ * sample set, that sample set too — also served via `/api/run-meta` for
+ * the spread readout and the (seam-only) variable gauge.
  */
 export const buildRunViewModel = async (runDir: string): Promise<RunViewModel> => {
   const observed = await runObserve(runDir);
   const transcript = await readTranscript(runDir);
   const mnemeEventsByBank = await readMnemeEventsByBank(runDir);
+  const telemetrySamples = await readWorldTelemetry(runDir);
   const allEvents = observed.streams.flatMap((stream) => stream.events);
 
   const world = observed.manifest.world;
@@ -49,6 +54,9 @@ export const buildRunViewModel = async (runDir: string): Promise<RunViewModel> =
     verdict: computeVerdict(observed.report, observed.artifactIntegrity),
     thread: computeThread(transcript, allEvents, mnemeEventsByBank),
     minds: computeMinds(mnemeEventsByBank),
-    provenance: computeProvenance(observed.manifest, observed.report, observed.artifactIntegrity)
+    provenance: computeProvenance(observed.manifest, observed.report, observed.artifactIntegrity),
+    seedSpread: observed.report.seed_spread,
+    spreadSummary: observed.report.spread_summary,
+    variableSamples: hasVariableSamples(telemetrySamples) ? telemetrySamples! : undefined
   };
 };

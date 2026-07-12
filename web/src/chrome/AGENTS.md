@@ -12,7 +12,17 @@ rather than living inside any one of them.
   (map, chat, minds rail, storyline portal) reacts to that same cursor
   rather than owning its own clock. Playback respects
   `prefers-reduced-motion` (disables the auto-advance interval rather than
-  silently ticking).
+  silently ticking). Increment 3 adds a phase-band row and a `tick N ·
+  phase` readout prefix (both from `clockModel.ts`'s `derivePhaseBands`/
+  `currentClockReadout`, over the timeline's own `viewClass: "clock"`
+  events — empty/absent for a run with no world clock stream) and, when
+  the optional `seedSpreadEventIds` prop is passed, a row of "spread dots"
+  marking the real `seed_spread` events on the track (`spreadDotEvents`).
+- `clockModel.ts` — pure derivations over the `clock.sync` stream and a
+  seed-spread event id set, kept outside `ScrubBar.tsx` so they're
+  unit-testable without rendering React (this repo's test runner only
+  picks up `.test.ts`, not `.test.tsx`): `derivePhaseBands`,
+  `currentClockReadout`, `spreadDotEvents`.
 
 ## Rules
 

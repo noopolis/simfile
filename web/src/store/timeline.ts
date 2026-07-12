@@ -16,9 +16,12 @@ import { useSyncExternalStore } from "react";
 
 export type ElementRef = string;
 
+/** `clock`/`marker` (world's `clock.sync`/`marker.seen`) and `wake` shared with `control.wake.accepted` are increment 3's world-stream additions — see `src/view/runTimelineTypes.ts`'s equivalent doc comment. */
 export type TimelineViewClass =
   | "message"
   | "wake"
+  | "clock"
+  | "marker"
   | "turn.input"
   | "turn.output"
   | "memory.claimed"
@@ -39,6 +42,8 @@ export interface TimelineEvent {
   subjects: ElementRef[];
   causes: string[];
   text?: string;
+  /** Increment 3 dedup join: set on a `moltnet` message echo to the real `world`-authority event id it echoes — see `src/view/runTimelineTypes.ts`'s equivalent field doc. */
+  worldEventId?: string;
   payload: unknown;
 }
 
@@ -241,6 +246,24 @@ export const recallEventsForTurnInput = (timeline: RunTimeline, turnInput: Timel
     .filter((causeId) => causeId.startsWith("mneme:"))
     .map((causeId) => byEventId.get(causeId))
     .filter((event): event is TimelineEvent => event !== undefined);
+};
+
+/**
+ * Increment 3 dedup rule: the set of `world`-authority event ids that have
+ * a moltnet echo (a `message` event whose `worldEventId` names them) —
+ * every id in this set is a `world.message` the chat pane must suppress
+ * (its moltnet twin, badged "world", already renders it); every
+ * `world`-authority message NOT in this set has no echo and renders
+ * standalone, flagged "not delivered". Computed over the whole timeline
+ * (never cursor-sliced) because the echo relationship is structural, not
+ * time-dependent.
+ */
+export const echoedWorldEventIds = (events: readonly TimelineEvent[]): ReadonlySet<string> => {
+  const echoed = new Set<string>();
+  for (const event of events) {
+    if (event.authority === "moltnet" && event.worldEventId) echoed.add(event.worldEventId);
+  }
+  return echoed;
 };
 
 export const useTimelineStore = (): TimelineStoreState =>

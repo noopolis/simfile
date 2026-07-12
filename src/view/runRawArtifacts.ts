@@ -1,15 +1,16 @@
 import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 
-import type { RawMnemeEvent, RawTranscript, RawTranscriptMessage } from "./runViewModelTypes.js";
+import type { RawMnemeEvent, RawTranscript, RawTranscriptMessage, RunTelemetrySample } from "./runViewModelTypes.js";
 
 /**
- * Shared, dependency-free reads of the two raw run-directory artifacts every
- * run-reader/run-replay data path needs: the moltnet transcript and the
- * per-bank mneme event logs. Extracted out of `runViewModel.ts` so
- * `runTimeline.ts` (`buildRunTimeline`) can read the exact same records
- * without re-implementing or duplicating file I/O (`AGENTS.md`: small
- * composable modules, no invented state).
+ * Shared, dependency-free reads of the raw run-directory artifacts every
+ * run-reader/run-replay data path needs: the moltnet transcript, the
+ * per-bank mneme event logs, and (increment 3) the world telemetry
+ * snapshot. Extracted out of `runViewModel.ts` so `runTimeline.ts`
+ * (`buildRunTimeline`) can read the exact same records without
+ * re-implementing or duplicating file I/O (`AGENTS.md`: small composable
+ * modules, no invented state).
  */
 
 const parseJsonlLines = (text: string): unknown[] =>
@@ -76,3 +77,38 @@ export const readTranscript = async (runDir: string): Promise<RawTranscript> => 
   const raw = JSON.parse(await readFile(path.join(runDir, "raw", "moltnet", "transcript.json"), "utf8")) as unknown;
   return normalizeRawTranscript(raw);
 };
+
+/** The `world/telemetry.json` shape written by `src/runtime/run-record.ts`'s `TelemetryArtifact`. */
+interface RawTelemetryArtifact {
+  run_id: string;
+  samples: { tick: number; sim_time: number; phase?: string; variables: Record<string, number> }[];
+  version: string;
+}
+
+/**
+ * Reads `world/telemetry.json` when present (world-driven runs only —
+ * `office-secret-v0-golden` ships one, `office-sim-golden` does not).
+ * Returns `null` on any missing/malformed file rather than throwing: this
+ * artifact is optional, never a requirement for a run to render
+ * (`runDetect.ts`'s shape check does not require it).
+ */
+export const readWorldTelemetry = async (runDir: string): Promise<RunTelemetrySample[] | null> => {
+  const raw = await readFile(path.join(runDir, "world", "telemetry.json"), "utf8").catch(() => null);
+  if (raw === null) return null;
+  try {
+    const parsed = JSON.parse(raw) as RawTelemetryArtifact;
+    if (!Array.isArray(parsed.samples)) return null;
+    return parsed.samples.map((sample) => ({
+      tick: sample.tick,
+      simTime: sample.sim_time,
+      phase: sample.phase,
+      variables: sample.variables ?? {},
+    }));
+  } catch {
+    return null;
+  }
+};
+
+/** `true` when at least one sample carries at least one variable — the gate that decides whether a run has real gauge data to render (`RunViewModel.variableSamples`'s own doc comment: never a fabricated empty gauge). */
+export const hasVariableSamples = (samples: readonly RunTelemetrySample[] | null): boolean =>
+  samples !== null && samples.some((sample) => Object.keys(sample.variables).length > 0);

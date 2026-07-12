@@ -4,6 +4,7 @@ import { describe, it, beforeEach } from "node:test";
 import {
   closePortal,
   clearHighlightedEventIds,
+  echoedWorldEventIds,
   eventsForElement,
   eventsForMembrane,
   eventsUpTo,
@@ -26,6 +27,7 @@ import {
   timelineStore,
   togglePlay,
   type RunTimeline,
+  type TimelineEvent,
 } from "./timeline.js";
 
 const fixtureTimeline = (): RunTimeline => ({
@@ -237,5 +239,48 @@ describe("timelineStore", () => {
     const withDangling = { ...turnInput, causes: [...turnInput.causes, "mneme:not-in-this-run"] };
     const recalls = recallEventsForTurnInput(timeline, withDangling);
     assert.deepEqual(recalls.map((event) => event.eventId), ["mneme:recall-a", "mneme:recall-b"]);
+  });
+});
+
+describe("echoedWorldEventIds (increment 3 world/moltnet dedup)", () => {
+  const baseEvent: TimelineEvent = {
+    t: 0,
+    eventId: "world:seed",
+    authority: "world",
+    streamId: "world",
+    seq: 1,
+    type: "world.message",
+    viewClass: "message",
+    recordedAt: "2026-07-12T00:00:00.000Z",
+    subjects: ["room:net:room"],
+    causes: [],
+    text: "seed text",
+    payload: {},
+  };
+
+  it("collects a world event id that a moltnet message's worldEventId names as its echo", () => {
+    const echo: TimelineEvent = {
+      ...baseEvent,
+      t: 1,
+      eventId: "moltnet:world:seed",
+      authority: "moltnet",
+      worldEventId: "world:seed",
+    };
+    const echoed = echoedWorldEventIds([baseEvent, echo]);
+    assert.ok(echoed.has("world:seed"));
+    assert.equal(echoed.size, 1);
+  });
+
+  it("does not flag a world event with no moltnet echo", () => {
+    const genuineReply: TimelineEvent = {
+      ...baseEvent,
+      t: 1,
+      eventId: "moltnet:reply",
+      authority: "moltnet",
+      worldEventId: undefined,
+    };
+    const echoed = echoedWorldEventIds([baseEvent, genuineReply]);
+    assert.equal(echoed.has("world:seed"), false);
+    assert.equal(echoed.size, 0);
   });
 });

@@ -88,6 +88,37 @@
   font-size: 11px;
 }
 
+/* World stream badges + undelivered flag (increment 3) */
+
+.chat-badge {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 1px 5px;
+  border-radius: 8px;
+  border: 1px solid var(--line-soft);
+  color: var(--sub);
+}
+
+.chat-badge-world {
+  color: var(--sub);
+  border-color: var(--line-soft);
+}
+
+.chat-badge-seed {
+  color: var(--cyan);
+  border-color: var(--cyan);
+}
+
+.chat-badge-undelivered {
+  color: var(--coral);
+  border-color: var(--coral);
+}
+
+.chat-message-undelivered {
+  opacity: 0.8;
+}
+
 .chat-text {
   margin: 4px 0;
   white-space: pre-wrap;
@@ -300,6 +331,48 @@
   width: 100%;
 }
 
+/* World tick stream: phase bands + spread dots (increment 3) */
+
+.scrub-phase-bands {
+  position: relative;
+  height: 5px;
+  margin-bottom: 2px;
+  overflow: hidden;
+  border-radius: 2px;
+}
+
+.scrub-phase-band {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  background: var(--line-soft);
+}
+
+.scrub-phase-band.tone-1 { background: var(--tint); }
+.scrub-phase-band.tone-2 { background: rgba(0, 229, 204, 0.14); }
+.scrub-phase-band.tone-3 { background: rgba(255, 255, 255, 0.05); }
+.scrub-phase-band.tone-4 { background: rgba(212, 96, 74, 0.12); }
+
+.scrub-spread-dots {
+  position: relative;
+  height: 6px;
+}
+
+.scrub-spread-dot {
+  position: absolute;
+  top: 0;
+  width: 6px;
+  height: 6px;
+  margin-left: -3px;
+  border-radius: 50%;
+  background: var(--cyan);
+  box-shadow: 0 0 4px var(--cyan);
+}
+
+.scrub-tick {
+  color: var(--cyan);
+}
+
 .scrub-density {
   position: relative;
   height: 4px;
@@ -440,6 +513,47 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Spread readout + variable gauge seam (increment 3) */
+
+.spread-readout {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 1px solid var(--cyan);
+  border-radius: 3px;
+  color: var(--cyan);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.variable-gauge-rail {
+  display: flex;
+  gap: 10px;
+  padding: 4px 10px;
+  flex-wrap: wrap;
+}
+
+.variable-gauge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--sub);
+}
+
+.variable-gauge-label {
+  color: var(--mute);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 10px;
+}
+
+.variable-gauge-value {
+  color: var(--accent-hi);
+  font-weight: 600;
 }
 
 /* Verdict strip + provenance panel (increment 2 rule 3: React parity with

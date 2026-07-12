@@ -51,6 +51,17 @@ button.tile-cell {
   background: rgba(255, 255, 255, 0.06);
 }
 
+/* Increment 3: the seeded meme's first-appearance glow. */
+@keyframes spread-glow-pulse {
+  0%, 100% { text-shadow: 0 0 6px var(--cyan); }
+  50% { text-shadow: 0 0 14px var(--cyan); }
+}
+
+.tile-cell.glow {
+  color: var(--cyan);
+  animation: spread-glow-pulse 1.6s ease-in-out infinite;
+}
+
 .tone-terrain {
   color: rgba(113, 133, 122, 0.28);
 }
@@ -129,6 +140,12 @@ button.tile-cell {
   border-color: var(--accent);
   color: var(--ink);
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.7);
+}
+
+.tile-anchor.glow {
+  border-color: var(--cyan);
+  color: var(--cyan);
+  animation: spread-glow-pulse 1.6s ease-in-out infinite;
 }
 
 .ascii-legend {

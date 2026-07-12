@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import type { ReactNode } from "react";
 
 import {
+  echoedWorldEventIds,
   eventsForElement,
   eventsUpTo,
   focusAndOpenPortal,
@@ -41,10 +42,34 @@ const renderWithMentions = (text: string): ReactNode[] => {
 const downstreamOf = (timeline: RunTimeline, eventId: string): TimelineEvent[] =>
   timeline.events.filter((event) => event.causes.includes(eventId));
 
-export function ChatPane({ timeline, cursor }: { timeline: RunTimeline; cursor: number }) {
+/**
+ * Increment 3's world/moltnet dedup + seed badges: `utteredEventIds` (the
+ * `uttered`-channel `seed_spread` event ids, from `../viewer/spreadModel.ts`,
+ * `undefined` for a run with no seed declaration) marks a message with the
+ * "🧬 seed" badge; every moltnet message with a `worldEventId` (it echoes a
+ * real world action) gets the "world" badge; and — the dedup rule itself —
+ * a `world`-authority `world.message`/`world.dm` event whose id has a
+ * moltnet echo (`echoedWorldEventIds`) is filtered out here entirely, so
+ * only its badged moltnet twin ever renders. A `world`-authority message
+ * that survives the filter (no echo at all) renders standalone, flagged
+ * "not delivered."
+ */
+export function ChatPane({
+  timeline,
+  cursor,
+  utteredEventIds,
+}: {
+  timeline: RunTimeline;
+  cursor: number;
+  utteredEventIds?: ReadonlySet<string>;
+}) {
+  const echoedWorldIds = useMemo(() => echoedWorldEventIds(timeline.events), [timeline]);
   const messages = useMemo(
-    () => eventsUpTo(timeline, cursor).filter((event) => event.viewClass === "message"),
-    [timeline, cursor],
+    () =>
+      eventsUpTo(timeline, cursor).filter(
+        (event) => event.viewClass === "message" && !(event.authority === "world" && echoedWorldIds.has(event.eventId)),
+      ),
+    [timeline, cursor, echoedWorldIds],
   );
 
   return (
@@ -53,8 +78,12 @@ export function ChatPane({ timeline, cursor }: { timeline: RunTimeline; cursor: 
       <div className="replay-pane-body">
         {messages.map((message) => {
           const chips = downstreamOf(timeline, message.eventId);
+          // Any world-authority message reaching this point has no moltnet echo (the echoed ones were filtered above).
+          const isUndeliveredWorld = message.authority === "world";
+          const isWorldEcho = message.authority === "moltnet" && Boolean(message.worldEventId);
+          const isSeed = utteredEventIds?.has(message.eventId) ?? false;
           return (
-            <article className="chat-message" key={message.eventId}>
+            <article className={["chat-message", isUndeliveredWorld ? "chat-message-undelivered" : ""].filter(Boolean).join(" ")} key={message.eventId}>
               <div className="chat-message-head">
                 <button
                   className="chat-author"
@@ -63,6 +92,15 @@ export function ChatPane({ timeline, cursor }: { timeline: RunTimeline; cursor: 
                 >
                   {message.actor ?? "unknown"}
                 </button>
+                {isWorldEcho ? (
+                  <span className="chat-badge chat-badge-world" title="Originated from a world action, delivered through moltnet">world</span>
+                ) : null}
+                {isSeed ? (
+                  <span className="chat-badge chat-badge-seed" title="Carries the seeded secret's token (seed_spread: uttered)">🧬 seed</span>
+                ) : null}
+                {isUndeliveredWorld ? (
+                  <span className="chat-badge chat-badge-undelivered" title="No moltnet echo recorded for this world message">not delivered</span>
+                ) : null}
                 <span className="chat-time">{message.recordedAt.slice(11, 19)}</span>
               </div>
               <p className="chat-text">{renderWithMentions(message.text ?? "")}</p>

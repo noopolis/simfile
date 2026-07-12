@@ -23,7 +23,11 @@ clocks).
   kind; `recallEventsForTurnInput` — resolves a `turn.input` event's
   `mneme:`-prefixed causes to their real `memory.recalled` rows).
   `useTimelineStore()` is the `useSyncExternalStore`-based hook every
-  component reads from.
+  component reads from. Increment 3 adds `echoedWorldEventIds` — the
+  world/moltnet dedup join (a `world`-authority message id is "echoed" when
+  some `moltnet` message's own `worldEventId` names it), read by
+  `../viewer/ReplayPanes.tsx`'s `ChatPane` to suppress a `world.message`'s
+  echoed twin and badge the survivor.
 - `deepLink.ts` — pure `parseDeepLink`/`serializeDeepLink`/`currentDeepLink`/
   `applyDeepLink` over the `?at=<event_id>&sel=<elementRef>&portals=<comma-refs>`
   URL shape (anchored on `event_id`, never the dense index `t`, so a link

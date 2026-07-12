@@ -1,5 +1,7 @@
 import type { CausalEvent } from "@noopolis/stele";
 
+import type { SeedSpreadEntry, SpreadSummary } from "../observe/report.js";
+
 /**
  * `RunViewModel` — the data-driven model the run-reader page renders
  * (`VIEW_DESIGN.md` rule 3: every rendered element traces to a record id).
@@ -92,13 +94,46 @@ export interface RunViewModel {
     artifacts: RunProvenanceArtifact[];
     entries: RunProvenanceEntry[];
   };
+  /**
+   * Increment 3: `runObserve`'s already-computed `seed_spread`/
+   * `spread_summary` (`../observe/seedSpread.ts`), passed through verbatim
+   * — never recomputed here. Both are DEFINED-BUT-OPTIONAL
+   * (`../observe/report.ts`): a run with no `manifest.seed_declaration`
+   * (e.g. `office-sim-golden`) simply omits them, and the viewer renders no
+   * spread UI at all rather than fake reach/latency numbers.
+   */
+  seedSpread?: SeedSpreadEntry[];
+  spreadSummary?: SpreadSummary;
+  /**
+   * Increment 3: `world/telemetry.json`'s per-tick variable samples, when
+   * the run has any (`readWorldTelemetry` in `runRawArtifacts.ts`).
+   * Omitted — never a fabricated empty gauge — when the run has no
+   * telemetry file, or every sample's `variables` map is empty (e.g.
+   * `office-secret-v0-golden`, which drives no variable).
+   */
+  variableSamples?: RunTelemetrySample[];
+}
+
+/** One `world/telemetry.json` sample row (`simfile.telemetry.v1`, `src/runtime/run-record.ts`'s `TelemetryArtifact`). */
+export interface RunTelemetrySample {
+  tick: number;
+  simTime: number;
+  phase?: string;
+  variables: Record<string, number>;
 }
 
 /** The raw `raw/moltnet/transcript.json` shape this package writes and reads. */
 export interface RawTranscriptMessage {
   id: string;
   from: { type: string; id: string; name: string };
-  parts: { kind: string; text?: string }[];
+  /**
+   * `data` is the `simfile_event_id`/`simfile_event_kind`/`simfile_rule_id`
+   * breadcrumb `src/moltnet/world-participant.ts`'s `metadataFromEvent`
+   * attaches to a message that originated from a world action
+   * (`world.message`/`world.dm`/`wake.recommended`) — absent on a genuine
+   * agent-authored message.
+   */
+  parts: { kind: string; text?: string; data?: Record<string, unknown> }[];
   mentions?: string[];
   created_at: string;
 }

@@ -10,6 +10,7 @@ import type { RunTimeline, RunTimelineElementKind } from "./runTimelineTypes.js"
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const GOLDEN_DIR = path.resolve(here, "..", "..", "fixtures", "observe", "office-sim-golden");
+const WORLD_GOLDEN_DIR = path.resolve(here, "..", "..", "fixtures", "observe", "office-secret-v0-golden");
 const REAL_RUN_DIR = path.resolve(
   here,
   "..",
@@ -248,5 +249,128 @@ describe("buildRunTimeline — real grok composed run", () => {
     assert.equal(seed.viewClass, "message");
     assert.ok(seed.subjects.includes("agent:world"));
     assert.ok(seed.subjects.includes("room:office_lab:office-room"));
+  });
+});
+
+describe("buildRunTimeline — world stream (buildWorldRecord, increment 3)", () => {
+  it("gives clock.sync the clock viewClass, anchored on the clock:global subject, never a room", async () => {
+    const timeline = await buildRunTimeline(WORLD_GOLDEN_DIR);
+    const clockEvents = timeline.events.filter((event) => event.type === "clock.sync");
+    assert.equal(clockEvents.length, 2);
+    for (const event of clockEvents) {
+      assert.equal(event.viewClass, "clock");
+      assert.deepEqual(event.subjects, ["clock:global"]);
+      assert.equal(event.authority, "world");
+    }
+    // Real tick/phase data, joined verbatim from the event's own payload — never invented.
+    assert.deepEqual(
+      clockEvents.map((event) => (event.payload as { tick: number }).tick),
+      [0, 1],
+    );
+  });
+
+  it("gives marker.seen the marker viewClass, attributed to the room plus the real agent who authored the tripping message", async () => {
+    const timeline = await buildRunTimeline(WORLD_GOLDEN_DIR);
+    const markerEvents = timeline.events.filter((event) => event.type === "marker.seen");
+    assert.equal(markerEvents.length, 2);
+
+    const eleanorMarker = markerEvents.find((event) =>
+      (event.payload as { source_event_id: string }).source_event_id === "msg_7623bed7-0c13-4b28-8682-9a2dd990ee6d");
+    assert.ok(eleanorMarker);
+    assert.equal(eleanorMarker!.viewClass, "marker");
+    assert.equal(eleanorMarker!.actor, "eleanor");
+    assert.deepEqual(eleanorMarker!.subjects, ["room:office_lab:office-room", "agent:eleanor"]);
+
+    const samMarker = markerEvents.find((event) =>
+      (event.payload as { source_event_id: string }).source_event_id === "msg_89afdb35-ee62-4256-b403-84eee53cb830");
+    assert.ok(samMarker);
+    assert.equal(samMarker!.actor, "sam");
+    assert.deepEqual(samMarker!.subjects, ["room:office_lab:office-room", "agent:sam"]);
+  });
+
+  it("gives world.message the message viewClass, attributed to the room, with text joined from its own content field", async () => {
+    const timeline = await buildRunTimeline(WORLD_GOLDEN_DIR);
+    const worldMessage = eventById(timeline, "simfile:run-289dccce5595430e8e8e8e0faf48b4d3:3");
+    assert.equal(worldMessage.viewClass, "message");
+    assert.equal(worldMessage.authority, "world");
+    assert.deepEqual(worldMessage.subjects, ["room:office_lab:office-room"]);
+    assert.match(worldMessage.text ?? "", /finalize the office pilot rollout/i);
+  });
+
+  it("joins the moltnet echo's worldEventId back to the real world.message event id (dedup breadcrumb)", async () => {
+    const timeline = await buildRunTimeline(WORLD_GOLDEN_DIR);
+    const echo = eventById(timeline, "moltnet:simfile:run-289dccce5595430e8e8e8e0faf48b4d3:3");
+    assert.equal(echo.worldEventId, "simfile:run-289dccce5595430e8e8e8e0faf48b4d3:3");
+
+    // Genuine agent-authored moltnet messages carry no such breadcrumb.
+    const eleanorReply = eventById(timeline, "moltnet:msg_7623bed7-0c13-4b28-8682-9a2dd990ee6d");
+    assert.equal(eleanorReply.worldEventId, undefined);
+  });
+
+  it("has no world-authority events at all for a run with no raw/world/causal.jsonl (graceful absence)", async () => {
+    const timeline = await buildRunTimeline(GOLDEN_DIR);
+    assert.equal(timeline.events.some((event) => event.authority === "world"), false);
+    assert.equal(timeline.events.some((event) => event.viewClass === "clock" || event.viewClass === "marker"), false);
+  });
+});
+
+const writeWorldWakeRun = async (): Promise<string> => {
+  const runDir = await mkdtemp(path.join(tmpdir(), "simfile-timeline-world-wake-"));
+  const worldDir = path.join(runDir, "raw", "world");
+  const moltnetDir = path.join(runDir, "raw", "moltnet");
+  await Promise.all([mkdir(worldDir, { recursive: true }), mkdir(moltnetDir, { recursive: true })]);
+
+  await writeFile(path.join(runDir, "manifest.json"), JSON.stringify({
+    version: "simfile.run-manifest.v1",
+    run_id: "run-world-wake",
+    created_at: "2026-07-12T00:00:00.000Z",
+    contract_versions: {},
+    artifacts: [],
+    world: { network_id: "lab", room_id: "hall", members: ["alice"] },
+  }), "utf8");
+
+  await writeFile(path.join(moltnetDir, "transcript.json"), JSON.stringify({ transcript: [] }), "utf8");
+  await writeFile(path.join(moltnetDir, "causal.jsonl"), "", "utf8");
+
+  const worldEvents = [
+    {
+      event_id: "simfile:run-world-wake:1",
+      seq: 1,
+      type: "wake.recommended",
+      recorded_at: "2026-07-12T00:00:00.000Z",
+      cause_event_ids: [],
+      payload: {
+        sim_time: 300, provenance: "mechanical", actor: "deadline_bites",
+        target: "agent:alice", scope: "agent:alice", act_id: "run-world-wake:act:1",
+        action: "wake:recommend", value: null, reason: "deadline_bites", tick: 5, phase: "workday",
+      },
+    },
+  ].map(({ seq, ...event }) => ({
+    version: "noopolis.causal-event.v1",
+    run_id: "run-world-wake",
+    emitter: { system: "simfile", stream_id: "world", seq },
+    principal_id: "system:simfile.world",
+    ...event,
+  }));
+  await writeFile(
+    path.join(worldDir, "causal.jsonl"),
+    `${worldEvents.map((event) => JSON.stringify(event)).join("\n")}\n`,
+    "utf8",
+  );
+
+  return runDir;
+};
+
+describe("buildRunTimeline — world stream wake.recommended (synthetic fixture)", () => {
+  it("gives wake.recommended the wake viewClass, attributed to the agent target ref (no fixture in this repo ships a real one)", async () => {
+    const runDir = await writeWorldWakeRun();
+    try {
+      const timeline = await buildRunTimeline(runDir);
+      const wake = eventById(timeline, "simfile:run-world-wake:1");
+      assert.equal(wake.viewClass, "wake");
+      assert.deepEqual(wake.subjects, ["agent:alice"]);
+    } finally {
+      await rm(runDir, { recursive: true, force: true });
+    }
   });
 });

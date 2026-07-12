@@ -14,6 +14,8 @@ interface AsciiMapProps {
   rooms: RoomGeometry[];
   selectedNode: ViewerNode;
   selectedSkin: ViewerSkin;
+  /** Increment 3: node `scope`s (`agent:`/`room:` refs) to render with the "glow" class — the seeded meme's first-appearance highlight (`../spreadModel.ts`'s `firstAppearanceGlowScopes`). Omitted/empty on a run with no seed spread. */
+  glowScopes?: ReadonlySet<string>;
 }
 
 export function AsciiMap({
@@ -24,6 +26,7 @@ export function AsciiMap({
   rooms,
   selectedNode,
   selectedSkin,
+  glowScopes,
 }: AsciiMapProps) {
   const tileWorld = useMemo(
     () => buildTileWorld({
@@ -47,6 +50,10 @@ export function AsciiMap({
   }, [tileWorld.layers]);
 
   const selectedRoomId = useMemo(() => roomIdForNode(selectedNode), [selectedNode]);
+  const glowNodeIds = useMemo(
+    () => new Set(nodes.filter((node) => glowScopes?.has(node.scope)).map((node) => node.id)),
+    [nodes, glowScopes],
+  );
   const stageStyle = useMemo(() => ({
     "--tile-cols": String(tileWorld.cols),
     "--tile-rows": String(tileWorld.rows),
@@ -80,10 +87,12 @@ export function AsciiMap({
             const cell = cellMap.get(key) ?? { glyph: "·", tone: "terrain" };
             const roomHit = selectedRoomId ? roomRectContains(tileWorld.roomRects[selectedRoomId], row, col) : false;
             const selected = cell.nodeId === selectedNode.id || roomHit;
+            const glowing = Boolean(cell.nodeId && glowNodeIds.has(cell.nodeId));
             const className = [
               "tile-cell",
               `tone-${cell.tone}`,
               selected ? "selected" : "",
+              glowing ? "glow" : "",
             ].filter(Boolean).join(" ");
 
             if (cell.nodeId) {
@@ -112,10 +121,11 @@ export function AsciiMap({
             return null;
           }
           const selected = node.id === selectedNode.id;
+          const glowing = glowNodeIds.has(node.id);
           const short = node.kind === "room" ? node.label : `${glyphForNode(node)} ${node.label}`;
           return (
             <button
-              className={`tile-anchor ${selected ? "selected" : ""}`}
+              className={["tile-anchor", selected ? "selected" : "", glowing ? "glow" : ""].filter(Boolean).join(" ")}
               key={`${anchor.nodeId}:${anchor.row}:${anchor.col}`}
               onClick={() => onSelect(anchor.nodeId)}
               style={{

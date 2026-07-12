@@ -12,8 +12,16 @@ import { ScrubBar } from "../chrome/ScrubBar.js";
 import { StorylinePortal } from "../portals/StorylinePortal.js";
 import { AsciiMap } from "./AsciiMap.js";
 import { ChatPane, MindsRail } from "./ReplayPanes.js";
-import { ProvenancePanel, VerdictStrip, useProvenancePanel, type RunMeta } from "./RunMetaPanels.js";
+import {
+  ProvenancePanel,
+  SpreadReadout,
+  VariableGaugeRail,
+  VerdictStrip,
+  useProvenancePanel,
+  type RunMeta,
+} from "./RunMetaPanels.js";
 import { defaultRenderSettings } from "./renderSettings.js";
+import { firstAppearanceGlowScopes, seedSpreadEventIds, utteredEventIds } from "./spreadModel.js";
 import { buildViewerWorld, viewerSkins } from "./worldModel.js";
 import type { ViewerContractTrace, ViewerWorldResponse } from "./types.js";
 import "../styles-replay.css";
@@ -79,6 +87,21 @@ export function RunReplayShell() {
   const skin = viewerSkins[0]!;
   const caption = worldTrace?.rooms[0]?.access_hint;
 
+  // Increment 3: the seeded meme's spread, joined against the loaded timeline/world
+  // — all graceful-absence (empty sets / []) when the run has no seed declaration.
+  const uttered = useMemo(() => utteredEventIds(runMeta?.seedSpread), [runMeta]);
+  const spreadDotIds = useMemo(() => seedSpreadEventIds(runMeta?.seedSpread), [runMeta]);
+  const roomScope = worldTrace?.rooms[0]?.scope;
+  const glowScopes = useMemo(
+    () =>
+      new Set(
+        timeline
+          ? firstAppearanceGlowScopes({ spreadSummary: runMeta?.spreadSummary, timeline, cursor, roomScope })
+          : [],
+      ),
+    [timeline, runMeta, cursor, roomScope],
+  );
+
   if (loadError) {
     return (
       <main className="viewer-shell replay-shell">
@@ -105,6 +128,10 @@ export function RunReplayShell() {
           <span className="run-name">{timeline.runId}</span>
         </div>
         {runMeta ? <VerdictStrip meta={runMeta} onOpenProvenance={provenancePanel.toggle} /> : null}
+        {runMeta?.spreadSummary ? (
+          <SpreadReadout participants={runMeta.participants} seedSpread={runMeta.seedSpread ?? []} summary={runMeta.spreadSummary} />
+        ) : null}
+        <VariableGaugeRail samples={runMeta?.variableSamples} />
       </header>
 
       <div className="replay-grid">
@@ -113,6 +140,7 @@ export function RunReplayShell() {
           {caption ? <p className="replay-caption">{caption}</p> : null}
           {world && selectedNode ? (
             <AsciiMap
+              glowScopes={glowScopes}
               nodes={world.nodes}
               onSelect={(id) => {
                 const node = world.nodes.find((candidate) => candidate.id === id);
@@ -129,7 +157,7 @@ export function RunReplayShell() {
           )}
         </section>
 
-        <ChatPane cursor={cursor} timeline={timeline} />
+        <ChatPane cursor={cursor} timeline={timeline} utteredEventIds={uttered} />
         <MindsRail cursor={cursor} timeline={timeline} />
       </div>
 
@@ -139,7 +167,7 @@ export function RunReplayShell() {
 
       {runMeta && provenancePanel.open ? <ProvenancePanel meta={runMeta} onClose={provenancePanel.close} /> : null}
 
-      <ScrubBar />
+      <ScrubBar seedSpreadEventIds={spreadDotIds} />
     </main>
   );
 }

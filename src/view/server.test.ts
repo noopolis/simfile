@@ -141,12 +141,18 @@ describe("createViewerServer", () => {
         runId: string;
         verdict: { turnCount: number; healthy: boolean };
         provenance: { artifacts: { path: string; ok: boolean }[]; entries: { key: string; value: string }[] };
+        seedSpread?: unknown[];
+        spreadSummary?: unknown;
       };
       assert.equal(meta.verdict.turnCount, 3);
       assert.equal(meta.verdict.healthy, true);
       assert.ok(meta.provenance.artifacts.length >= 6);
       assert.ok(meta.provenance.artifacts.every((artifact) => artifact.ok));
       assert.ok(meta.provenance.entries.some((entry) => entry.value.includes("eleanor")));
+      // office-sim-golden has no manifest.seed_declaration — graceful absence,
+      // not a fabricated empty array (increment 3).
+      assert.equal(meta.seedSpread, undefined);
+      assert.equal(meta.spreadSummary, undefined);
 
       const retiredModelResponse = await fetch(`${handle.url}/api/run-view-model.json`);
       assert.equal(retiredModelResponse.status, 404, "the bespoke run-view-model endpoint is retired in increment 2");
@@ -165,6 +171,49 @@ describe("createViewerServer", () => {
 
       const eventsResponse = await fetch(`${handle.url}/api/events`);
       assert.equal(eventsResponse.status, 404, "run-replay mode must not open the live SSE stream");
+    } finally {
+      await handle.close();
+    }
+  });
+
+  it("serves the world tick stream and the seeded meme's spread for a world-driven run (increment 3)", async () => {
+    const runDir = path.resolve(
+      path.dirname(fileURLToPath(import.meta.url)),
+      "..",
+      "..",
+      "fixtures",
+      "observe",
+      "office-secret-v0-golden"
+    );
+    const handle = await createViewerServer({
+      mode: "replay",
+      port: 0,
+      sourcePath: runDir,
+    });
+
+    try {
+      const timelineResponse = await fetch(`${handle.url}/api/timeline`);
+      assert.equal(timelineResponse.status, 200);
+      const timeline = await timelineResponse.json() as {
+        events: { authority: string; viewClass: string; type: string; subjects: string[] }[];
+      };
+      const clockEvents = timeline.events.filter((event) => event.viewClass === "clock");
+      assert.ok(clockEvents.length > 0, "expected the world clock.sync stream to render as viewClass clock");
+      assert.ok(clockEvents.every((event) => event.authority === "world"));
+      const markerEvents = timeline.events.filter((event) => event.viewClass === "marker");
+      assert.ok(markerEvents.length > 0, "expected marker.seen to render as viewClass marker");
+      assert.ok(markerEvents.every((event) => event.subjects.some((subject) => subject.startsWith("room:"))));
+
+      const metaResponse = await fetch(`${handle.url}/api/run-meta`);
+      assert.equal(metaResponse.status, 200);
+      const meta = await metaResponse.json() as {
+        seedSpread: { channel: string; event_id: string }[];
+        spreadSummary: { reach: number; latency?: number; first_appearance: { agent: string; event_id: string }[] };
+      };
+      assert.ok(meta.seedSpread.some((entry) => entry.channel === "uttered"));
+      assert.equal(meta.spreadSummary.reach, 1);
+      assert.equal(meta.spreadSummary.latency, 1);
+      assert.equal(meta.spreadSummary.first_appearance[0]?.agent, "sam");
     } finally {
       await handle.close();
     }

@@ -220,7 +220,9 @@ interface RunReplayBundle {
  * mode serves the same React shell as world/live mode, fed by
  * `/api/timeline`, the `runWorldTrace` adapter's `/api/world`, and
  * `/api/run-meta` (verdict + provenance, reusing `computeVerdict`/
- * `computeProvenance` from `runViewModelCompute.ts` unchanged). The bespoke
+ * `computeProvenance` from `runViewModelCompute.ts` unchanged; increment 3
+ * additionally carries `seedSpread`/`spreadSummary`/`variableSamples` when
+ * the run has them). The bespoke
  * run-reader page (`runPage.ts`/`runPageScript.ts`/`runPageStyles.ts`) and
  * its `/api/run-view-model.json` endpoint are retired as of increment 2: the
  * React shell now renders verdict/provenance at parity, so `GET
@@ -277,6 +279,16 @@ export const createViewerServer = async (config: ViewerServerConfig): Promise<Vi
           runId: runReplay.model.runId,
           verdict: runReplay.model.verdict,
           provenance: runReplay.model.provenance,
+          // Passthrough context for the spread readout's "reach/total"
+          // denominator (never spread math itself — that stays in
+          // `spreadSummary`, computed once by `computeSeedSpread`).
+          participants: runReplay.model.participants,
+          // Increment 3: undefined on a run with no `manifest.seed_declaration`
+          // (JSON.stringify drops an undefined-valued key outright — the
+          // React shell's graceful-absence path, not an empty array/object).
+          seedSpread: runReplay.model.seedSpread,
+          spreadSummary: runReplay.model.spreadSummary,
+          variableSamples: runReplay.model.variableSamples,
         });
         return;
       }
