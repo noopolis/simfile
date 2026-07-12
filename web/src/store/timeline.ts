@@ -64,20 +64,41 @@ export interface TimelineStoreState {
   playing: boolean;
   /** Steps per second while `playing`. */
   speed: number;
+  /** The current map/chat focus — independent of which portals are open. */
   selection: ElementRef | null;
+  /**
+   * Every currently open storyline portal, in open order. Portals stack
+   * (`VIEW_DESIGN.md`: "Portals stack with breadcrumbs") — opening a bank
+   * portal never closes an already-open agent portal, and vice versa. One
+   * mechanism for every element kind (`agent:` | `room:` | `bank:`): there is
+   * no per-kind portal list.
+   */
+  openPortals: ElementRef[];
+  /**
+   * Event ids currently linked-highlighted (recall -> turn linked selection,
+   * increment 2 rule 2). Hovering or selecting a recall chip on a turn sets
+   * this to the `memory.recalled` event id(s) it names; any open bank/agent
+   * portal renders a matching row highlighted, cross-portal, through this
+   * shared store field rather than component-to-component messaging.
+   */
+  highlightedEventIds: string[];
   loadError: string | null;
 }
 
 const listeners = new Set<() => void>();
 
-let state: TimelineStoreState = {
+const initialState = (): TimelineStoreState => ({
   timeline: null,
   cursor: 0,
   playing: false,
   speed: 2,
   selection: null,
+  openPortals: [],
+  highlightedEventIds: [],
   loadError: null,
-};
+});
+
+let state: TimelineStoreState = initialState();
 
 const emit = (): void => {
   for (const listener of listeners) listener();
@@ -100,7 +121,7 @@ export const timelineStore = {
 
 /** Reset hook for tests: this module holds process-wide singleton state. */
 export const resetTimelineStoreForTests = (): void => {
-  state = { timeline: null, cursor: 0, playing: false, speed: 2, selection: null, loadError: null };
+  state = initialState();
 };
 
 export const maxCursor = (timeline: RunTimeline | null): number =>
@@ -129,6 +150,35 @@ export const setSpeed = (speed: number): void => setState({ speed: Math.max(0.25
 
 export const setSelection = (ref: ElementRef | null): void => setState({ selection: ref });
 
+/** Opens `ref`'s storyline portal if it is not already open. Idempotent. */
+export const openPortal = (ref: ElementRef): void => {
+  if (state.openPortals.includes(ref)) return;
+  setState({ openPortals: [...state.openPortals, ref] });
+};
+
+export const closePortal = (ref: ElementRef): void =>
+  setState({ openPortals: state.openPortals.filter((open) => open !== ref) });
+
+/** Deep-link restore: replaces the whole open-portal set in one write. */
+export const setOpenPortals = (refs: readonly ElementRef[]): void =>
+  setState({ openPortals: [...new Set(refs)] });
+
+/**
+ * The one open-trigger every element kind shares (increment 2 rule 1: "one
+ * mechanism, all element kinds — no per-kind portal code"). Focuses `ref` as
+ * the current map/chat selection and opens its storyline portal, whether
+ * `ref` is `agent:`, `room:`, or `bank:`.
+ */
+export const focusAndOpenPortal = (ref: ElementRef): void => {
+  setSelection(ref);
+  openPortal(ref);
+};
+
+export const setHighlightedEventIds = (ids: readonly string[]): void =>
+  setState({ highlightedEventIds: [...ids] });
+
+export const clearHighlightedEventIds = (): void => setState({ highlightedEventIds: [] });
+
 /**
  * The time-link invariant, as a value every consumer shares instead of
  * re-deriving: the prefix slice of events "as of" a cursor. Because
@@ -140,9 +190,32 @@ export const setSelection = (ref: ElementRef | null): void => setState({ selecti
 export const eventsUpTo = (timeline: RunTimeline, cursor: number): TimelineEvent[] =>
   timeline.events.filter((event) => event.t <= cursor);
 
-/** Every event whose `subjects` includes `ref`, in `t` order — the raw feed an agent storyline portal renders. */
+/**
+ * Every event whose `subjects` includes `ref`, in `t` order — the raw feed a
+ * storyline portal renders, whatever kind of element `ref` names (`agent:` |
+ * `room:` | `bank:`). One slice function for every portal kind: a room
+ * storyline is `eventsForElement(timeline, "room:...")`, a bank storyline is
+ * `eventsForElement(timeline, "bank:...")`, unchanged from the agent case.
+ */
 export const eventsForElement = (timeline: RunTimeline, ref: ElementRef): TimelineEvent[] =>
   timeline.events.filter((event) => event.subjects.includes(ref));
+
+/**
+ * Recall -> turn linked selection (increment 2 rule 2): a `turn.input` event
+ * whose own `causes` include `mneme:`-prefixed ids means "this memory fed
+ * this turn." Resolves those cause ids, by id (never by ordinal position),
+ * to the actual `memory.recalled` `TimelineEvent` rows already in the
+ * timeline, so a recall chip can point at (and highlight) the exact bank-log
+ * row it names. Ids with no matching event (outside this run's recorded set)
+ * are silently dropped rather than invented.
+ */
+export const recallEventsForTurnInput = (timeline: RunTimeline, turnInput: TimelineEvent): TimelineEvent[] => {
+  const byEventId = new Map(timeline.events.map((event) => [event.eventId, event] as const));
+  return turnInput.causes
+    .filter((causeId) => causeId.startsWith("mneme:"))
+    .map((causeId) => byEventId.get(causeId))
+    .filter((event): event is TimelineEvent => event !== undefined);
+};
 
 export const useTimelineStore = (): TimelineStoreState =>
   useSyncExternalStore(timelineStore.subscribe, timelineStore.getSnapshot, timelineStore.getSnapshot);

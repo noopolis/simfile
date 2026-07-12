@@ -216,13 +216,16 @@ interface RunReplayBundle {
  * directory (`manifest.json` @ `simfile.run-manifest.v1` +
  * `raw/moltnet/transcript.json`, see `runDetect.ts`) never has `--state`
  * set, so this only applies in replay mode. Built once at server start (the
- * run directory is sealed, not tailed) rather than per-request. This
- * REPLACES the old bespoke run-reader HTML routing: run-replay mode serves
- * the same React shell as world/live mode, fed by `/api/timeline` and the
- * `runWorldTrace` adapter's `/api/world`, instead of `runPage.ts`'s
- * dedicated page. `runPage.ts`/`runPageScript.ts`/`runPageStyles.ts` stay in
- * the tree (their retirement is a later increment) but are no longer wired
- * into this server.
+ * run directory is sealed, not tailed) rather than per-request. Run-replay
+ * mode serves the same React shell as world/live mode, fed by
+ * `/api/timeline`, the `runWorldTrace` adapter's `/api/world`, and
+ * `/api/run-meta` (verdict + provenance, reusing `computeVerdict`/
+ * `computeProvenance` from `runViewModelCompute.ts` unchanged). The bespoke
+ * run-reader page (`runPage.ts`/`runPageScript.ts`/`runPageStyles.ts`) and
+ * its `/api/run-view-model.json` endpoint are retired as of increment 2: the
+ * React shell now renders verdict/provenance at parity, so `GET
+ * /api/run-view-model.json` 404s (falls through to the static-asset
+ * handler, same as any other unknown path).
  */
 const loadRunReplay = async (config: ViewerServerConfig): Promise<RunReplayBundle | null> => {
   if (config.mode !== "replay" || config.statePath) return null;
@@ -269,12 +272,19 @@ export const createViewerServer = async (config: ViewerServerConfig): Promise<Vi
         });
         return;
       }
-      if (path === "/api/run-view-model.json") {
-        sendJson(res, runReplay.model);
+      if (path === "/api/run-meta") {
+        sendJson(res, {
+          runId: runReplay.model.runId,
+          verdict: runReplay.model.verdict,
+          provenance: runReplay.model.provenance,
+        });
         return;
       }
       // No `/api/events`: run-replay's cursor is scrubbed by the client
       // store, never a live/synthetic tick that would fight it.
+      // No `/api/run-view-model.json`: retired in increment 2 — the React
+      // shell's `RunMetaPanels` renders `/api/run-meta` (a subset of the
+      // same computed model) instead of the bespoke `runPage.ts` page.
     } else {
       if (path === "/api/world") {
         await sendWorld(req, res, config);

@@ -17,10 +17,13 @@ a bespoke page.
 - `server.ts` hosts static files from `../web` and provides read-only JSON/SSE
   endpoints for the world viewer; at startup it calls `loadRunReplay` to
   detect run-replay mode (`isObserveRunDir`) and, when detected, additionally
-  serves `/api/timeline`, an adapted `/api/world`, and `/api/run-view-model.json`
-  — `/` still falls through to the same React static assets as world/live
-  mode, and `/api/state.mode` reports `"run-replay"`. `/api/events` (the
-  live SSE tick) is not served in this mode.
+  serves `/api/timeline`, an adapted `/api/world`, and `/api/run-meta`
+  (`{ runId, verdict, provenance }`, reusing `computeVerdict`/
+  `computeProvenance` unchanged) — `/` still falls through to the same React
+  static assets as world/live mode, and `/api/state.mode` reports
+  `"run-replay"`. `/api/events` (the live SSE tick) is not served in this
+  mode. `/api/run-view-model.json` is retired (increment 2): it 404s like
+  any other unknown path.
 - `runDetect.ts` — `isObserveRunDir`: the shape check that selects
   run-replay mode (never touched when `--state` is passed — that always
   means the world live mode).
@@ -43,20 +46,28 @@ a bespoke page.
   `web/src/viewer/worldModel.ts`'s `buildViewerWorld` already renders (one
   informational room anchor — these runs have no place-bearing world yet —
   heuristic agents, and `ledger_facts` keyed by `tick := t`).
-- `runViewModelTypes.ts` — the `RunViewModel` shape the run-view-model
-  endpoint still serves (verdict, thread with per-turn causal trace, minds,
-  provenance) plus the raw transcript/mneme-event-log shapes read from disk.
+- `runViewModelTypes.ts` — the `RunViewModel` shape (verdict, thread with
+  per-turn causal trace, minds, provenance) plus the raw
+  transcript/mneme-event-log shapes read from disk. `thread`/`minds` are
+  computed but no longer served whole; `/api/run-meta` exposes only
+  `verdict`/`provenance` (the React shell gets its chat/minds content from
+  `/api/timeline` instead — see `web/src/viewer/ReplayPanes.tsx`).
 - `runViewModelCompute.ts` — pure functions building the thread (message ->
   wake -> turn -> reply, plus the `mneme:`-cause "recall fed this turn" edge),
   the per-agent memory portals, the verdict, and provenance from
-  already-loaded data. No I/O.
+  already-loaded data. No I/O. `computeVerdict`/`computeProvenance` are the
+  functions `/api/run-meta` serves — do not reimplement their logic in
+  `server.ts` or in `web/`.
 - `runViewModel.ts` — `buildRunViewModel(runDir)`: calls the existing
   `runObserve` (`../observe/`) for the reconciled report and causal streams,
   `runRawArtifacts.ts` for the transcript and mneme event logs, and
   assembles the `RunViewModel`.
-- `runPage.ts` / `runPageStyles.ts` / `runPageScript.ts` — the now-bypassed
-  bespoke run-reader HTML page. `server.ts` no longer wires these in;
-  retired in a later increment, not deleted yet.
+
+`runPage.ts` / `runPageStyles.ts` / `runPageScript.ts` (the bespoke
+run-reader HTML page) and the `/api/run-view-model.json` endpoint they fed
+are retired as of increment 2: the React shell renders verdict/provenance
+at parity (`web/src/viewer/RunMetaPanels.tsx`), so there is no reason left
+to keep the standalone page in the tree.
 
 ## Rules
 

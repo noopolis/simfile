@@ -105,6 +105,13 @@
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
+  align-items: center;
+}
+
+.chat-chip-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .chat-chip {
@@ -122,7 +129,63 @@
   color: var(--accent-hi);
 }
 
+/* Recall -> turn chips (increment 2 rule 2) */
+
+.recall-chips {
+  display: inline-flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.recall-chip {
+  font-size: 10px;
+  padding: 2px 6px;
+  border: 1px dashed var(--coral);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--coral);
+  cursor: pointer;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recall-chip:hover,
+.recall-chip:focus-visible {
+  background: var(--coral);
+  color: var(--bg);
+}
+
 /* Minds rail */
+
+.mind-bank {
+  margin-bottom: 14px;
+  border-bottom: 1px solid var(--dashed);
+  padding-bottom: 8px;
+}
+
+.mind-bank-header {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  background: none;
+  border: none;
+  color: var(--accent-hi);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 11px;
+  padding: 4px 0;
+  cursor: pointer;
+}
+
+.mind-bank-header span {
+  color: var(--mute);
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: normal;
+}
 
 .mind-portal {
   margin-bottom: 10px;
@@ -355,6 +418,12 @@
   color: var(--accent-hi);
 }
 
+.storyline-row.highlighted {
+  background: var(--tint);
+  outline: 1px solid var(--coral);
+  color: var(--accent-hi);
+}
+
 .storyline-t {
   color: var(--faint);
 }
@@ -371,6 +440,153 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Verdict strip + provenance panel (increment 2 rule 3: React parity with
+   the retired bespoke run page) */
+
+.verdict-strip {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 10px;
+  border: 1px solid var(--line-soft);
+  border-radius: 3px;
+  background: none;
+  color: var(--sub);
+  font-size: 11px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.verdict-strip:hover {
+  border-color: var(--line);
+}
+
+.verdict-strip.unhealthy {
+  border-color: var(--coral);
+  color: var(--coral);
+}
+
+.verdict-dot {
+  color: var(--accent-hi);
+}
+
+.verdict-strip.unhealthy .verdict-dot {
+  color: var(--coral);
+}
+
+.verdict-failures {
+  color: var(--coral);
+  font-weight: 700;
+}
+
+.provenance-panel {
+  position: fixed;
+  top: 56px;
+  right: 16px;
+  bottom: 64px;
+  width: 380px;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  z-index: 30;
+  overflow: hidden;
+}
+
+.provenance-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.provenance-title {
+  font-weight: 600;
+  color: var(--accent-hi);
+  flex: 1;
+}
+
+.provenance-header button {
+  background: none;
+  border: none;
+  color: var(--mute);
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.provenance-body {
+  overflow: auto;
+  padding: 10px;
+  display: grid;
+  gap: 16px;
+}
+
+.provenance-body h3 {
+  margin: 0 0 6px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--mute);
+}
+
+.provenance-artifacts {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.provenance-artifacts li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 8px;
+  font-size: 11px;
+  padding: 3px 4px;
+  border-left: 2px solid var(--line-soft);
+}
+
+.provenance-artifacts li.fail {
+  border-left-color: var(--coral);
+  color: var(--coral);
+}
+
+.artifact-path {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.artifact-sha {
+  color: var(--faint);
+}
+
+.provenance-entries {
+  margin: 0;
+  display: grid;
+  gap: 4px;
+  font-size: 11px;
+}
+
+.provenance-entries div {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr);
+  gap: 8px;
+}
+
+.provenance-entries dt {
+  color: var(--mute);
+}
+
+.provenance-entries dd {
+  margin: 0;
+  color: var(--sub);
 }
 
 @media (max-width: 1100px) {

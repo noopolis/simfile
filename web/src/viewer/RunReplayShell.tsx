@@ -1,21 +1,18 @@
-import { useEffect, useMemo, useState } from "react";
-import type { ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import {
-  eventsForElement,
-  eventsUpTo,
+  focusAndOpenPortal,
   loadTimeline,
-  setCursor,
   setLoadError,
-  setSelection,
   useTimelineStore,
-  type ElementRef,
   type RunTimeline,
-  type TimelineEvent,
 } from "../store/timeline.js";
+import { applyDeepLink, parseDeepLink, startDeepLinkSync } from "../store/deepLink.js";
 import { ScrubBar } from "../chrome/ScrubBar.js";
 import { StorylinePortal } from "../portals/StorylinePortal.js";
 import { AsciiMap } from "./AsciiMap.js";
+import { ChatPane, MindsRail } from "./ReplayPanes.js";
+import { ProvenancePanel, VerdictStrip, useProvenancePanel, type RunMeta } from "./RunMetaPanels.js";
 import { defaultRenderSettings } from "./renderSettings.js";
 import { buildViewerWorld, viewerSkins } from "./worldModel.js";
 import type { ViewerContractTrace, ViewerWorldResponse } from "./types.js";
@@ -23,11 +20,14 @@ import "../styles-replay.css";
 
 /**
  * The run-replay hybrid shell (`VIEW_DESIGN.md` two-layer rule + rule 7):
- * the existing GlyphCSS map on one side, the placeless chat room and minds
- * rail as portals beside it, and one global `ScrubBar` at the bottom that
- * every pane reads its "as of" slice from via `timelineStore`. This is a
- * sibling of `App.tsx` (the world/live console), selected by `main.tsx`
- * from `/api/state.mode === "run-replay"` — `App.tsx` itself is untouched.
+ * the existing GlyphCSS map on one side, the placeless room chat and minds
+ * rail (`ReplayPanes.tsx`) as time-linked panes, a stack of storyline
+ * portals (`StorylinePortal.tsx`, one mechanism for every element kind), a
+ * verdict/provenance readout ported from the retired bespoke run page
+ * (`RunMetaPanels.tsx`), and one global `ScrubBar` — every pane reads its
+ * "as of" slice from `timelineStore`. This is a sibling of `App.tsx` (the
+ * world/live console), selected by `main.tsx` from
+ * `/api/state.mode === "run-replay"` — `App.tsx` itself is untouched.
  */
 
 const fetchJson = async <T,>(url: string): Promise<T> => {
@@ -36,99 +36,13 @@ const fetchJson = async <T,>(url: string): Promise<T> => {
   return response.json() as Promise<T>;
 };
 
-const mentionPattern = /@[A-Za-z][\w-]*/gu;
-
-const renderWithMentions = (text: string): ReactNode[] => {
-  const parts: ReactNode[] = [];
-  let lastIndex = 0;
-  let match: RegExpExecArray | null;
-  mentionPattern.lastIndex = 0;
-  let key = 0;
-  while ((match = mentionPattern.exec(text)) !== null) {
-    if (match.index > lastIndex) parts.push(<span key={key++}>{text.slice(lastIndex, match.index)}</span>);
-    parts.push(<mark key={key++} className="mention">{match[0]}</mark>);
-    lastIndex = match.index + match[0].length;
-  }
-  parts.push(<span key={key++}>{text.slice(lastIndex)}</span>);
-  return parts;
-};
-
-const downstreamOf = (timeline: RunTimeline, eventId: string): TimelineEvent[] =>
-  timeline.events.filter((event) => event.causes.includes(eventId));
-
-function ChatPane({ timeline, cursor }: { timeline: RunTimeline; cursor: number }) {
-  const messages = useMemo(
-    () => eventsUpTo(timeline, cursor).filter((event) => event.viewClass === "message"),
-    [timeline, cursor],
-  );
-
-  return (
-    <section className="replay-pane replay-chat" aria-label="Room chat">
-      <header className="replay-pane-header">room chat · {messages.length} messages as of t={cursor}</header>
-      <div className="replay-pane-body">
-        {messages.map((message) => {
-          const chips = downstreamOf(timeline, message.eventId);
-          return (
-            <article className="chat-message" key={message.eventId}>
-              <div className="chat-message-head">
-                <button className="chat-author" onClick={() => setSelection(message.actor ? `agent:${message.actor}` : null)} type="button">
-                  {message.actor ?? "unknown"}
-                </button>
-                <span className="chat-time">{message.recordedAt.slice(11, 19)}</span>
-              </div>
-              <p className="chat-text">{renderWithMentions(message.text ?? "")}</p>
-              {chips.length > 0 ? (
-                <div className="chat-chips">
-                  {chips.map((chip) => (
-                    <button className="chat-chip" key={chip.eventId} onClick={() => setCursor(chip.t)} type="button">
-                      {chip.viewClass}
-                    </button>
-                  ))}
-                </div>
-              ) : null}
-            </article>
-          );
-        })}
-      </div>
-    </section>
-  );
-}
-
-function MindsRail({ timeline, cursor }: { timeline: RunTimeline; cursor: number }) {
-  const agents = useMemo(() => timeline.elements.filter((element) => element.kind === "agent"), [timeline]);
-
-  return (
-    <aside className="replay-pane replay-minds" aria-label="Minds rail">
-      <header className="replay-pane-header">minds</header>
-      <div className="replay-pane-body">
-        {agents.map((agent) => {
-          const strata = eventsForElement(timeline, agent.ref)
-            .filter((event) => event.t <= cursor && event.viewClass.startsWith("memory."));
-          return (
-            <div className="mind-portal" key={agent.ref}>
-              <button className="mind-header" onClick={() => setSelection(agent.ref)} type="button">
-                {agent.label} <span>{strata.length}</span>
-              </button>
-              <ol className="mind-strata">
-                {strata.slice(-6).map((row) => (
-                  <li className={`stratum-${row.viewClass.split(".")[1]}`} key={row.eventId}>
-                    <span className="stratum-kind">{row.viewClass.split(".")[1]}</span>
-                    <span className="stratum-text">{row.text ?? row.type}</span>
-                  </li>
-                ))}
-              </ol>
-            </div>
-          );
-        })}
-      </div>
-    </aside>
-  );
-}
-
 export function RunReplayShell() {
-  const { timeline, cursor, selection, loadError } = useTimelineStore();
+  const { timeline, cursor, selection, openPortals, loadError } = useTimelineStore();
   const [worldTrace, setWorldTrace] = useState<ViewerContractTrace | null>(null);
   const [worldError, setWorldError] = useState<string | null>(null);
+  const [runMeta, setRunMeta] = useState<RunMeta | null>(null);
+  const provenancePanel = useProvenancePanel();
+  const deepLinkApplied = useRef(false);
 
   useEffect(() => {
     void fetchJson<RunTimeline>("/api/timeline")
@@ -138,7 +52,24 @@ export function RunReplayShell() {
     void fetchJson<ViewerWorldResponse>("/api/world")
       .then((response) => setWorldTrace(response.trace))
       .catch((error: unknown) => setWorldError(error instanceof Error ? error.message : String(error)));
+
+    void fetchJson<RunMeta>("/api/run-meta")
+      .then(setRunMeta)
+      .catch(() => setRunMeta(null));
+
+    // Global-chrome-owned side effect (never a component-local clock, rule 7):
+    // mirrors cursor/selection/open-portals into the URL as the user scrubs.
+    return startDeepLinkSync();
   }, []);
+
+  useEffect(() => {
+    // Deep-link restore (increment 2 rule 4) runs once, as soon as the
+    // timeline is loaded — `at` needs the loaded events to resolve an
+    // event id to its *current* `t`.
+    if (!timeline || deepLinkApplied.current) return;
+    deepLinkApplied.current = true;
+    applyDeepLink(timeline, parseDeepLink(window.location.search));
+  }, [timeline]);
 
   const world = useMemo(() => (worldTrace ? buildViewerWorld(worldTrace) : null), [worldTrace]);
   const selectedNode = useMemo(
@@ -164,8 +95,6 @@ export function RunReplayShell() {
     );
   }
 
-  const portalRef: ElementRef | null = selection && selection.startsWith("agent:") ? selection : null;
-
   return (
     <main className={`viewer-shell replay-shell ${skin.className}`}>
       <header className="topbar">
@@ -175,6 +104,7 @@ export function RunReplayShell() {
           <span className="version">run-replay</span>
           <span className="run-name">{timeline.runId}</span>
         </div>
+        {runMeta ? <VerdictStrip meta={runMeta} onOpenProvenance={provenancePanel.toggle} /> : null}
       </header>
 
       <div className="replay-grid">
@@ -186,7 +116,7 @@ export function RunReplayShell() {
               nodes={world.nodes}
               onSelect={(id) => {
                 const node = world.nodes.find((candidate) => candidate.id === id);
-                setSelection(node?.scope ?? null);
+                if (node) focusAndOpenPortal(node.scope);
               }}
               renderSettings={defaultRenderSettings}
               roomPaths={world.roomPaths}
@@ -203,7 +133,11 @@ export function RunReplayShell() {
         <MindsRail cursor={cursor} timeline={timeline} />
       </div>
 
-      {portalRef ? <StorylinePortal elementRef={portalRef} /> : null}
+      {openPortals.map((ref, index) => (
+        <StorylinePortal elementRef={ref} key={ref} stackIndex={index} />
+      ))}
+
+      {runMeta && provenancePanel.open ? <ProvenancePanel meta={runMeta} onClose={provenancePanel.close} /> : null}
 
       <ScrubBar />
     </main>

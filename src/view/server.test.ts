@@ -135,11 +135,21 @@ describe("createViewerServer", () => {
       assert.equal(page.status, 200);
       assert.match(await page.text(), /Simfile View/);
 
-      const modelResponse = await fetch(`${handle.url}/api/run-view-model.json`);
-      assert.equal(modelResponse.status, 200);
-      const model = await modelResponse.json() as { thread: unknown[]; verdict: { turnCount: number } };
-      assert.equal(model.thread.length, 4);
-      assert.equal(model.verdict.turnCount, 3);
+      const metaResponse = await fetch(`${handle.url}/api/run-meta`);
+      assert.equal(metaResponse.status, 200);
+      const meta = await metaResponse.json() as {
+        runId: string;
+        verdict: { turnCount: number; healthy: boolean };
+        provenance: { artifacts: { path: string; ok: boolean }[]; entries: { key: string; value: string }[] };
+      };
+      assert.equal(meta.verdict.turnCount, 3);
+      assert.equal(meta.verdict.healthy, true);
+      assert.ok(meta.provenance.artifacts.length >= 6);
+      assert.ok(meta.provenance.artifacts.every((artifact) => artifact.ok));
+      assert.ok(meta.provenance.entries.some((entry) => entry.value.includes("eleanor")));
+
+      const retiredModelResponse = await fetch(`${handle.url}/api/run-view-model.json`);
+      assert.equal(retiredModelResponse.status, 404, "the bespoke run-view-model endpoint is retired in increment 2");
 
       const timelineResponse = await fetch(`${handle.url}/api/timeline`);
       assert.equal(timelineResponse.status, 200);

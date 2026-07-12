@@ -10,13 +10,17 @@ const stringField = (world: Record<string, unknown>, key: string): string | unde
 
 /**
  * Loads a sealed compose-and-observe run directory and builds the single
- * `RunViewModel` the run-reader page (`runPage.ts`) renders: reconciles the
- * causal streams via the existing `runObserve` (Slice B pipeline, never
- * re-implemented here), reads the raw moltnet transcript for message text,
- * and reads each mneme bank's `events.jsonl` for the per-agent memory
- * portals. Pure orchestration — every field this returns traces back to one
- * of those three already-audited sources (`observe/AGENTS.md`,
- * `VIEW_DESIGN.md` rule 2: observer tier only, no invented state).
+ * `RunViewModel`: reconciles the causal streams via the existing
+ * `runObserve` (Slice B pipeline, never re-implemented here), reads the raw
+ * moltnet transcript for message text, and reads each mneme bank's
+ * `events.jsonl` for the per-agent memory portals. Pure orchestration —
+ * every field this returns traces back to one of those three
+ * already-audited sources (`observe/AGENTS.md`, `VIEW_DESIGN.md` rule 2:
+ * observer tier only, no invented state). `server.ts`'s `/api/run-meta`
+ * serves this model's `verdict`/`provenance` fields to the React shell
+ * (`web/src/viewer/RunMetaPanels.tsx`); `thread`/`minds` are computed too
+ * but no longer served whole — the shell gets chat/minds content from
+ * `/api/timeline` instead.
  */
 export const buildRunViewModel = async (runDir: string): Promise<RunViewModel> => {
   const observed = await runObserve(runDir);
