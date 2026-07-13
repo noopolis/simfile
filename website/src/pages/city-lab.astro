@@ -1,0 +1,264 @@
+---
+// Dev lab for dialing in the ASCII city hero. Not linked from the site.
+// Interactive camera + light + city controls, roads + floor, and a "copy config"
+// button so the chosen values can be handed back to bake into GlyphCity.astro.
+---
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>city-lab · simfile</title>
+    <meta name="robots" content="noindex" />
+    <style>
+      :root { color-scheme: dark; }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; height: 100%; background: #0b0b0d; color: #ffe8b8;
+        font-family: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, monospace; }
+      #stage { position: fixed; inset: 0; z-index: 0; }
+      #stage :global(pre) { margin: 0; width: 100%; height: 100%; line-height: 1; letter-spacing: 0; }
+      #panel {
+        position: fixed; top: 0; right: 0; z-index: 2; width: 320px; max-height: 100vh;
+        overflow-y: auto; padding: 12px 14px 20px; background: rgba(3,5,10,0.9);
+        border-left: 1px solid rgba(255,232,184,0.18); font-size: 11px;
+      }
+      #panel h2 { margin: 14px 0 6px; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase;
+        color: rgba(255,232,184,0.5); border-bottom: 1px solid rgba(255,232,184,0.12); padding-bottom: 4px; }
+      #panel h2:first-child { margin-top: 0; }
+      .row { display: grid; grid-template-columns: 92px 1fr 44px; align-items: center; gap: 6px; margin: 4px 0; }
+      .row label { color: rgba(255,232,184,0.75); }
+      .row input[type=range] { width: 100%; accent-color: #7c5cff; }
+      .row .val { text-align: right; color: #a78bfa; }
+      .btns { display: flex; gap: 8px; margin-top: 12px; }
+      button { flex: 1; padding: 8px; border: 1px solid #7c5cff; background: #7c5cff; color: #0b0b0d;
+        font: 700 11px ui-monospace, monospace; cursor: pointer; border-radius: 0; }
+      button.alt { background: transparent; color: #a78bfa; }
+      #out { margin-top: 10px; width: 100%; height: 120px; background: #03050a; color: #cbb9ff;
+        border: 1px solid rgba(255,232,184,0.18); font: 10px/1.4 ui-monospace, monospace; padding: 8px; resize: vertical; }
+      #hint { position: fixed; left: 12px; bottom: 10px; z-index: 2; font-size: 10px; color: rgba(255,232,184,0.4); }
+    </style>
+  </head>
+  <body>
+    <div id="stage"></div>
+    <div id="panel"></div>
+    <div id="hint">drag sliders → tune · Copy config → paste back to bake it in</div>
+
+    <script>
+      import { createGlyphScene, createGlyphOrthographicCamera, cubePolygons, planePolygons } from "glyphcss";
+
+      const hex = (rgb) => "#" + rgb.map((c) => Math.max(0, Math.min(255, Math.round(c))).toString(16).padStart(2, "0")).join("");
+      const lerp = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t);
+      const rng = (s) => { const x = Math.sin(s * 12.9898 + 7.13) * 43758.5453; return x - Math.floor(x); };
+
+      const FLOOR = [20, 20, 30], ROAD = [46, 44, 66], LANE = [150, 132, 96];
+      const COOL = [64, 60, 96], COOL_HI = [108, 96, 168], CREAM = [150, 138, 110], GOLD = [150, 108, 52], ROOF = [176, 150, 240];
+
+      // Config: { key: [default, min, max, step, group] }
+      const SPEC = {
+        rotX: [60, 0, 90, 1, "camera"], rotY: [12, -90, 90, 1, "camera"],
+        iso: [52, 0, 90, 1, "camera"], zoom: [1.9, 0.5, 6, 0.1, "camera"],
+        centerX: [0.5, 0, 1, 0.01, "camera"], centerY: [0.64, 0, 1, 0.01, "camera"],
+        density: [1, 0.5, 2.6, 0.1, "render"], aa: [1, 1, 3, 1, "render"],
+        lightX: [0.25, -1, 1, 0.05, "light"], lightY: [-0.3, -1, 1, 0.05, "light"], lightZ: [0.25, -1, 1, 0.05, "light"],
+        lightI: [1.25, 0, 2.5, 0.05, "light"], ambI: [0.65, 0, 1.5, 0.05, "light"],
+        depth: [5, 2, 18, 1, "city"], run: [8, 3, 24, 1, "city"],
+        blockD: [176, 24, 340, 4, "city"], blockW: [184, 24, 340, 4, "city"],
+        bsize: [40, 8, 120, 1, "city"], gap: [3, 0, 40, 1, "city"],
+        street: [68, 0, 200, 1, "city"], merge: [0.18, 0, 0.8, 0.02, "city"],
+        maxH: [315, 40, 600, 5, "city"], minH: [72, 6, 300, 2, "city"],
+        loop: [21, 4, 60, 1, "city"], speed: [1, 0, 3, 0.1, "city"], ground: [1, 0, 1, 1, "city"],
+      };
+      const T = {};
+      const urlq = new URLSearchParams(window.location.search);
+      for (const k in SPEC) T[k] = urlq.has(k) ? Number(urlq.get(k)) : SPEC[k][0];
+
+      const stage = document.getElementById("stage");
+      let scene = null, buildings = [], roadsY = [], spanY = 0, offset = 0;
+      let rot = (x, y) => [x, y]; // world rotation about Z by `iso` (set in build)
+      const BASE_FONT = 13;
+
+      let pitch = 0, spanX = 0;
+      function build() {
+        if (scene) scene.destroy();
+        // Render density: autoSize derives cols/rows from the <pre> font size, so a
+        // smaller font = more cells = a denser render.
+        stage.style.fontSize = (BASE_FONT / T.density) + "px";
+        const camera = createGlyphOrthographicCamera({
+          rotX: T.rotX, rotY: T.rotY, zoom: T.zoom, center: [T.centerX, T.centerY],
+        });
+        scene = createGlyphScene(stage, {
+          mode: "solid", camera, autoSize: true, cellAspect: 2.0, useColors: true,
+          supersample: Math.max(1, Math.round(T.aa)), // anti-alias → kills road/lane motion crawl
+          directionalLight: { direction: [T.lightX, T.lightY, T.lightZ], intensity: T.lightI, color: "#ffffff" },
+          ambientLight: { intensity: T.ambI, color: "#7a6fc0" },
+        });
+        buildings = []; roadsY = [];
+        // Rotate the WHOLE city (blocks, roads, buildings) about Z by `iso` so the
+        // buildings' sides line up with the block sides while keeping the iso angle.
+        const isoRad = (T.iso * Math.PI) / 180, cI = Math.cos(isoRad), sI = Math.sin(isoRad);
+        rot = (lx, ly) => [lx * cI - ly * sI, lx * sI + ly * cI];
+        // pitch = lot (block) + road (street). Changing street widens the roads and
+        // Blocks are PLOTS of land (blockD × blockW). `street` is the road between
+        // plots. Each plot is filled with `bsize` buildings packed at `gap` — so
+        // enlarging a plot fits MORE buildings, it doesn't scale them. Plots
+        // themselves vary: `merge` fuses some into bigger blocks, like a real city.
+        const bd = Math.round(T.depth), br = Math.round(T.run); // block counts
+        const pitchX = T.blockD + T.street, pitchY = T.blockW + T.street;
+        spanX = bd * pitchX;
+        spanY = br * pitchY;
+        const half = (v) => v / 2;
+
+        // Slab placed in LOCAL coords lx,ly → rotated into the city's world frame.
+        const slab = (color, w, d, cz, sz, lx, ly) => {
+          const [wx, wy] = rot(lx, ly);
+          return scene.add(cubePolygons({ center: [0, 0, 0], size: 1, color: hex(color) }),
+            { position: [wx, wy, cz], scale: [w, d, sz], rotation: [0, 0, T.iso] });
+        };
+
+        if (T.ground) {
+          // Floor stays flat + unrotated (a big centered slab under everything).
+          scene.add(cubePolygons({ center: [0, 0, 0], size: 1, color: hex(FLOOR) }),
+            { position: [0, 0, -3], scale: [Math.max(spanX, spanY) * 3, Math.max(spanX, spanY) * 3, 6] });
+          // Road grid at every plot boundary (merged plots' buildings cover their roads).
+          for (let i = 1; i <= bd; i++) {
+            const x = -half(spanX) + i * pitchX - T.street / 2;
+            slab(ROAD, T.street, spanY, 0, 1, x, 0);
+            slab(LANE, 5, spanY, 0.1, 1, x, 0);
+          }
+          for (let j = 1; j <= br; j++) {
+            const baseY = -half(spanY) + j * pitchY - T.street / 2;
+            const road = slab(ROAD, spanX, T.street, 0, 1, 0, baseY);
+            const lane = slab(LANE, spanX, 5, 0.1, 1, 0, baseY);
+            roadsY.push({ road, lane, baseY });
+          }
+        }
+
+        const addPart = (parts, color, fx, fy, dz, sz) => {
+          const handle = scene.add(cubePolygons({ center: [0, 0, 0], size: 1, color: hex(color) }),
+            { position: [0, 0, dz], scale: [fx, fy, sz], rotation: [0, 0, T.iso] });
+          parts.push({ handle, fx, fy, dz, sz });
+        };
+
+        // Fill a plot [x0,x0+D] × [y0,y0+W] with packed bsize buildings.
+        const step = T.bsize + T.gap;
+        const fillPlot = (x0, D, y0, W, seed) => {
+          const nx = Math.max(1, Math.floor((D + T.gap) / step));
+          const ny = Math.max(1, Math.floor((W + T.gap) / step));
+          const usedD = nx * T.bsize + (nx - 1) * T.gap;
+          const usedW = ny * T.bsize + (ny - 1) * T.gap;
+          const ox = x0 + (D - usedD) / 2, oy = y0 + (W - usedW) / 2;
+          for (let a = 0; a < nx; a++) {
+            for (let b = 0; b < ny; b++) {
+              const s = seed * 131 + a * 17 + b * 7;
+              if (rng(s + 500) < 0.05) continue; // occasional in-plot gap
+              const x = ox + a * step + T.bsize / 2 - half(spanX);
+              const baseY = oy + b * step + T.bsize / 2 - half(spanY);
+              const tall = rng(s + 42);
+              const hh = T.minH + Math.pow(rng(s + 7), 2.4) * (T.maxH - T.minH) * (tall > 0.85 ? 1 : 0.4);
+              const warm = rng(s + 90);
+              const base = warm > 0.9 ? GOLD : warm > 0.76 ? CREAM : lerp(COOL, COOL_HI, rng(s + 3));
+              const fx = T.bsize, fy = T.bsize, m = 0.94;
+              const parts = [];
+              if (hh > T.minH * 1.7 && rng(s + 60) > 0.5) {
+                const bH = hh * (0.5 + rng(s + 61) * 0.2);
+                addPart(parts, base, fx * m, fy * m, bH / 2, bH);
+                const tH = hh - bH, tf = m * (0.6 + rng(s + 62) * 0.2);
+                addPart(parts, lerp(base, COOL_HI, 0.3), fx * tf, fy * tf, bH + tH / 2, tH);
+              } else addPart(parts, base, fx * m, fy * m, hh / 2, hh);
+              addPart(parts, ROOF, fx * m * 0.8, fy * m * 0.8, hh + 2, 4);
+              buildings.push({ parts, x, baseY });
+            }
+          }
+        };
+
+        // Irregular plot grid: some plots merge into bigger blocks.
+        const usedB = Array.from({ length: bd }, () => new Array(br).fill(false));
+        for (let i = 0; i < bd; i++) {
+          for (let j = 0; j < br; j++) {
+            if (usedB[i][j]) continue;
+            const bc = i * br + j;
+            if (rng(bc + 900) < 0.05) { usedB[i][j] = true; continue; } // plaza / empty plot
+            let sI = 1, sJ = 1;
+            const roll = rng(bc + 300);
+            if (roll < T.merge / 2 && j + 1 < br && !usedB[i][j + 1]) sJ = 2;
+            else if (roll < T.merge && i + 1 < bd && !usedB[i + 1][j]) sI = 2;
+            for (let di = 0; di < sI; di++) for (let dj = 0; dj < sJ; dj++) usedB[i + di][j + dj] = true;
+            const x0 = -half(spanX) + i * pitchX;
+            const y0 = -half(spanY) + j * pitchY;
+            const D = T.blockD * sI + (sI - 1) * T.street; // merged plot spans the covered road
+            const W = T.blockW * sJ + (sJ - 1) * T.street;
+            // shift back to world-centered coords for fillPlot (it re-centers via half())
+            fillPlot(x0 + half(spanX), D, y0 + half(spanY), W, bc);
+          }
+        }
+        place();
+      }
+
+      function place() {
+        if (!scene) return;
+        const wrap = (v) => ((v % spanY) + spanY) % spanY - spanY / 2;
+        for (const rd of roadsY) {
+          const [rx, ry] = rot(0, wrap(rd.baseY + offset));
+          rd.road.setTransform({ position: [rx, ry, 0], scale: [spanX, T.street, 1], rotation: [0, 0, T.iso] });
+          const [lx, ly] = rot(0, wrap(rd.baseY + offset));
+          rd.lane.setTransform({ position: [lx, ly, 0.1], scale: [spanX, 5, 1], rotation: [0, 0, T.iso] });
+        }
+        for (const b of buildings) {
+          const [wx, wy] = rot(b.x, wrap(b.baseY + offset));
+          for (const p of b.parts)
+            p.handle.setTransform({ position: [wx, wy, p.dz], scale: [p.fx, p.fy, p.sz], rotation: [0, 0, T.iso] });
+        }
+        scene.rerender();
+      }
+
+      // ── Build the control panel ──────────────────────────────────────────
+      const panel = document.getElementById("panel");
+      let lastGroup = "";
+      const valEls = {};
+      for (const k in SPEC) {
+        const [def, min, max, step, group] = SPEC[k];
+        if (group !== lastGroup) { const h = document.createElement("h2"); h.textContent = group; panel.appendChild(h); lastGroup = group; }
+        const row = document.createElement("div"); row.className = "row";
+        const label = document.createElement("label"); label.textContent = k;
+        const input = document.createElement("input"); input.type = "range";
+        input.min = min; input.max = max; input.step = step; input.value = T[k];
+        const val = document.createElement("span"); val.className = "val"; val.textContent = T[k]; valEls[k] = val;
+        input.addEventListener("input", () => {
+          T[k] = Number(input.value); val.textContent = input.value;
+          if (["rotX", "rotY", "zoom", "centerX", "centerY", "lightX", "lightY", "lightZ", "lightI", "ambI"].includes(k)) {
+            // camera/light: rebuild (cheap) to reflect immediately
+            build();
+          } else build();
+        });
+        row.append(label, input, val); panel.appendChild(row);
+      }
+      const btns = document.createElement("div"); btns.className = "btns";
+      const copyBtn = document.createElement("button"); copyBtn.textContent = "Copy config";
+      const playBtn = document.createElement("button"); playBtn.className = "alt"; playBtn.textContent = "Pause";
+      btns.append(copyBtn, playBtn); panel.appendChild(btns);
+      const out = document.createElement("textarea"); out.id = "out"; out.readOnly = true; panel.appendChild(out);
+
+      function configText() {
+        const qs = Object.keys(SPEC).map((k) => `${k}=${T[k]}`).join("&");
+        const obj = Object.keys(SPEC).map((k) => `      ${k}: ${T[k]},`).join("\n");
+        return `URL: /city-lab?${qs}\n\n// values\n${obj}`;
+      }
+      copyBtn.addEventListener("click", () => {
+        const txt = configText(); out.value = txt;
+        navigator.clipboard?.writeText(txt).then(() => { copyBtn.textContent = "Copied!"; setTimeout(() => (copyBtn.textContent = "Copy config"), 1200); });
+      });
+      let playing = true;
+      playBtn.addEventListener("click", () => { playing = !playing; playBtn.textContent = playing ? "Pause" : "Play"; });
+
+      // ── Animate ──────────────────────────────────────────────────────────
+      build();
+      let last = null;
+      const tick = (now) => {
+        requestAnimationFrame(tick);
+        const dt = last !== null ? Math.min((now - last) / 1000, 0.05) : 0; last = now;
+        if (playing && spanY > 0) { offset += dt * (spanY / T.loop) * T.speed; place(); }
+      };
+      requestAnimationFrame(tick);
+    </script>
+  </body>
+</html>
