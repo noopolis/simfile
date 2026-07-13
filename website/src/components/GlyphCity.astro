@@ -1,0 +1,192 @@
+---
+// Animated isometric ASCII city, rendered by GlyphCSS's software rasterizer.
+// Blocks are plots of land filled with packed buildings; the whole city is
+// yawed by `iso` so buildings align with the block sides, and it scrolls +
+// wraps seamlessly. Config baked from the city-lab; URL query overrides any key.
+// Honors prefers-reduced-motion (static frame) and pauses when off-screen.
+const { fontUrl } = Astro.props;
+---
+
+<div class="city" aria-hidden="true">
+  <div class="city__stage"></div>
+  <div class="city__vignette"></div>
+</div>
+
+<script>
+  import { createGlyphScene, createGlyphOrthographicCamera, cubePolygons } from "glyphcss";
+
+  const hex = (rgb: number[]) =>
+    "#" + rgb.map((c) => Math.max(0, Math.min(255, Math.round(c))).toString(16).padStart(2, "0")).join("");
+  const lerp = (a: number[], b: number[], t: number) => a.map((v, i) => v + (b[i] - v) * t);
+  const rng = (s: number) => { const x = Math.sin(s * 12.9898 + 7.13) * 43758.5453; return x - Math.floor(x); };
+
+  const FLOOR = [20, 20, 30], ROAD = [46, 44, 66], LANE = [150, 132, 96];
+  const COOL = [64, 60, 96], COOL_HI = [108, 96, 168], CREAM = [150, 138, 110], GOLD = [150, 108, 52], ROOF = [176, 150, 240];
+  const BASE_FONT = 13;
+
+  // Baked config (dialed in the city-lab). Any key can be overridden via ?key=…
+  const DEF: Record<string, number> = {
+    rotX: 60, rotY: 90, iso: 52, zoom: 2.1, centerX: 0.5, centerY: 0.64,
+    density: 1.4, aa: 1,
+    lightX: 0.25, lightY: -0.1, lightZ: 0.25, lightI: 1.25, ambI: 0.65,
+    depth: 5, run: 8, blockD: 188, blockW: 184, bsize: 40, gap: 21, street: 41,
+    merge: 0.34, maxH: 200, minH: 34, loop: 19, speed: 1, ground: 1,
+  };
+
+  function boot(root: HTMLElement) {
+    const stage = root.querySelector(".city__stage") as HTMLElement;
+    if (!stage) return;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    const q = new URLSearchParams(window.location.search);
+    const T: Record<string, number> = {};
+    for (const k in DEF) T[k] = q.has(k) ? Number(q.get(k)) : DEF[k];
+
+    let scene: any = null, buildings: any[] = [], roadsY: any[] = [], spanX = 0, spanY = 0, offset = 0;
+    let rot = (x: number, y: number): [number, number] => [x, y];
+
+    stage.style.fontSize = BASE_FONT / T.density + "px";
+    const camera = createGlyphOrthographicCamera({ rotX: T.rotX, rotY: T.rotY, zoom: T.zoom, center: [T.centerX, T.centerY] });
+    scene = createGlyphScene(stage, {
+      mode: "solid", camera, autoSize: true, cellAspect: 2.0, useColors: true,
+      supersample: Math.max(1, Math.round(T.aa)),
+      directionalLight: { direction: [T.lightX, T.lightY, T.lightZ], intensity: T.lightI, color: "#ffffff" },
+      ambientLight: { intensity: T.ambI, color: "#7a6fc0" },
+    });
+
+    const isoRad = (T.iso * Math.PI) / 180, cI = Math.cos(isoRad), sI = Math.sin(isoRad);
+    rot = (lx, ly) => [lx * cI - ly * sI, lx * sI + ly * cI];
+
+    const bd = Math.round(T.depth), br = Math.round(T.run);
+    const pitchX = T.blockD + T.street, pitchY = T.blockW + T.street;
+    spanX = bd * pitchX;
+    spanY = br * pitchY;
+    const half = (v: number) => v / 2;
+
+    const slab = (color: number[], w: number, d: number, cz: number, sz: number, lx: number, ly: number) => {
+      const [wx, wy] = rot(lx, ly);
+      return scene.add(cubePolygons({ center: [0, 0, 0], size: 1, color: hex(color) }),
+        { position: [wx, wy, cz], scale: [w, d, sz], rotation: [0, 0, T.iso] });
+    };
+
+    if (T.ground) {
+      scene.add(cubePolygons({ center: [0, 0, 0], size: 1, color: hex(FLOOR) }),
+        { position: [0, 0, -3], scale: [Math.max(spanX, spanY) * 3, Math.max(spanX, spanY) * 3, 6] });
+      for (let i = 1; i <= bd; i++) {
+        const x = -half(spanX) + i * pitchX - T.street / 2;
+        slab(ROAD, T.street, spanY, 0, 1, x, 0);
+        slab(LANE, 5, spanY, 0.1, 1, x, 0);
+      }
+      for (let j = 1; j <= br; j++) {
+        const baseY = -half(spanY) + j * pitchY - T.street / 2;
+        const road = slab(ROAD, spanX, T.street, 0, 1, 0, baseY);
+        const lane = slab(LANE, spanX, 5, 0.1, 1, 0, baseY);
+        roadsY.push({ road, lane, baseY });
+      }
+    }
+
+    const addPart = (parts: any[], color: number[], fx: number, fy: number, dz: number, sz: number) => {
+      const handle = scene.add(cubePolygons({ center: [0, 0, 0], size: 1, color: hex(color) }),
+        { position: [0, 0, dz], scale: [fx, fy, sz], rotation: [0, 0, T.iso] });
+      parts.push({ handle, fx, fy, dz, sz });
+    };
+
+    const step = T.bsize + T.gap;
+    const fillPlot = (x0: number, D: number, y0: number, W: number, seed: number) => {
+      const nx = Math.max(1, Math.floor((D + T.gap) / step));
+      const ny = Math.max(1, Math.floor((W + T.gap) / step));
+      const usedD = nx * T.bsize + (nx - 1) * T.gap, usedW = ny * T.bsize + (ny - 1) * T.gap;
+      const ox = x0 + (D - usedD) / 2, oy = y0 + (W - usedW) / 2;
+      for (let a = 0; a < nx; a++) {
+        for (let b = 0; b < ny; b++) {
+          const s = seed * 131 + a * 17 + b * 7;
+          if (rng(s + 500) < 0.05) continue;
+          const x = ox + a * step + T.bsize / 2 - half(spanX);
+          const baseY = oy + b * step + T.bsize / 2 - half(spanY);
+          const tall = rng(s + 42);
+          const hh = T.minH + Math.pow(rng(s + 7), 2.4) * (T.maxH - T.minH) * (tall > 0.85 ? 1 : 0.4);
+          const warm = rng(s + 90);
+          const base = warm > 0.9 ? GOLD : warm > 0.76 ? CREAM : lerp(COOL, COOL_HI, rng(s + 3));
+          const fx = T.bsize, fy = T.bsize, m = 0.94;
+          const parts: any[] = [];
+          if (hh > T.minH * 1.7 && rng(s + 60) > 0.5) {
+            const bH = hh * (0.5 + rng(s + 61) * 0.2);
+            addPart(parts, base, fx * m, fy * m, bH / 2, bH);
+            const tH = hh - bH, tf = m * (0.6 + rng(s + 62) * 0.2);
+            addPart(parts, lerp(base, COOL_HI, 0.3), fx * tf, fy * tf, bH + tH / 2, tH);
+          } else addPart(parts, base, fx * m, fy * m, hh / 2, hh);
+          addPart(parts, ROOF, fx * m * 0.8, fy * m * 0.8, hh + 2, 4);
+          buildings.push({ parts, x, baseY });
+        }
+      }
+    };
+
+    const usedB = Array.from({ length: bd }, () => new Array(br).fill(false));
+    for (let i = 0; i < bd; i++) {
+      for (let j = 0; j < br; j++) {
+        if (usedB[i][j]) continue;
+        const bc = i * br + j;
+        if (rng(bc + 900) < 0.05) { usedB[i][j] = true; continue; }
+        let sI2 = 1, sJ = 1;
+        const roll = rng(bc + 300);
+        if (roll < T.merge / 2 && j + 1 < br && !usedB[i][j + 1]) sJ = 2;
+        else if (roll < T.merge && i + 1 < bd && !usedB[i + 1][j]) sI2 = 2;
+        for (let di = 0; di < sI2; di++) for (let dj = 0; dj < sJ; dj++) usedB[i + di][j + dj] = true;
+        const x0 = -half(spanX) + i * pitchX, y0 = -half(spanY) + j * pitchY;
+        const D = T.blockD * sI2 + (sI2 - 1) * T.street, W = T.blockW * sJ + (sJ - 1) * T.street;
+        fillPlot(x0 + half(spanX), D, y0 + half(spanY), W, bc);
+      }
+    }
+
+    const place = () => {
+      const wrap = (v: number) => ((v % spanY) + spanY) % spanY - spanY / 2;
+      for (const rd of roadsY) {
+        const [rx, ry] = rot(0, wrap(rd.baseY + offset));
+        rd.road.setTransform({ position: [rx, ry, 0], scale: [spanX, T.street, 1], rotation: [0, 0, T.iso] });
+        rd.lane.setTransform({ position: [rx, ry, 0.1], scale: [spanX, 5, 1], rotation: [0, 0, T.iso] });
+      }
+      for (const b of buildings) {
+        const [wx, wy] = rot(b.x, wrap(b.baseY + offset));
+        for (const p of b.parts) p.handle.setTransform({ position: [wx, wy, p.dz], scale: [p.fx, p.fy, p.sz], rotation: [0, 0, T.iso] });
+      }
+      scene.rerender();
+    };
+
+    place();
+    if (reduce) return;
+
+    const speed = spanY / T.loop;
+    let raf = 0, last: number | null = null, running = true;
+    const tick = (now: number) => {
+      raf = requestAnimationFrame(tick);
+      if (!running) { last = now; return; }
+      const dt = last !== null ? Math.min((now - last) / 1000, 0.05) : 0;
+      last = now;
+      offset += dt * speed * T.speed;
+      place();
+    };
+    raf = requestAnimationFrame(tick);
+
+    const io = new IntersectionObserver((e) => { running = e[0]?.isIntersecting ?? true; last = null; }, { threshold: 0.01 });
+    io.observe(root);
+  }
+
+  const el = document.currentScript?.previousElementSibling as HTMLElement | null;
+  const root = el?.classList.contains("city") ? el : document.querySelector(".city");
+  if (root) boot(root as HTMLElement);
+</script>
+
+<style>
+  .city { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 0; }
+  .city__stage { position: absolute; inset: -8% -2% -12% -2%; }
+  .city__stage :global(pre) {
+    margin: 0; width: 100%; height: 100%; line-height: 1; letter-spacing: 0; user-select: none;
+    font-family: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, monospace;
+  }
+  .city__vignette {
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(52% 54% at 50% 48%, rgba(11, 11, 13, 0.72) 0%, rgba(11, 11, 13, 0.3) 44%, rgba(11, 11, 13, 0) 78%),
+      linear-gradient(180deg, rgba(11, 11, 13, 0.3) 0%, rgba(11, 11, 13, 0) 20%, rgba(11, 11, 13, 0) 66%, #0b0b0d 100%);
+  }
+</style>

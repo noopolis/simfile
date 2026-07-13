@@ -59,11 +59,11 @@ a { color: inherit; }
   position: relative;
   width: 100vw;
   margin-inline: calc(50% - 50vw);
-  min-height: min(90vh, 840px);
+  min-height: calc(100vh - 62px); /* fill the viewport before the fold (minus the nav) */
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: clamp(56px, 8vw, 104px) 0 clamp(52px, 6vw, 88px);
+  padding: clamp(40px, 6vw, 88px) 0;
   overflow: hidden;
   border-bottom: 1px solid var(--gc-border);
 }
@@ -76,6 +76,23 @@ a { color: inherit; }
   flex-direction: column;
   align-items: center;
   text-align: center;
+}
+/* Backdrop scrim so the copy stays legible over the moving city. */
+.hero-copy::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: -5% -3% -7%;
+  background: radial-gradient(
+    72% 62% at 50% 46%,
+    rgba(8, 8, 11, 0.9) 0%,
+    rgba(8, 8, 11, 0.74) 52%,
+    rgba(8, 8, 11, 0.32) 80%,
+    rgba(8, 8, 11, 0) 100%
+  );
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+  pointer-events: none;
 }
 .eyebrow, .section-label { margin: 0 0 20px; font-size: 10px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; }
 .eyebrow { color: var(--gc-orange); }
