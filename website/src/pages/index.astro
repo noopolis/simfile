@@ -1,5 +1,6 @@
 ---
 import GlyphCity from '../components/GlyphCity.astro';
+import SiteHeader from '../components/SiteHeader.astro';
 import '../styles/landing.css';
 ---
 <!DOCTYPE html>
@@ -30,17 +31,7 @@ import '../styles/landing.css';
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   </head>
   <body>
-    <header class="nav">
-      <div class="nav-in">
-        <a class="mark" href="/" aria-label="Simfile home">sim<span>file</span></a>
-        <nav class="nav-links" aria-label="Primary navigation">
-          <a href="#result">Result</a>
-          <a href="#world">World</a>
-          <a href="#viewer">Viewer</a>
-          <a href="/introduction/">Docs</a>
-        </nav>
-      </div>
-    </header>
+    <SiteHeader />
 
     <main>
       <section class="hero" aria-labelledby="hero-title">
@@ -85,83 +76,49 @@ import '../styles/landing.css';
         </div>
       </section>
 
-      <section class="band term-section-rule" id="result" aria-labelledby="result-title">
-        <div class="inner">
-          <div class="section-copy">
-            <p class="section-label">01 / Result</p>
-            <h2 id="result-title">The secret spread. The controls held.</h2>
-            <p>
-              We placed one token in one agent's private memory and nowhere else. In five of five real-engine runs it surfaced in conversation and reached the second agent — no prompt told anyone to share it.
-            </p>
-          </div>
-
-          <div class="result-layout">
-            <div class="table-wrap term-cmd-frame">
-              <div class="term-cmd-bar"><span>control matrix</span><span>sealed ledger</span></div>
-              <table>
-                <thead>
-                  <tr><th>Condition</th><th>Private seed</th><th>Result</th></tr>
-                </thead>
-                <tbody>
-                  <tr><td>Seeded · 5 runs</td><td>the secret</td><td class="pass">reached the second agent, 5/5</td></tr>
-                  <tr><td>Replacement control</td><td>a different secret</td><td>the replacement spread; the original stayed absent</td></tr>
-                  <tr><td>Unseeded control</td><td>nothing</td><td>the token never appeared</td></tr>
-                </tbody>
-              </table>
-            </div>
-            <div class="run-count term-cmd-frame" aria-label="Five out of five runs">
-              <div class="term-cmd-bar"><span>run count</span><span>observed</span></div>
-              <div class="run-count-value">5/5</div>
-              <div class="run-count-label">In this experiment</div>
-            </div>
-          </div>
-          <p class="metric-line">measured per run — channel · reach · latency · fidelity, re-derived from the sealed ledger, never trusted from the harness.</p>
-        </div>
-      </section>
-
       <section class="band term-section-rule" id="world" aria-labelledby="world-title">
         <div class="inner">
           <div class="section-copy">
-            <p class="section-label">02 / World</p>
-            <h2 id="world-title">Write the conditions. Don't write the outcome.</h2>
+            <p class="section-label">01 / World</p>
+            <h2 id="world-title">The whole world in one <span>Simfile</span>.</h2>
             <p>
-              Declare the clock, variables, generators, rules, markers, and falsifiable probes in a small YAML file. The world is deterministic; the agents still decide what to say, remember, and do. The world can wake an agent or post into a room — it never scripts a thought.
+              A single <code>Simfile</code> declares the clock, variables, generators, rules, markers, and falsifiable probes around your agents. The mechanics are deterministic for a seed; the agents still decide what to say, remember, and do. The world can wake an agent or post into a room — it never scripts a thought.
             </p>
           </div>
 
           <div class="world-layout">
             <div class="code-block term-cmd-frame">
-              <div class="block-label term-cmd-bar"><span>Simfile.yaml · one valid world</span><span>yaml</span></div>
+              <div class="block-label term-cmd-bar"><span>[ Simfile ]</span><span>one authored world</span></div>
               <pre><code>simfile_version: "0.1"
 name: autonomous-office-world
-spawnfile: ./Spawnfile
+spawnfile: ./Spawnfile            # the org of real agents this world wraps
 
-clock:
+clock:                            # simulated time — deterministic for the seed
   seed: office-run-014
   tick: 20s
 
-variables:
+variables:                        # world state you can drive and measure
   filing_pressure:
     scope: room:office-floor:case-warroom
     initial: 0.4
     range: 0..1
 
-generators:
+generators:                       # how variables evolve each tick
   deadline_ramp:
     kind: deterministic
     variable: filing_pressure
     delta: 0.02
 
-rules:
+rules:                            # when the world acts on the agents
   deadline_bites:
     when:
       variable: filing_pressure
       above: 0.85
     do:
-      - action: wake:recommend
+      - action: wake:recommend    # nudge a room — never a scripted line
         to: room:office-floor:case-warroom
 
-markers:
+markers:                          # tokens to trace as they spread
   tenant_name:
     text:
       - Rosa Delgado
@@ -169,7 +126,7 @@ markers:
     scopes:
       - room:office-floor:case-warroom
 
-probes:
+probes:                           # falsifiable checks over the run
   deadline_observed:
     when:
       event: wake.recommended
@@ -181,8 +138,8 @@ probes:
             <div class="command-block term-cmd-frame" aria-label="Simfile commands">
               <div class="block-label term-cmd-bar"><span>Run it</span><span>shell</span></div>
               <pre><code><span class="prompt">$</span> npm install simfile
-<span class="prompt">$</span> simfile validate ./Simfile.yaml
-<span class="prompt">$</span> simfile run ./Simfile.yaml --out runs/latest
+<span class="prompt">$</span> simfile validate ./Simfile
+<span class="prompt">$</span> simfile run ./Simfile --out runs/latest
 <span class="prompt">$</span> simfile observe runs/latest        # causal chains + spread → report.json
 <span class="prompt">$</span> simfile view runs/latest           # scrub, descend, watch spread</code></pre>
             </div>
@@ -193,7 +150,7 @@ probes:
       <section class="band term-section-rule" id="viewer" aria-labelledby="viewer-title">
         <div class="inner">
           <div class="section-copy">
-            <p class="section-label">03 / Viewer</p>
+            <p class="section-label">02 / Viewer</p>
             <h2 id="viewer-title">One timeline rewinds the whole society.</h2>
             <p>
               Drag one cursor. The world map, the room conversation, every agent's memory, and the causal traces all return to the same moment. Every glyph points to a record — ask anything which records make it true. The header always discloses whether the dialogue came from a real engine or a scripted fixture.
@@ -244,8 +201,8 @@ probes:
           <div class="command-block term-cmd-frame compact" aria-label="Simfile quickstart commands">
             <div class="term-cmd-bar"><span>quickstart</span><span>shell</span></div>
             <pre><code><span class="prompt">$</span> npm install simfile
-<span class="prompt">$</span> simfile validate ./Simfile.yaml
-<span class="prompt">$</span> simfile run ./Simfile.yaml --out runs/latest
+<span class="prompt">$</span> simfile validate ./Simfile
+<span class="prompt">$</span> simfile run ./Simfile --out runs/latest
 <span class="prompt">$</span> simfile observe runs/latest        # causal chains + spread → report.json
 <span class="prompt">$</span> simfile view runs/latest           # scrub, descend, watch spread</code></pre>
           </div>

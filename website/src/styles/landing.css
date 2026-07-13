@@ -17,7 +17,7 @@
   --mono: ui-monospace, "JetBrains Mono", "SF Mono", SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
-html { scroll-behavior: auto; scroll-padding-top: 64px; background: var(--gc-bg-deep); }
+html { scroll-behavior: auto; scroll-padding-top: 72px; background: var(--gc-bg-deep); }
 body {
   margin: 0;
   overflow-x: clip;
@@ -40,26 +40,13 @@ a { color: inherit; }
 ::selection { background: var(--gc-cyan); color: var(--gc-bg-deep); }
 ::-moz-selection { background: var(--gc-cyan); color: var(--gc-bg-deep); }
 
-.inner, .nav-in { width: min(1280px, calc(100% - 48px)); margin-inline: auto; }
-
-.nav { position: sticky; top: 0; z-index: 10; border-bottom: 1px solid var(--gc-border); background: rgba(3, 5, 10, 0.9); }
-.nav::after { position: absolute; bottom: -1px; left: max(24px, calc((100% - 1280px) / 2)); width: 72px; height: 1px; content: ""; background: var(--gc-cyan); }
-.nav-in { min-height: 62px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
-.mark { font: 800 17px/1 var(--mono); letter-spacing: -0.06em; text-decoration: none; text-transform: lowercase; }
-.mark::before { margin-right: 9px; color: var(--gc-cream-faint); content: "["; }
-.mark::after { margin-left: 9px; color: var(--gc-cream-faint); content: "]"; }
-.mark span { color: var(--gc-cyan); text-shadow: 0 0 16px rgba(124, 92, 255, 0.3); }
-.nav-links { display: flex; gap: clamp(14px, 2.3vw, 30px); color: var(--gc-cream-faint); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; }
-.nav-links a { text-decoration: none; }
-.nav-links a::before { color: var(--gc-cyan); content: "./"; opacity: 0; }
-.nav-links a:hover, .nav-links a:focus-visible { color: var(--gc-cyan); outline: none; }
-.nav-links a:hover::before, .nav-links a:focus-visible::before { opacity: 1; }
+.inner { width: min(1280px, calc(100% - 48px)); margin-inline: auto; }
 
 .hero {
   position: relative;
   width: 100vw;
   margin-inline: calc(50% - 50vw);
-  min-height: calc(100vh - 62px); /* fill the viewport before the fold (minus the nav) */
+  min-height: calc(100vh - 72px); /* fill the viewport before the fold (minus the header) */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -106,6 +93,7 @@ h1 span { color: var(--gc-cyan); text-shadow: 0 0 26px rgba(124, 92, 255, 0.32);
 @keyframes cursor-blink { 50% { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { h1::after { animation: none; } }
 .hero-sub, .section-copy > p:last-child, .descend-copy > p:last-child { color: var(--gc-cream-dim); font-size: clamp(15px, 1.4vw, 17px); line-height: 1.72; }
+.hero-sub code, .section-copy code, .band p code { padding: 0.08em 0.3em; border: 1px solid rgba(124, 92, 255, 0.24); background: rgba(124, 92, 255, 0.1); color: #a78bfa; font-family: var(--mono); font-size: 0.92em; }
 .hero-sub { max-width: 58ch; margin: 26px 0 0; }
 .hero-copy .actions { justify-content: center; }
 .hero-copy .install-chip { margin-inline: auto; }
@@ -215,10 +203,7 @@ pre code { padding: 20px; display: block; color: var(--gc-cream-dim); font: 11px
 }
 
 @media (max-width: 560px) {
-  .inner, .hero, .nav-in { width: min(100% - 28px, 1280px); }
-  .nav-in { min-height: 58px; gap: 14px; }
-  .nav-links { gap: 10px; font-size: 9px; }
-  .nav-links a::before { display: none; }
+  .inner, .hero { width: min(100% - 28px, 1280px); }
   .hero { padding-top: 56px; }
   h1 { font-size: clamp(39px, 12vw, 58px); }
   .result-callout p { padding: 17px; }

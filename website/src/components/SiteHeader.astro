@@ -1,0 +1,112 @@
+---
+// Canonical site header — the same glyphcss terminal bar the docs use, for
+// standalone (non-Starlight) pages like the landing. Keep this visually in sync
+// with DocsHeader.astro.
+const pathname = Astro.url.pathname.replace(/\/$/, '') || '/';
+const topLinks = [
+  { href: '/', label: 'Home', active: pathname === '/' },
+  { href: '/quickstart', label: 'Quickstart', active: ['/quickstart', '/introduction'].includes(pathname) },
+  { href: '/guides/viewer', label: 'Viewer', active: pathname.startsWith('/guides/') && !pathname.startsWith('/guides/memetics') },
+  { href: '/guides/memetics', label: 'Memetics', active: pathname.startsWith('/guides/memetics') },
+  { href: '/reference/simfile', label: 'Reference', active: pathname.startsWith('/reference/') },
+];
+---
+
+<header class="header">
+  <div class="title-wrapper">
+    <a href="/" class="site-title" aria-label="Simfile home">
+      <span class="mark"><span class="base">sim</span><span class="accent">file</span></span>
+    </a>
+  </div>
+  <nav class="docs-top-nav" aria-label="Site sections">
+    {topLinks.map((link) => (
+      <a href={link.href} class:list={[{ active: link.active }]}>{link.label}</a>
+    ))}
+  </nav>
+  <div class="header-spacer">
+    <a class="github-social" href="https://github.com/noopolis/simfile" target="_blank" rel="noopener noreferrer" aria-label="View simfile on GitHub">
+      <span class="github-social__main">
+        <svg class="github-social__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+          <path fill-rule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.19 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z" />
+        </svg>
+        <span>GitHub</span>
+      </span>
+      <span class="github-social__count" id="star-count-site">&#9733; &hellip;</span>
+    </a>
+  </div>
+</header>
+
+<script>
+  (async () => {
+    try {
+      const res = await fetch("https://api.github.com/repos/noopolis/simfile");
+      if (!res.ok) return;
+      const json = await res.json();
+      const el = document.getElementById("star-count-site");
+      if (el && typeof json?.stargazers_count === "number") el.textContent = `★ ${json.stargazers_count}`;
+    } catch (_) {}
+  })();
+</script>
+
+<style>
+  .header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: center;
+    gap: 24px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    width: 100%;
+    height: 72px;
+    background: #0f1115;
+    border-bottom: 1px solid rgba(255, 232, 184, 0.18);
+    box-sizing: border-box;
+    font-family: ui-monospace, "JetBrains Mono", "SF Mono", "Menlo", monospace;
+    background-image: repeating-linear-gradient(to bottom, transparent 0 2px, rgba(255, 255, 255, 0.012) 2px 3px);
+  }
+  .title-wrapper { justify-self: start; padding-left: 16px; min-width: 0; overflow: clip; }
+  .site-title { text-decoration: none; display: inline-flex; align-items: center; }
+  .mark { font-family: ui-monospace, "JetBrains Mono", monospace; font-weight: 700; font-size: 14px; line-height: 1; }
+  .mark .base { color: rgba(255, 232, 184, 0.94); }
+  .mark .accent { color: #7c5cff; }
+
+  .docs-top-nav { display: flex; align-items: center; gap: 0.25rem; justify-self: center; min-width: 0; }
+  .docs-top-nav a {
+    font-family: ui-monospace, "JetBrains Mono", "SF Mono", "Menlo", monospace;
+    color: rgba(226, 232, 240, 0.55);
+    font-size: 13px; font-weight: 600; letter-spacing: 0.02em; line-height: 1;
+    text-decoration: none; white-space: nowrap; border-radius: 0; padding: 0.55rem 0.75rem; position: relative;
+  }
+  .docs-top-nav a::before { content: "> "; color: rgba(124, 92, 255, 0.45); }
+  .docs-top-nav a:hover { color: rgba(255, 232, 184, 0.95); }
+  .docs-top-nav a:hover::before { color: #f97316; }
+  .docs-top-nav a.active { color: rgba(255, 232, 184, 0.98); text-shadow: 0 0 6px rgba(249, 115, 22, 0.4); }
+  .docs-top-nav a.active::before { content: "[ "; color: #f97316; }
+  .docs-top-nav a.active::after { content: " ]"; color: #f97316; }
+
+  .header-spacer { justify-self: end; padding-right: 16px; min-width: 0; }
+  .github-social {
+    display: inline-flex; align-items: center; gap: 6px; text-decoration: none; border-radius: 0;
+    border: 1px solid rgba(255, 232, 184, 0.3); overflow: hidden; background: rgba(15, 17, 21, 0.6);
+    color: rgba(255, 232, 184, 0.94); font-family: ui-monospace, monospace; font-weight: 600;
+    transition: border-color 100ms, color 100ms;
+  }
+  .github-social:hover { border-color: rgba(124, 92, 255, 0.7); color: #e2e8f0; }
+  .github-social__main { display: inline-flex; align-items: center; gap: 6px; padding: 5px 9px; border-right: 1px solid rgba(255, 232, 184, 0.2); font-size: 12px; }
+  .github-social__main::before { content: "["; color: rgba(124, 92, 255, 0.65); margin-right: 2px; }
+  .github-social__main::after { content: "]"; color: rgba(124, 92, 255, 0.65); margin-left: 2px; }
+  .github-social__icon { width: 14px; height: 14px; fill: currentColor; }
+  .github-social__count { display: inline-flex; align-items: center; justify-content: center; min-width: 40px; padding: 5px 9px; color: rgba(255, 232, 184, 0.85); font-size: 12px; }
+
+  @media (max-width: 38rem) {
+    .header { grid-template-areas: "brand spacer" "links links"; grid-template-columns: minmax(0, 1fr) auto; height: 90px; row-gap: 8px; column-gap: 12px; align-content: center; overflow-x: clip; }
+    .title-wrapper { grid-area: brand; }
+    .header-spacer { grid-area: spacer; padding-right: 0; }
+    .docs-top-nav { grid-area: links; justify-self: start; width: 100%; padding-left: 12px; min-width: 0; max-width: 100%; overflow-x: auto; scrollbar-width: none; }
+    .docs-top-nav::-webkit-scrollbar { display: none; }
+    .docs-top-nav a { font-size: 0.78rem; padding-inline: 0.25rem; }
+    .docs-top-nav a::before { content: ""; }
+    .github-social { display: none; }
+  }
+</style>
