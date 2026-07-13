@@ -12,6 +12,6 @@ This boundary protects two properties:
 - a run with no presentation pack still renders;
 - changing presentation cannot change the clock, rules, causal record, observation result, or replay.
 
-The renderer may derive layout and synthesize visual anchors—for example, a `team:<id>` node next to its representative when a mind membrane is present. Those are labeled presentation choices, not ledger events.
+The renderer may derive layout and synthesize visual anchors, for example, a `team:<id>` node next to its representative when a mind membrane is present. Those are labeled presentation choices, not ledger events.
 
 There is no `simfile skin` command and no public skin manifest flag in v0.1. Treat custom presentation packs as an appendix and future viewer surface, not as world-authoring keys or the headline capability. The shipped instrument is described in the [viewer guide](/guides/viewer/).

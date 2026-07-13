@@ -92,7 +92,7 @@ It writes:
 runs/<run-id>/observe/report.json
 ```
 
-That report contains participants, causally ordered agent turns, complete and incomplete chain counts, per-bank memory measurements, failures, and—when the manifest declares a seed—`seed_spread` plus `spread_summary`.
+That report contains participants, causally ordered agent turns, complete and incomplete chain counts, per-bank memory measurements, and failures. When the manifest declares a seed, it also contains `seed_spread` plus `spread_summary`.
 
 To inspect the committed scripted golden run without starting any services:
 

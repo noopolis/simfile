@@ -21,7 +21,7 @@ This is the core authoring rule: hardcode constraints, not conclusions.
 
 The world is a Moltnet participant. A `moltnet:message`, `moltnet:dm`, or `wake:recommend` action travels through the same room topology the organization already uses. There is no hidden prompt path that lets the experiment inject an answer directly into an agent.
 
-That is especially important for memetics. A kickoff can ask Eleanor to discuss an office rollout, but it must not contain the seeded name. If the name appears, the evidence must come from the agent's recorded utterance or memory—not the instrument's own message.
+That is especially important for memetics. A kickoff can ask Eleanor to discuss an office rollout, but it must not contain the seeded name. If the name appears, the evidence must come from the agent's recorded utterance or memory, not the instrument's own message.
 
 ## Two run records
 
@@ -54,7 +54,7 @@ The seed-spread observer does not trust the live world's `marker.seen` event as 
 
 An agent can itself be represented by a Spawnfile team with an interior Moltnet network. The outer agent is then a membrane: a representative speaks on the public floor while an inner council deliberates behind it.
 
-When a composed run includes compatible `spawnfile-report.json` metadata, the viewer derives that membrane. Descending opens an interior map, filtered chat, member minds, and a crossings view for the representative—all on the same global cursor. Ordinary leaf agents do not get an invented interior.
+When a composed run includes compatible `spawnfile-report.json` metadata, the viewer derives that membrane. Descending opens an interior map, filtered chat, member minds, and a crossings view for the representative, all on the same global cursor. Ordinary leaf agents do not get an invented interior.
 
 ## Pixel accountability
 

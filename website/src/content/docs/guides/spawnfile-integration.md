@@ -3,7 +3,7 @@ title: Spawnfile Integration
 description: How Simfile binds to, runs around, and observes a Spawnfile organization without absorbing it.
 ---
 
-Spawnfile owns the organization. Simfile owns the deterministic world and the resulting measurement. Their integration is through versioned files, CLI receipts, and Moltnet—not imports of Spawnfile internals.
+Spawnfile owns the organization. Simfile owns the deterministic world and the resulting measurement. Their integration is through versioned files, CLI receipts, and Moltnet, not imports of Spawnfile internals.
 
 ## Authoring reference versus resolved graph
 

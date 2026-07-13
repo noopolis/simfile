@@ -278,7 +278,7 @@ const topLinks = [
         /* Align the first link's text with the logo above it (logo sits at 16px;
            each link adds its own 0.25rem ≈ 4px inset, so the nav pads 12px).
            Plain physical padding (not calc/logical) so it applies on first paint
-           — the calc form was being resolved a frame late, flickering the nav. */
+           The calc form was being resolved a frame late, flickering the nav. */
         padding-left: 12px;
         /* Grid items default to min-width:auto (= min-content), which lets the
            nav grow to its links' width and overflow the viewport instead of

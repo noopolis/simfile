@@ -99,7 +99,7 @@
         rot = (lx, ly) => [lx * cI - ly * sI, lx * sI + ly * cI];
         // pitch = lot (block) + road (street). Changing street widens the roads and
         // Blocks are PLOTS of land (blockD × blockW). `street` is the road between
-        // plots. Each plot is filled with `bsize` buildings packed at `gap` — so
+        // plots. Each plot is filled with `bsize` buildings packed at `gap`, so
         // enlarging a plot fits MORE buildings, it doesn't scale them. Plots
         // themselves vary: `merge` fuses some into bigger blocks, like a real city.
         const bd = Math.round(T.depth), br = Math.round(T.run); // block counts

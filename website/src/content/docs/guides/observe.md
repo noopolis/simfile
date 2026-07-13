@@ -105,7 +105,7 @@ The manifest pins the matcher policy. `exact` uses case-insensitive Unicode word
 - `latency`: the lowest known absolute world tick among those agents' first appearances. It does not subtract a seed tick and is omitted when no appearance can be joined to a tick.
 - `first_appearance`: one earliest known entry per reached agent.
 
-The serialized `seed_spread` array is grouped by channel derivation—seed, utterances, registrations, then recalls. Treat event ids and ticks as its evidence; do not assume array position is a global causal order.
+The serialized `seed_spread` array is grouped by channel derivation: seed, utterances, registrations, then recalls. Treat event ids and ticks as its evidence; do not assume array position is a global causal order.
 
 See [Memetics Experiment](/guides/memetics/) for the seeded, replacement, and unseeded experimental design.
 
