@@ -1,6 +1,6 @@
 {
   "name": "simfile",
-  "version": "0.1.0",
+  "version": "0.0.1",
   "description": "Declarative simulation world mechanics for agentic organizations.",
   "license": "MIT",
   "type": "module",
