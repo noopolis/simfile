@@ -349,7 +349,7 @@
 }
 
 .scrub-phase-band.tone-1 { background: var(--tint); }
-.scrub-phase-band.tone-2 { background: rgba(0, 229, 204, 0.14); }
+.scrub-phase-band.tone-2 { background: rgba(124, 92, 255, 0.14); }
 .scrub-phase-band.tone-3 { background: rgba(255, 255, 255, 0.05); }
 .scrub-phase-band.tone-4 { background: rgba(212, 96, 74, 0.12); }
 
@@ -728,7 +728,7 @@
 
 .engine-badge-real-engine {
   color: var(--green-hi);
-  background: rgba(61, 220, 132, 0.1);
+  background: rgba(124, 92, 255, 0.1);
 }
 
 .engine-badge-mixed {
@@ -737,8 +737,8 @@
     45deg,
     rgba(212, 96, 74, 0.12),
     rgba(212, 96, 74, 0.12) 6px,
-    rgba(61, 220, 132, 0.12) 6px,
-    rgba(61, 220, 132, 0.12) 12px
+    rgba(124, 92, 255, 0.12) 6px,
+    rgba(124, 92, 255, 0.12) 12px
   );
 }
 
