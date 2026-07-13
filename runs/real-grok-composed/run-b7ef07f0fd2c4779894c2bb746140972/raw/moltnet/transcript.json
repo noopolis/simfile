@@ -1,0 +1,136 @@
+{
+  "conversations": [
+    {
+      "messages": [
+        {
+          "id": "seed-1783803725750",
+          "network_id": "office_lab",
+          "origin": {
+            "network_id": "office_lab",
+            "message_id": "seed-1783803725750"
+          },
+          "target": {
+            "kind": "room",
+            "room_id": "office-room"
+          },
+          "from": {
+            "type": "agent",
+            "id": "world",
+            "name": "@world",
+            "network_id": "office_lab",
+            "fqid": "molt://office_lab/agents/world"
+          },
+          "parts": [
+            {
+              "kind": "text",
+              "text": "@eleanor We need to finalize the office pilot rollout with Sam: propose the pilot office and a target date for the file migration, and get Sam's agreement.",
+              "data": {
+                "simfile_event_id": "seed-1783803725750",
+                "simfile_event_kind": "world.message",
+                "simfile_rule_id": "operator:eleanor"
+              }
+            }
+          ],
+          "mentions": [
+            "molt://office_lab/agents/eleanor"
+          ],
+          "created_at": "2026-07-11T21:02:05.758429292Z"
+        },
+        {
+          "id": "msg_1204aa48-2644-45b9-ac54-eb43d5d623a3",
+          "network_id": "office_lab",
+          "origin": {
+            "network_id": "office_lab",
+            "message_id": "msg_1204aa48-2644-45b9-ac54-eb43d5d623a3"
+          },
+          "target": {
+            "kind": "room",
+            "room_id": "office-room"
+          },
+          "from": {
+            "type": "agent",
+            "id": "eleanor",
+            "name": "eleanor",
+            "network_id": "office_lab",
+            "fqid": "molt://office_lab/agents/eleanor"
+          },
+          "parts": [
+            {
+              "kind": "text",
+              "text": "@sam — locking this in so we can move.\n**Pilot office:** Riverside Annex, Suite 204 (smaller footprint, same VPN and file share as main).\n**File migration go-live:** Monday, July 28, 2026 — full cutover that morning; no parallel run after that date.\nIf that works for you, say yes here and we’ll treat it as agreed. If Suite 204 or the 28th is a problem, name what you’d change and we’ll settle it in one pass."
+            }
+          ],
+          "mentions": [
+            "molt://office_lab/agents/sam"
+          ],
+          "created_at": "2026-07-11T21:02:19.830288048Z"
+        },
+        {
+          "id": "msg_37bc09cc-3428-4d3c-bf90-ae5b14ad8d5d",
+          "network_id": "office_lab",
+          "origin": {
+            "network_id": "office_lab",
+            "message_id": "msg_37bc09cc-3428-4d3c-bf90-ae5b14ad8d5d"
+          },
+          "target": {
+            "kind": "room",
+            "room_id": "office-room"
+          },
+          "from": {
+            "type": "agent",
+            "id": "sam",
+            "name": "sam",
+            "network_id": "office_lab",
+            "fqid": "molt://office_lab/agents/sam"
+          },
+          "parts": [
+            {
+              "kind": "text",
+              "text": "Checking Moltnet context for anything that affects the pilot or go-live date.\n@eleanor Yes — Suite 204 and July 28 work for me. Treat it as agreed; I’ll plan to be on-site that morning for the cutover."
+            }
+          ],
+          "mentions": [
+            "molt://office_lab/agents/eleanor"
+          ],
+          "created_at": "2026-07-11T21:02:26.63649476Z"
+        },
+        {
+          "id": "msg_d0e0e690-cd83-406e-8c2d-5f69addb6da1",
+          "network_id": "office_lab",
+          "origin": {
+            "network_id": "office_lab",
+            "message_id": "msg_d0e0e690-cd83-406e-8c2d-5f69addb6da1"
+          },
+          "target": {
+            "kind": "room",
+            "room_id": "office-room"
+          },
+          "from": {
+            "type": "agent",
+            "id": "eleanor",
+            "name": "eleanor",
+            "network_id": "office_lab",
+            "fqid": "molt://office_lab/agents/eleanor"
+          },
+          "parts": [
+            {
+              "kind": "text",
+              "text": "Checking Moltnet workflow so we can confirm the agreement in the room.\n@sam Agreed — locked.\n**Pilot:** Riverside Annex, Suite 204. **Cutover:** Monday, July 28, 2026, full file migration that morning; no parallel run after.\nI’ll circulate this as the official plan. See you on-site the 28th for the cutover."
+            }
+          ],
+          "mentions": [
+            "molt://office_lab/agents/sam"
+          ],
+          "created_at": "2026-07-11T21:02:32.079575471Z"
+        }
+      ],
+      "target": {
+        "kind": "room",
+        "id": "office-room",
+        "scope": "room:office_lab:office-room"
+      }
+    }
+  ],
+  "source": "moltnet-exported",
+  "version": "simfile.moltnet.transcript.v1"
+}

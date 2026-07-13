@@ -1,0 +1,14 @@
+simfile_version: "0.1"
+run_id: office-world-v0
+run_name: office-world-v0
+seed: office-v0-seed
+ticks: 120
+source:
+  path: fixtures/e2e/office-world-v0/Simfile
+  sha256: c1699757627d9cbfe07b160d29655074ff2454373524d4d68a7b5cb65821413f
+artifacts:
+  ledger: ledger.jsonl
+  report: report.json
+  telemetry: telemetry.json
+  viewer_trace: viewer-trace.json
+  moltnet: moltnet-transcript.json

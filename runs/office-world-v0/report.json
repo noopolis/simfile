@@ -1,0 +1,49 @@
+{
+  "markers": [
+    {
+      "markerId": "tenant_name",
+      "mode": "containment",
+      "passed": true,
+      "evidence": [
+        "office-world-v0:61"
+      ],
+      "detail": "contained marker stayed within declared scopes"
+    },
+    {
+      "markerId": "moon_phrase",
+      "mode": "propagation",
+      "passed": true,
+      "evidence": [
+        "office-world-v0:3"
+      ],
+      "detail": "marker reached required propagation scope(s)"
+    }
+  ],
+  "probes": [
+    {
+      "probeId": "deadline_observed",
+      "passed": true,
+      "evidence": [
+        "office-world-v0:109"
+      ],
+      "count": 1
+    },
+    {
+      "probeId": "pressure_peaked",
+      "passed": true,
+      "evidence": [
+        "sample:104",
+        "sample:105",
+        "sample:106",
+        "sample:107",
+        "sample:108",
+        "sample:109",
+        "sample:110"
+      ],
+      "count": 7
+    }
+  ],
+  "run_id": "office-world-v0",
+  "seed": "office-v0-seed",
+  "ticks": 120
+}

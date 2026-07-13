@@ -1,0 +1,59 @@
+{
+  "entries": [
+    {
+      "event_id": "office-world-v0:3",
+      "kind": "world.message",
+      "marker_ids": [
+        "moon_phrase"
+      ],
+      "rule_id": "full_moon_rises",
+      "scope": "room:office-floor:after-work-chat",
+      "sim_time": 0,
+      "target": "room:office-floor:after-work-chat",
+      "text": "Full moon over the office; the social weather is 0.450322."
+    },
+    {
+      "event_id": "office-world-v0:59",
+      "kind": "world.message",
+      "marker_ids": [],
+      "rule_id": "maribel_calls",
+      "scope": "room:office-floor:office-hall",
+      "sim_time": 32400,
+      "target": "room:office-floor:office-hall",
+      "text": "Maribel calls: she found the contractor texts."
+    },
+    {
+      "event_id": "office-world-v0:61",
+      "kind": "world.message",
+      "marker_ids": [
+        "tenant_name"
+      ],
+      "rule_id": "witness_revealed",
+      "scope": "room:office-floor:case-warroom",
+      "sim_time": 32400,
+      "target": "room:office-floor:case-warroom",
+      "text": "The witness is Rosa Delgado. Her name stays in this room."
+    },
+    {
+      "event_id": "office-world-v0:62",
+      "kind": "world.dm",
+      "marker_ids": [],
+      "rule_id": "witness_revealed",
+      "scope": "agent:eleanor",
+      "sim_time": 32400,
+      "target": "agent:eleanor",
+      "text": "Private perception: the landlord's lawyer sent Eleanor a terse letter."
+    },
+    {
+      "event_id": "office-world-v0:109",
+      "kind": "wake.recommended",
+      "marker_ids": [],
+      "scope": "room:office-floor:case-warroom",
+      "sim_time": 59400,
+      "target": "room:office-floor:case-warroom",
+      "text": "deadline_bites"
+    }
+  ],
+  "run_id": "office-world-v0",
+  "version": "simfile.moltnet.transcript.v1"
+}

@@ -1,0 +1,1326 @@
+{
+  "run_id": "office-world-v0",
+  "samples": [
+    {
+      "phase": "night",
+      "sim_time": 0,
+      "tick": 0,
+      "variables": {
+        "filing_pressure": 0.4,
+        "evening_pull": 0.110537,
+        "moon_fullness": 0.96,
+        "social_weather": 0.450322
+      }
+    },
+    {
+      "phase": "night",
+      "sim_time": 600,
+      "tick": 1,
+      "variables": {
+        "filing_pressure": 0.4,
+        "evening_pull": 0.13021,
+        "moon_fullness": 0.96,
+        "social_weather": 0.462126
+      }
+    },
+    {
+      "phase": "night",
+      "sim_time": 1200,
+      "tick": 2,
+      "variables": {
+        "filing_pressure": 0.4,
+        "evening_pull": 0.141383,
+        "moon_fullness": 0.96,
+        "social_weather": 0.46883
+      }
+    },
+    {
+      "phase": "night",
+      "sim_time": 1800,
+      "tick": 3,
+      "variables": {
+        "filing_pressure": 0.4,
+        "evening_pull": 0.145121,
+        "moon_fullness": 0.96,
+        "social_weather": 0.471073
+      }
+    },
+    {
+      "phase": "night",
+      "sim_time": 2400,
+      "tick": 4,
+      "variables": {
+        "filing_pressure": 0.4,
+        "evening_pull": 0.1615,
+        "moon_fullness": 0.96,
+        "social_weather": 0.4809
+      }
+    },
+    {
+      "phase": "night",
+      "sim_time": 3000,
+      "tick": 5,
+      "variables": {
+        "filing_pressure": 0.4,
+        "evening_pull": 0.190237,
+        "moon_fullness": 0.96,
+        "social_weather": 0.498142
+      }
+    },
+    {
+      "phase": "night",
+      "sim_time": 3600,
+      "tick": 6,
+      "variables": {
+        "filing_pressure": 0.4,
+        "evening_pull": 0.187273,
+        "moon_fullness": 0.96,
+        "social_weather": 0.496364
+      }
+    },
+    {
+      "phase": "night",
+      "sim_time": 4200,
+      "tick": 7,
+      "variables": {
+        "filing_pressure": 0.4,
+        "evening_pull": 0.177294,
+        "moon_fullness": 0.96,
+        "social_weather": 0.490376
+      }
+    },
+    {
+      "phase": "night",
+      "sim_time": 4800,
+      "tick": 8,
+      "variables": {
+        "filing_pressure": 0.4,
+        "evening_pull": 0.192697,
+        "moon_fullness": 0.96,
+        "social_weather": 0.499618
+      }
+    },
+    {
+      "phase": "night",
+      "sim_time": 5400,
+      "tick": 9,
+      "variables": {
+        "filing_pressure": 0.4,
+        "evening_pull": 0.21923,
+        "moon_fullness": 0.96,
+        "social_weather": 0.515538
+      }
+    },
+    {
+      "phase": "night",
+      "sim_time": 6000,
+      "tick": 10,
+      "variables": {
+        "filing_pressure": 0.4,
+        "evening_pull": 0.213181,
+        "moon_fullness": 0.96,
+        "social_weather": 0.511909
+      }
+    },
+    {
+      "phase": "night",
+      "sim_time": 6600,
+      "tick": 11,
+      "variables": {
+        "filing_pressure": 0.4,
+        "evening_pull": 0.227027,
+        "moon_fullness": 0.96,
+        "social_weather": 0.520216
+      }
+    },
+    {
+      "phase": "night",
+      "sim_time": 7200,
+      "tick": 12,
+      "variables": {
+        "filing_pressure": 0.4,
+        "evening_pull": 0.22054,
+        "moon_fullness": 0.96,
+        "social_weather": 0.516324
+      }
+    },
+    {
+      "phase": "night",
+      "sim_time": 7800,
+      "tick": 13,
+      "variables": {
+        "filing_pressure": 0.4,
+        "evening_pull": 0.221742,
+        "moon_fullness": 0.96,
+        "social_weather": 0.517045
+      }
+    },
+    {
+      "phase": "night",
+      "sim_time": 8400,
+      "tick": 14,
+      "variables": {
+        "filing_pressure": 0.4,
+        "evening_pull": 0.231711,
+        "moon_fullness": 0.96,
+        "social_weather": 0.523027
+      }
+    },
+    {
+      "phase": "night",
+      "sim_time": 9000,
+      "tick": 15,
+      "variables": {
+        "filing_pressure": 0.4,
+        "evening_pull": 0.253117,
+        "moon_fullness": 0.96,
+        "social_weather": 0.53587
+      }
+    },
+    {
+      "phase": "night",
+      "sim_time": 9600,
+      "tick": 16,
+      "variables": {
+        "filing_pressure": 0.4,
+        "evening_pull": 0.267034,
+        "moon_fullness": 0.96,
+        "social_weather": 0.54422
+      }
+    },
+    {
+      "phase": "night",
+      "sim_time": 10200,
+      "tick": 17,
+      "variables": {
+        "filing_pressure": 0.4,
+        "evening_pull": 0.272283,
+        "moon_fullness": 0.96,
+        "social_weather": 0.54737
+      }
+    },
+    {
+      "phase": "night",
+      "sim_time": 10800,
+      "tick": 18,
+      "variables": {
+        "filing_pressure": 0.4,
+        "evening_pull": 0.266493,
+        "moon_fullness": 0.96,
+        "social_weather": 0.543896
+      }
+    },
+    {
+      "phase": "night",
+      "sim_time": 11400,
+      "tick": 19,
+      "variables": {
+        "filing_pressure": 0.4,
+        "evening_pull": 0.287929,
+        "moon_fullness": 0.96,
+        "social_weather": 0.556757
+      }
+    },
+    {
+      "phase": "night",
+      "sim_time": 12000,
+      "tick": 20,
+      "variables": {
+        "filing_pressure": 0.4,
+        "evening_pull": 0.282527,
+        "moon_fullness": 0.96,
+        "social_weather": 0.553516
+      }
+    },
+    {
+      "phase": "night",
+      "sim_time": 12600,
+      "tick": 21,
+      "variables": {
+        "filing_pressure": 0.4,
+        "evening_pull": 0.30443,
+        "moon_fullness": 0.96,
+        "social_weather": 0.566658
+      }
+    },
+    {
+      "phase": "night",
+      "sim_time": 13200,
+      "tick": 22,
+      "variables": {
+        "filing_pressure": 0.4,
+        "evening_pull": 0.321232,
+        "moon_fullness": 0.96,
+        "social_weather": 0.576739
+      }
+    },
+    {
+      "phase": "night",
+      "sim_time": 13800,
+      "tick": 23,
+      "variables": {
+        "filing_pressure": 0.4,
+        "evening_pull": 0.321425,
+        "moon_fullness": 0.96,
+        "social_weather": 0.576855
+      }
+    },
+    {
+      "phase": "night",
+      "sim_time": 14400,
+      "tick": 24,
+      "variables": {
+        "filing_pressure": 0.4,
+        "evening_pull": 0.314607,
+        "moon_fullness": 0.96,
+        "social_weather": 0.572764
+      }
+    },
+    {
+      "phase": "night",
+      "sim_time": 15000,
+      "tick": 25,
+      "variables": {
+        "filing_pressure": 0.4,
+        "evening_pull": 0.33738,
+        "moon_fullness": 0.96,
+        "social_weather": 0.586428
+      }
+    },
+    {
+      "phase": "night",
+      "sim_time": 15600,
+      "tick": 26,
+      "variables": {
+        "filing_pressure": 0.4,
+        "evening_pull": 0.349236,
+        "moon_fullness": 0.96,
+        "social_weather": 0.593542
+      }
+    },
+    {
+      "phase": "night",
+      "sim_time": 16200,
+      "tick": 27,
+      "variables": {
+        "filing_pressure": 0.4,
+        "evening_pull": 0.344882,
+        "moon_fullness": 0.96,
+        "social_weather": 0.590929
+      }
+    },
+    {
+      "phase": "night",
+      "sim_time": 16800,
+      "tick": 28,
+      "variables": {
+        "filing_pressure": 0.4,
+        "evening_pull": 0.360192,
+        "moon_fullness": 0.96,
+        "social_weather": 0.600115
+      }
+    },
+    {
+      "phase": "night",
+      "sim_time": 17400,
+      "tick": 29,
+      "variables": {
+        "filing_pressure": 0.4,
+        "evening_pull": 0.354401,
+        "moon_fullness": 0.96,
+        "social_weather": 0.596641
+      }
+    },
+    {
+      "phase": "night",
+      "sim_time": 18000,
+      "tick": 30,
+      "variables": {
+        "filing_pressure": 0.4,
+        "evening_pull": 0.361101,
+        "moon_fullness": 0.96,
+        "social_weather": 0.600661
+      }
+    },
+    {
+      "phase": "night",
+      "sim_time": 18600,
+      "tick": 31,
+      "variables": {
+        "filing_pressure": 0.4,
+        "evening_pull": 0.367278,
+        "moon_fullness": 0.96,
+        "social_weather": 0.604367
+      }
+    },
+    {
+      "phase": "night",
+      "sim_time": 19200,
+      "tick": 32,
+      "variables": {
+        "filing_pressure": 0.4,
+        "evening_pull": 0.383194,
+        "moon_fullness": 0.96,
+        "social_weather": 0.613916
+      }
+    },
+    {
+      "phase": "night",
+      "sim_time": 19800,
+      "tick": 33,
+      "variables": {
+        "filing_pressure": 0.4,
+        "evening_pull": 0.404453,
+        "moon_fullness": 0.96,
+        "social_weather": 0.626672
+      }
+    },
+    {
+      "phase": "night",
+      "sim_time": 20400,
+      "tick": 34,
+      "variables": {
+        "filing_pressure": 0.4,
+        "evening_pull": 0.426753,
+        "moon_fullness": 0.96,
+        "social_weather": 0.640052
+      }
+    },
+    {
+      "phase": "night",
+      "sim_time": 21000,
+      "tick": 35,
+      "variables": {
+        "filing_pressure": 0.4,
+        "evening_pull": 0.416894,
+        "moon_fullness": 0.96,
+        "social_weather": 0.634136
+      }
+    },
+    {
+      "phase": "night",
+      "sim_time": 21600,
+      "tick": 36,
+      "variables": {
+        "filing_pressure": 0.4,
+        "evening_pull": 0.425087,
+        "moon_fullness": 0.96,
+        "social_weather": 0.639052
+      }
+    },
+    {
+      "phase": "night",
+      "sim_time": 22200,
+      "tick": 37,
+      "variables": {
+        "filing_pressure": 0.4,
+        "evening_pull": 0.427076,
+        "moon_fullness": 0.96,
+        "social_weather": 0.640246
+      }
+    },
+    {
+      "phase": "night",
+      "sim_time": 22800,
+      "tick": 38,
+      "variables": {
+        "filing_pressure": 0.4,
+        "evening_pull": 0.431797,
+        "moon_fullness": 0.96,
+        "social_weather": 0.643078
+      }
+    },
+    {
+      "phase": "night",
+      "sim_time": 23400,
+      "tick": 39,
+      "variables": {
+        "filing_pressure": 0.4,
+        "evening_pull": 0.439798,
+        "moon_fullness": 0.96,
+        "social_weather": 0.647879
+      }
+    },
+    {
+      "phase": "night",
+      "sim_time": 24000,
+      "tick": 40,
+      "variables": {
+        "filing_pressure": 0.4,
+        "evening_pull": 0.444423,
+        "moon_fullness": 0.96,
+        "social_weather": 0.650654
+      }
+    },
+    {
+      "phase": "night",
+      "sim_time": 24600,
+      "tick": 41,
+      "variables": {
+        "filing_pressure": 0.4,
+        "evening_pull": 0.473923,
+        "moon_fullness": 0.96,
+        "social_weather": 0.668354
+      }
+    },
+    {
+      "phase": "morning",
+      "sim_time": 25200,
+      "tick": 42,
+      "variables": {
+        "filing_pressure": 0.4,
+        "evening_pull": 0.483741,
+        "moon_fullness": 0.96,
+        "social_weather": 0.674245
+      }
+    },
+    {
+      "phase": "morning",
+      "sim_time": 25800,
+      "tick": 43,
+      "variables": {
+        "filing_pressure": 0.4,
+        "evening_pull": 0.487087,
+        "moon_fullness": 0.96,
+        "social_weather": 0.676252
+      }
+    },
+    {
+      "phase": "morning",
+      "sim_time": 26400,
+      "tick": 44,
+      "variables": {
+        "filing_pressure": 0.4,
+        "evening_pull": 0.499696,
+        "moon_fullness": 0.96,
+        "social_weather": 0.683818
+      }
+    },
+    {
+      "phase": "morning",
+      "sim_time": 27000,
+      "tick": 45,
+      "variables": {
+        "filing_pressure": 0.4,
+        "evening_pull": 0.505412,
+        "moon_fullness": 0.96,
+        "social_weather": 0.687247
+      }
+    },
+    {
+      "phase": "morning",
+      "sim_time": 27600,
+      "tick": 46,
+      "variables": {
+        "filing_pressure": 0.4,
+        "evening_pull": 0.506175,
+        "moon_fullness": 0.96,
+        "social_weather": 0.687705
+      }
+    },
+    {
+      "phase": "morning",
+      "sim_time": 28200,
+      "tick": 47,
+      "variables": {
+        "filing_pressure": 0.4,
+        "evening_pull": 0.517689,
+        "moon_fullness": 0.96,
+        "social_weather": 0.694613
+      }
+    },
+    {
+      "phase": "morning",
+      "sim_time": 28800,
+      "tick": 48,
+      "variables": {
+        "filing_pressure": 0.4,
+        "evening_pull": 0.529995,
+        "moon_fullness": 0.96,
+        "social_weather": 0.701997
+      }
+    },
+    {
+      "phase": "morning",
+      "sim_time": 29400,
+      "tick": 49,
+      "variables": {
+        "filing_pressure": 0.4,
+        "evening_pull": 0.552809,
+        "moon_fullness": 0.96,
+        "social_weather": 0.715685
+      }
+    },
+    {
+      "phase": "morning",
+      "sim_time": 30000,
+      "tick": 50,
+      "variables": {
+        "filing_pressure": 0.4,
+        "evening_pull": 0.559664,
+        "moon_fullness": 0.96,
+        "social_weather": 0.719798
+      }
+    },
+    {
+      "phase": "morning",
+      "sim_time": 30600,
+      "tick": 51,
+      "variables": {
+        "filing_pressure": 0.4,
+        "evening_pull": 0.576642,
+        "moon_fullness": 0.96,
+        "social_weather": 0.729985
+      }
+    },
+    {
+      "phase": "morning",
+      "sim_time": 31200,
+      "tick": 52,
+      "variables": {
+        "filing_pressure": 0.4,
+        "evening_pull": 0.585868,
+        "moon_fullness": 0.96,
+        "social_weather": 0.735521
+      }
+    },
+    {
+      "phase": "morning",
+      "sim_time": 31800,
+      "tick": 53,
+      "variables": {
+        "filing_pressure": 0.4,
+        "evening_pull": 0.596427,
+        "moon_fullness": 0.96,
+        "social_weather": 0.741856
+      }
+    },
+    {
+      "phase": "workday",
+      "sim_time": 32400,
+      "tick": 54,
+      "variables": {
+        "filing_pressure": 0.41,
+        "evening_pull": 0.610838,
+        "moon_fullness": 0.96,
+        "social_weather": 0.750503
+      }
+    },
+    {
+      "phase": "workday",
+      "sim_time": 33000,
+      "tick": 55,
+      "variables": {
+        "filing_pressure": 0.42,
+        "evening_pull": 0.624271,
+        "moon_fullness": 0.96,
+        "social_weather": 0.758563
+      }
+    },
+    {
+      "phase": "workday",
+      "sim_time": 33600,
+      "tick": 56,
+      "variables": {
+        "filing_pressure": 0.43,
+        "evening_pull": 0.631521,
+        "moon_fullness": 0.96,
+        "social_weather": 0.762913
+      }
+    },
+    {
+      "phase": "workday",
+      "sim_time": 34200,
+      "tick": 57,
+      "variables": {
+        "filing_pressure": 0.44,
+        "evening_pull": 0.655639,
+        "moon_fullness": 0.96,
+        "social_weather": 0.777383
+      }
+    },
+    {
+      "phase": "workday",
+      "sim_time": 34800,
+      "tick": 58,
+      "variables": {
+        "filing_pressure": 0.45,
+        "evening_pull": 0.668665,
+        "moon_fullness": 0.96,
+        "social_weather": 0.785199
+      }
+    },
+    {
+      "phase": "workday",
+      "sim_time": 35400,
+      "tick": 59,
+      "variables": {
+        "filing_pressure": 0.46,
+        "evening_pull": 0.686423,
+        "moon_fullness": 0.96,
+        "social_weather": 0.795854
+      }
+    },
+    {
+      "phase": "workday",
+      "sim_time": 36000,
+      "tick": 60,
+      "variables": {
+        "filing_pressure": 0.47,
+        "evening_pull": 0.685014,
+        "moon_fullness": 0.96,
+        "social_weather": 0.795008
+      }
+    },
+    {
+      "phase": "workday",
+      "sim_time": 36600,
+      "tick": 61,
+      "variables": {
+        "filing_pressure": 0.48,
+        "evening_pull": 0.682062,
+        "moon_fullness": 0.96,
+        "social_weather": 0.793237
+      }
+    },
+    {
+      "phase": "workday",
+      "sim_time": 37200,
+      "tick": 62,
+      "variables": {
+        "filing_pressure": 0.49,
+        "evening_pull": 0.682771,
+        "moon_fullness": 0.96,
+        "social_weather": 0.793663
+      }
+    },
+    {
+      "phase": "workday",
+      "sim_time": 37800,
+      "tick": 63,
+      "variables": {
+        "filing_pressure": 0.5,
+        "evening_pull": 0.711216,
+        "moon_fullness": 0.96,
+        "social_weather": 0.81073
+      }
+    },
+    {
+      "phase": "workday",
+      "sim_time": 38400,
+      "tick": 64,
+      "variables": {
+        "filing_pressure": 0.51,
+        "evening_pull": 0.736159,
+        "moon_fullness": 0.96,
+        "social_weather": 0.825695
+      }
+    },
+    {
+      "phase": "workday",
+      "sim_time": 39000,
+      "tick": 65,
+      "variables": {
+        "filing_pressure": 0.52,
+        "evening_pull": 0.745691,
+        "moon_fullness": 0.96,
+        "social_weather": 0.831415
+      }
+    },
+    {
+      "phase": "workday",
+      "sim_time": 39600,
+      "tick": 66,
+      "variables": {
+        "filing_pressure": 0.53,
+        "evening_pull": 0.767223,
+        "moon_fullness": 0.96,
+        "social_weather": 0.844334
+      }
+    },
+    {
+      "phase": "workday",
+      "sim_time": 40200,
+      "tick": 67,
+      "variables": {
+        "filing_pressure": 0.54,
+        "evening_pull": 0.762358,
+        "moon_fullness": 0.96,
+        "social_weather": 0.841415
+      }
+    },
+    {
+      "phase": "workday",
+      "sim_time": 40800,
+      "tick": 68,
+      "variables": {
+        "filing_pressure": 0.55,
+        "evening_pull": 0.787438,
+        "moon_fullness": 0.96,
+        "social_weather": 0.856463
+      }
+    },
+    {
+      "phase": "workday",
+      "sim_time": 41400,
+      "tick": 69,
+      "variables": {
+        "filing_pressure": 0.56,
+        "evening_pull": 0.816824,
+        "moon_fullness": 0.96,
+        "social_weather": 0.874094
+      }
+    },
+    {
+      "phase": "workday",
+      "sim_time": 42000,
+      "tick": 70,
+      "variables": {
+        "filing_pressure": 0.57,
+        "evening_pull": 0.827194,
+        "moon_fullness": 0.96,
+        "social_weather": 0.880316
+      }
+    },
+    {
+      "phase": "workday",
+      "sim_time": 42600,
+      "tick": 71,
+      "variables": {
+        "filing_pressure": 0.58,
+        "evening_pull": 0.853797,
+        "moon_fullness": 0.96,
+        "social_weather": 0.896278
+      }
+    },
+    {
+      "phase": "workday",
+      "sim_time": 43200,
+      "tick": 72,
+      "variables": {
+        "filing_pressure": 0.59,
+        "evening_pull": 0.851974,
+        "moon_fullness": 0.96,
+        "social_weather": 0.895184
+      }
+    },
+    {
+      "phase": "workday",
+      "sim_time": 43800,
+      "tick": 73,
+      "variables": {
+        "filing_pressure": 0.6,
+        "evening_pull": 0.857102,
+        "moon_fullness": 0.96,
+        "social_weather": 0.898261
+      }
+    },
+    {
+      "phase": "workday",
+      "sim_time": 44400,
+      "tick": 74,
+      "variables": {
+        "filing_pressure": 0.61,
+        "evening_pull": 0.849572,
+        "moon_fullness": 0.96,
+        "social_weather": 0.893743
+      }
+    },
+    {
+      "phase": "workday",
+      "sim_time": 45000,
+      "tick": 75,
+      "variables": {
+        "filing_pressure": 0.62,
+        "evening_pull": 0.86251,
+        "moon_fullness": 0.96,
+        "social_weather": 0.901506
+      }
+    },
+    {
+      "phase": "workday",
+      "sim_time": 45600,
+      "tick": 76,
+      "variables": {
+        "filing_pressure": 0.63,
+        "evening_pull": 0.885383,
+        "moon_fullness": 0.96,
+        "social_weather": 0.91523
+      }
+    },
+    {
+      "phase": "workday",
+      "sim_time": 46200,
+      "tick": 77,
+      "variables": {
+        "filing_pressure": 0.64,
+        "evening_pull": 0.912428,
+        "moon_fullness": 0.96,
+        "social_weather": 0.931457
+      }
+    },
+    {
+      "phase": "workday",
+      "sim_time": 46800,
+      "tick": 78,
+      "variables": {
+        "filing_pressure": 0.65,
+        "evening_pull": 0.908648,
+        "moon_fullness": 0.96,
+        "social_weather": 0.929189
+      }
+    },
+    {
+      "phase": "workday",
+      "sim_time": 47400,
+      "tick": 79,
+      "variables": {
+        "filing_pressure": 0.66,
+        "evening_pull": 0.917892,
+        "moon_fullness": 0.96,
+        "social_weather": 0.934735
+      }
+    },
+    {
+      "phase": "workday",
+      "sim_time": 48000,
+      "tick": 80,
+      "variables": {
+        "filing_pressure": 0.67,
+        "evening_pull": 0.942773,
+        "moon_fullness": 0.96,
+        "social_weather": 0.949664
+      }
+    },
+    {
+      "phase": "workday",
+      "sim_time": 48600,
+      "tick": 81,
+      "variables": {
+        "filing_pressure": 0.68,
+        "evening_pull": 0.964198,
+        "moon_fullness": 0.96,
+        "social_weather": 0.962519
+      }
+    },
+    {
+      "phase": "workday",
+      "sim_time": 49200,
+      "tick": 82,
+      "variables": {
+        "filing_pressure": 0.69,
+        "evening_pull": 0.975767,
+        "moon_fullness": 0.96,
+        "social_weather": 0.96946
+      }
+    },
+    {
+      "phase": "workday",
+      "sim_time": 49800,
+      "tick": 83,
+      "variables": {
+        "filing_pressure": 0.7,
+        "evening_pull": 0.970618,
+        "moon_fullness": 0.96,
+        "social_weather": 0.966371
+      }
+    },
+    {
+      "phase": "workday",
+      "sim_time": 50400,
+      "tick": 84,
+      "variables": {
+        "filing_pressure": 0.71,
+        "evening_pull": 0.983209,
+        "moon_fullness": 0.96,
+        "social_weather": 0.973925
+      }
+    },
+    {
+      "phase": "workday",
+      "sim_time": 51000,
+      "tick": 85,
+      "variables": {
+        "filing_pressure": 0.72,
+        "evening_pull": 1,
+        "moon_fullness": 0.96,
+        "social_weather": 0.984
+      }
+    },
+    {
+      "phase": "workday",
+      "sim_time": 51600,
+      "tick": 86,
+      "variables": {
+        "filing_pressure": 0.73,
+        "evening_pull": 1,
+        "moon_fullness": 0.96,
+        "social_weather": 0.984
+      }
+    },
+    {
+      "phase": "workday",
+      "sim_time": 52200,
+      "tick": 87,
+      "variables": {
+        "filing_pressure": 0.74,
+        "evening_pull": 1,
+        "moon_fullness": 0.96,
+        "social_weather": 0.984
+      }
+    },
+    {
+      "phase": "workday",
+      "sim_time": 52800,
+      "tick": 88,
+      "variables": {
+        "filing_pressure": 0.75,
+        "evening_pull": 1,
+        "moon_fullness": 0.96,
+        "social_weather": 0.984
+      }
+    },
+    {
+      "phase": "workday",
+      "sim_time": 53400,
+      "tick": 89,
+      "variables": {
+        "filing_pressure": 0.76,
+        "evening_pull": 0.99205,
+        "moon_fullness": 0.96,
+        "social_weather": 0.97923
+      }
+    },
+    {
+      "phase": "workday",
+      "sim_time": 54000,
+      "tick": 90,
+      "variables": {
+        "filing_pressure": 0.77,
+        "evening_pull": 1,
+        "moon_fullness": 0.96,
+        "social_weather": 0.984
+      }
+    },
+    {
+      "phase": "workday",
+      "sim_time": 54600,
+      "tick": 91,
+      "variables": {
+        "filing_pressure": 0.78,
+        "evening_pull": 1,
+        "moon_fullness": 0.96,
+        "social_weather": 0.984
+      }
+    },
+    {
+      "phase": "workday",
+      "sim_time": 55200,
+      "tick": 92,
+      "variables": {
+        "filing_pressure": 0.79,
+        "evening_pull": 1,
+        "moon_fullness": 0.96,
+        "social_weather": 0.984
+      }
+    },
+    {
+      "phase": "workday",
+      "sim_time": 55800,
+      "tick": 93,
+      "variables": {
+        "filing_pressure": 0.8,
+        "evening_pull": 1,
+        "moon_fullness": 0.96,
+        "social_weather": 0.984
+      }
+    },
+    {
+      "phase": "workday",
+      "sim_time": 56400,
+      "tick": 94,
+      "variables": {
+        "filing_pressure": 0.81,
+        "evening_pull": 1,
+        "moon_fullness": 0.96,
+        "social_weather": 0.984
+      }
+    },
+    {
+      "phase": "workday",
+      "sim_time": 57000,
+      "tick": 95,
+      "variables": {
+        "filing_pressure": 0.82,
+        "evening_pull": 1,
+        "moon_fullness": 0.96,
+        "social_weather": 0.984
+      }
+    },
+    {
+      "phase": "workday",
+      "sim_time": 57600,
+      "tick": 96,
+      "variables": {
+        "filing_pressure": 0.83,
+        "evening_pull": 1,
+        "moon_fullness": 0.96,
+        "social_weather": 0.984
+      }
+    },
+    {
+      "phase": "workday",
+      "sim_time": 58200,
+      "tick": 97,
+      "variables": {
+        "filing_pressure": 0.84,
+        "evening_pull": 1,
+        "moon_fullness": 0.96,
+        "social_weather": 0.984
+      }
+    },
+    {
+      "phase": "workday",
+      "sim_time": 58800,
+      "tick": 98,
+      "variables": {
+        "filing_pressure": 0.85,
+        "evening_pull": 1,
+        "moon_fullness": 0.96,
+        "social_weather": 0.984
+      }
+    },
+    {
+      "phase": "workday",
+      "sim_time": 59400,
+      "tick": 99,
+      "variables": {
+        "filing_pressure": 0.86,
+        "evening_pull": 1,
+        "moon_fullness": 0.96,
+        "social_weather": 0.984
+      }
+    },
+    {
+      "phase": "workday",
+      "sim_time": 60000,
+      "tick": 100,
+      "variables": {
+        "filing_pressure": 0.87,
+        "evening_pull": 0.99174,
+        "moon_fullness": 0.96,
+        "social_weather": 0.979044
+      }
+    },
+    {
+      "phase": "workday",
+      "sim_time": 60600,
+      "tick": 101,
+      "variables": {
+        "filing_pressure": 0.88,
+        "evening_pull": 1,
+        "moon_fullness": 0.96,
+        "social_weather": 0.984
+      }
+    },
+    {
+      "phase": "workday",
+      "sim_time": 61200,
+      "tick": 102,
+      "variables": {
+        "filing_pressure": 0.89,
+        "evening_pull": 1,
+        "moon_fullness": 0.96,
+        "social_weather": 0.984
+      }
+    },
+    {
+      "phase": "workday",
+      "sim_time": 61800,
+      "tick": 103,
+      "variables": {
+        "filing_pressure": 0.9,
+        "evening_pull": 1,
+        "moon_fullness": 0.96,
+        "social_weather": 0.984
+      }
+    },
+    {
+      "phase": "workday",
+      "sim_time": 62400,
+      "tick": 104,
+      "variables": {
+        "filing_pressure": 0.91,
+        "evening_pull": 1,
+        "moon_fullness": 0.96,
+        "social_weather": 0.984
+      }
+    },
+    {
+      "phase": "workday",
+      "sim_time": 63000,
+      "tick": 105,
+      "variables": {
+        "filing_pressure": 0.92,
+        "evening_pull": 1,
+        "moon_fullness": 0.96,
+        "social_weather": 0.984
+      }
+    },
+    {
+      "phase": "workday",
+      "sim_time": 63600,
+      "tick": 106,
+      "variables": {
+        "filing_pressure": 0.93,
+        "evening_pull": 0.998508,
+        "moon_fullness": 0.96,
+        "social_weather": 0.983105
+      }
+    },
+    {
+      "phase": "workday",
+      "sim_time": 64200,
+      "tick": 107,
+      "variables": {
+        "filing_pressure": 0.94,
+        "evening_pull": 1,
+        "moon_fullness": 0.96,
+        "social_weather": 0.984
+      }
+    },
+    {
+      "phase": "evening",
+      "sim_time": 64800,
+      "tick": 108,
+      "variables": {
+        "filing_pressure": 0.93,
+        "evening_pull": 0.999492,
+        "moon_fullness": 0.96,
+        "social_weather": 0.983695
+      }
+    },
+    {
+      "phase": "evening",
+      "sim_time": 65400,
+      "tick": 109,
+      "variables": {
+        "filing_pressure": 0.92,
+        "evening_pull": 1,
+        "moon_fullness": 0.96,
+        "social_weather": 0.984
+      }
+    },
+    {
+      "phase": "evening",
+      "sim_time": 66000,
+      "tick": 110,
+      "variables": {
+        "filing_pressure": 0.91,
+        "evening_pull": 0.992487,
+        "moon_fullness": 0.96,
+        "social_weather": 0.979492
+      }
+    },
+    {
+      "phase": "evening",
+      "sim_time": 66600,
+      "tick": 111,
+      "variables": {
+        "filing_pressure": 0.9,
+        "evening_pull": 1,
+        "moon_fullness": 0.96,
+        "social_weather": 0.984
+      }
+    },
+    {
+      "phase": "evening",
+      "sim_time": 67200,
+      "tick": 112,
+      "variables": {
+        "filing_pressure": 0.89,
+        "evening_pull": 0.990193,
+        "moon_fullness": 0.96,
+        "social_weather": 0.978116
+      }
+    },
+    {
+      "phase": "evening",
+      "sim_time": 67800,
+      "tick": 113,
+      "variables": {
+        "filing_pressure": 0.88,
+        "evening_pull": 1,
+        "moon_fullness": 0.96,
+        "social_weather": 0.984
+      }
+    },
+    {
+      "phase": "evening",
+      "sim_time": 68400,
+      "tick": 114,
+      "variables": {
+        "filing_pressure": 0.87,
+        "evening_pull": 1,
+        "moon_fullness": 0.96,
+        "social_weather": 0.984
+      }
+    },
+    {
+      "phase": "evening",
+      "sim_time": 69000,
+      "tick": 115,
+      "variables": {
+        "filing_pressure": 0.86,
+        "evening_pull": 0.992576,
+        "moon_fullness": 0.96,
+        "social_weather": 0.979546
+      }
+    },
+    {
+      "phase": "evening",
+      "sim_time": 69600,
+      "tick": 116,
+      "variables": {
+        "filing_pressure": 0.85,
+        "evening_pull": 0.996865,
+        "moon_fullness": 0.96,
+        "social_weather": 0.982119
+      }
+    },
+    {
+      "phase": "evening",
+      "sim_time": 70200,
+      "tick": 117,
+      "variables": {
+        "filing_pressure": 0.84,
+        "evening_pull": 1,
+        "moon_fullness": 0.96,
+        "social_weather": 0.984
+      }
+    },
+    {
+      "phase": "evening",
+      "sim_time": 70800,
+      "tick": 118,
+      "variables": {
+        "filing_pressure": 0.83,
+        "evening_pull": 1,
+        "moon_fullness": 0.96,
+        "social_weather": 0.984
+      }
+    },
+    {
+      "phase": "evening",
+      "sim_time": 71400,
+      "tick": 119,
+      "variables": {
+        "filing_pressure": 0.82,
+        "evening_pull": 1,
+        "moon_fullness": 0.96,
+        "social_weather": 0.984
+      }
+    }
+  ],
+  "version": "simfile.telemetry.v1"
+}

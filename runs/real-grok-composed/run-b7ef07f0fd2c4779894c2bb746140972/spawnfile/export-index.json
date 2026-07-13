@@ -1,0 +1,53 @@
+{
+  "deployment": "office-sim-grok-luna-verify",
+  "exported_at": "2026-07-11T21:02:33.829Z",
+  "files": [
+    {
+      "bytes": 3587,
+      "path": "raw/daimon/eleanor/causal.jsonl",
+      "sha256": "0a9405a569078f062ca5a5a43334b074b60b2ebee4776cf945062146dd561805",
+      "source": {
+        "kind": "volume",
+        "ref": "spawnfile-org-agent-eleanor-daimon-telemetry-run-b7ef07f0fd2c4779894c-587a7601:/causal.jsonl"
+      }
+    },
+    {
+      "bytes": 2626,
+      "path": "raw/daimon/sam/causal.jsonl",
+      "sha256": "9acbbd61f92acb64941f041d5501e888acf730e3e7f09c1267a6cb909e14061d",
+      "source": {
+        "kind": "volume",
+        "ref": "spawnfile-org-agent-sam-daimon-telemetry-run-b7ef07f0fd2c4779894c-d76d68da:/causal.jsonl"
+      }
+    },
+    {
+      "bytes": 4564,
+      "path": "raw/mneme/office-recall/causal.jsonl",
+      "sha256": "e383876a5c6d6298157d205462d177ae2c983b8c899811d2e9c4cda1595fa7bc",
+      "source": {
+        "kind": "volume",
+        "ref": "spawnfile-org-memory-var-lib-spawnfile-memory-office-sim-run-b7ef07f0fd2c4779894c-d82ebc6d:/memory/causal.jsonl"
+      }
+    },
+    {
+      "bytes": 18242,
+      "path": "raw/mneme/office-recall/events.jsonl",
+      "sha256": "d564d6ae92673ad547bd03b232741789756071d31253db6b28f7bc925e611fc9",
+      "source": {
+        "kind": "volume",
+        "ref": "spawnfile-org-memory-var-lib-spawnfile-memory-office-sim-run-b7ef07f0fd2c4779894c-d82ebc6d:/memory/events.jsonl"
+      }
+    },
+    {
+      "bytes": 2432,
+      "path": "raw/moltnet/causal.jsonl",
+      "sha256": "9965895404ef830fb47dec820b7bf9f49f6b27f5deb2476d21cb9ae7d63381a1",
+      "source": {
+        "kind": "volume",
+        "ref": "spawnfile-org-moltnet-office-lab-causal-run-b7ef07f0fd2c4779894c-9523bb8a:/causal.jsonl"
+      }
+    }
+  ],
+  "run_id": "run-b7ef07f0fd2c4779894c2bb746140972",
+  "version": "spawnfile.export-index.v1"
+}

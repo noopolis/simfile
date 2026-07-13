@@ -1,0 +1,48 @@
+{
+  "version": "simfile.run-manifest.v1",
+  "run_id": "run-b7ef07f0fd2c4779894c2bb746140972",
+  "created_at": "2026-07-11T21:02:34.399Z",
+  "contract_versions": {
+    "causal-event.v1": "noopolis.causal-event.v1",
+    "simfile.observe.v1": "simfile.observe.v1",
+    "simfile.run-manifest.v1": "simfile.run-manifest.v1"
+  },
+  "spawnfile": {
+    "fingerprint": "sf1:698389dd7a43"
+  },
+  "artifacts": [
+    {
+      "path": "raw/daimon/eleanor/causal.jsonl",
+      "sha256": "0a9405a569078f062ca5a5a43334b074b60b2ebee4776cf945062146dd561805"
+    },
+    {
+      "path": "raw/daimon/sam/causal.jsonl",
+      "sha256": "9acbbd61f92acb64941f041d5501e888acf730e3e7f09c1267a6cb909e14061d"
+    },
+    {
+      "path": "raw/mneme/office-recall/causal.jsonl",
+      "sha256": "e383876a5c6d6298157d205462d177ae2c983b8c899811d2e9c4cda1595fa7bc"
+    },
+    {
+      "path": "raw/mneme/office-recall/events.jsonl",
+      "sha256": "d564d6ae92673ad547bd03b232741789756071d31253db6b28f7bc925e611fc9"
+    },
+    {
+      "path": "raw/moltnet/causal.jsonl",
+      "sha256": "9965895404ef830fb47dec820b7bf9f49f6b27f5deb2476d21cb9ae7d63381a1"
+    },
+    {
+      "path": "raw/moltnet/transcript.json",
+      "sha256": "87d8e9d5bbdb2a5420638a8d7eb2a89f051e7375653b4ee3cb4448d93bb9153c"
+    }
+  ],
+  "engine": "grok",
+  "world": {
+    "network_id": "office_lab",
+    "room_id": "office-room",
+    "members": [
+      "eleanor",
+      "sam"
+    ]
+  }
+}

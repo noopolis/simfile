@@ -1,0 +1,2460 @@
+{
+  "agents": [
+    {
+      "detail": "Heuristic placement: trace has this agent but no presence stream yet.",
+      "id": "eleanor",
+      "label": "eleanor",
+      "label_hint": "heuristic",
+      "scope": "agent:eleanor"
+    }
+  ],
+  "corridors": [
+    {
+      "from_room": "after-work-chat",
+      "id": "after-work-chat--case-warroom",
+      "path": [
+        {
+          "x": -1.2,
+          "y": -0.93
+        },
+        {
+          "x": 1.2,
+          "y": -0.93
+        },
+        {
+          "x": 1.2,
+          "y": -0.93
+        }
+      ],
+      "to_room": "case-warroom",
+      "width": 0.08
+    },
+    {
+      "from_room": "case-warroom",
+      "id": "case-warroom--office-hall",
+      "path": [
+        {
+          "x": 1.2,
+          "y": -0.93
+        },
+        {
+          "x": -1.2,
+          "y": -0.93
+        },
+        {
+          "x": -1.2,
+          "y": 0.93
+        }
+      ],
+      "to_room": "office-hall",
+      "width": 0.08
+    }
+  ],
+  "ledger_facts": [
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:1",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 0,
+        "sim_time": 0,
+        "phase": "night"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 0,
+      "target": "global",
+      "tick": 0,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "full_moon_rises",
+      "detail": "rule.fired",
+      "event_id": "office-world-v0:2",
+      "kind": "rule.fired",
+      "payload": {
+        "rule": "full_moon_rises",
+        "tick": 0,
+        "sim_time": 0,
+        "phase": "night"
+      },
+      "provenance": "mechanical",
+      "scope": "room:office-floor:after-work-chat",
+      "sim_time": 0,
+      "target": "room:office-floor:after-work-chat",
+      "tick": 0,
+      "type": "rule.fired"
+    },
+    {
+      "actor": "@world",
+      "detail": "Full moon over the office; the social weather is 0.450322.",
+      "event_id": "office-world-v0:3",
+      "kind": "world.message",
+      "payload": {
+        "action": "moltnet:message",
+        "rule": "full_moon_rises",
+        "content": "Full moon over the office; the social weather is 0.450322.",
+        "tick": 0,
+        "sim_time": 0,
+        "phase": "night"
+      },
+      "provenance": "mechanical",
+      "scope": "room:office-floor:after-work-chat",
+      "sim_time": 0,
+      "target": "room:office-floor:after-work-chat",
+      "tick": 0,
+      "type": "world.message"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:4",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 1,
+        "sim_time": 600,
+        "phase": "night"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 600,
+      "target": "global",
+      "tick": 1,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:5",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 2,
+        "sim_time": 1200,
+        "phase": "night"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 1200,
+      "target": "global",
+      "tick": 2,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:6",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 3,
+        "sim_time": 1800,
+        "phase": "night"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 1800,
+      "target": "global",
+      "tick": 3,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:7",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 4,
+        "sim_time": 2400,
+        "phase": "night"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 2400,
+      "target": "global",
+      "tick": 4,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:8",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 5,
+        "sim_time": 3000,
+        "phase": "night"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 3000,
+      "target": "global",
+      "tick": 5,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:9",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 6,
+        "sim_time": 3600,
+        "phase": "night"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 3600,
+      "target": "global",
+      "tick": 6,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:10",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 7,
+        "sim_time": 4200,
+        "phase": "night"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 4200,
+      "target": "global",
+      "tick": 7,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:11",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 8,
+        "sim_time": 4800,
+        "phase": "night"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 4800,
+      "target": "global",
+      "tick": 8,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:12",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 9,
+        "sim_time": 5400,
+        "phase": "night"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 5400,
+      "target": "global",
+      "tick": 9,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:13",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 10,
+        "sim_time": 6000,
+        "phase": "night"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 6000,
+      "target": "global",
+      "tick": 10,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:14",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 11,
+        "sim_time": 6600,
+        "phase": "night"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 6600,
+      "target": "global",
+      "tick": 11,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:15",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 12,
+        "sim_time": 7200,
+        "phase": "night"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 7200,
+      "target": "global",
+      "tick": 12,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:16",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 13,
+        "sim_time": 7800,
+        "phase": "night"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 7800,
+      "target": "global",
+      "tick": 13,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:17",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 14,
+        "sim_time": 8400,
+        "phase": "night"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 8400,
+      "target": "global",
+      "tick": 14,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:18",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 15,
+        "sim_time": 9000,
+        "phase": "night"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 9000,
+      "target": "global",
+      "tick": 15,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:19",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 16,
+        "sim_time": 9600,
+        "phase": "night"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 9600,
+      "target": "global",
+      "tick": 16,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:20",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 17,
+        "sim_time": 10200,
+        "phase": "night"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 10200,
+      "target": "global",
+      "tick": 17,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:21",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 18,
+        "sim_time": 10800,
+        "phase": "night"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 10800,
+      "target": "global",
+      "tick": 18,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:22",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 19,
+        "sim_time": 11400,
+        "phase": "night"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 11400,
+      "target": "global",
+      "tick": 19,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:23",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 20,
+        "sim_time": 12000,
+        "phase": "night"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 12000,
+      "target": "global",
+      "tick": 20,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:24",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 21,
+        "sim_time": 12600,
+        "phase": "night"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 12600,
+      "target": "global",
+      "tick": 21,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:25",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 22,
+        "sim_time": 13200,
+        "phase": "night"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 13200,
+      "target": "global",
+      "tick": 22,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:26",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 23,
+        "sim_time": 13800,
+        "phase": "night"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 13800,
+      "target": "global",
+      "tick": 23,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:27",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 24,
+        "sim_time": 14400,
+        "phase": "night"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 14400,
+      "target": "global",
+      "tick": 24,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:28",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 25,
+        "sim_time": 15000,
+        "phase": "night"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 15000,
+      "target": "global",
+      "tick": 25,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:29",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 26,
+        "sim_time": 15600,
+        "phase": "night"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 15600,
+      "target": "global",
+      "tick": 26,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:30",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 27,
+        "sim_time": 16200,
+        "phase": "night"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 16200,
+      "target": "global",
+      "tick": 27,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:31",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 28,
+        "sim_time": 16800,
+        "phase": "night"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 16800,
+      "target": "global",
+      "tick": 28,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:32",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 29,
+        "sim_time": 17400,
+        "phase": "night"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 17400,
+      "target": "global",
+      "tick": 29,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:33",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 30,
+        "sim_time": 18000,
+        "phase": "night"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 18000,
+      "target": "global",
+      "tick": 30,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:34",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 31,
+        "sim_time": 18600,
+        "phase": "night"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 18600,
+      "target": "global",
+      "tick": 31,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:35",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 32,
+        "sim_time": 19200,
+        "phase": "night"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 19200,
+      "target": "global",
+      "tick": 32,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:36",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 33,
+        "sim_time": 19800,
+        "phase": "night"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 19800,
+      "target": "global",
+      "tick": 33,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:37",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 34,
+        "sim_time": 20400,
+        "phase": "night"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 20400,
+      "target": "global",
+      "tick": 34,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:38",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 35,
+        "sim_time": 21000,
+        "phase": "night"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 21000,
+      "target": "global",
+      "tick": 35,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:39",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 36,
+        "sim_time": 21600,
+        "phase": "night"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 21600,
+      "target": "global",
+      "tick": 36,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:40",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 37,
+        "sim_time": 22200,
+        "phase": "night"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 22200,
+      "target": "global",
+      "tick": 37,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:41",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 38,
+        "sim_time": 22800,
+        "phase": "night"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 22800,
+      "target": "global",
+      "tick": 38,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:42",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 39,
+        "sim_time": 23400,
+        "phase": "night"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 23400,
+      "target": "global",
+      "tick": 39,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:43",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 40,
+        "sim_time": 24000,
+        "phase": "night"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 24000,
+      "target": "global",
+      "tick": 40,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:44",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 41,
+        "sim_time": 24600,
+        "phase": "night"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 24600,
+      "target": "global",
+      "tick": 41,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:45",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 42,
+        "sim_time": 25200,
+        "phase": "morning"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 25200,
+      "target": "global",
+      "tick": 42,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:46",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 43,
+        "sim_time": 25800,
+        "phase": "morning"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 25800,
+      "target": "global",
+      "tick": 43,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:47",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 44,
+        "sim_time": 26400,
+        "phase": "morning"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 26400,
+      "target": "global",
+      "tick": 44,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:48",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 45,
+        "sim_time": 27000,
+        "phase": "morning"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 27000,
+      "target": "global",
+      "tick": 45,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:49",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 46,
+        "sim_time": 27600,
+        "phase": "morning"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 27600,
+      "target": "global",
+      "tick": 46,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:50",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 47,
+        "sim_time": 28200,
+        "phase": "morning"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 28200,
+      "target": "global",
+      "tick": 47,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:51",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 48,
+        "sim_time": 28800,
+        "phase": "morning"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 28800,
+      "target": "global",
+      "tick": 48,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:52",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 49,
+        "sim_time": 29400,
+        "phase": "morning"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 29400,
+      "target": "global",
+      "tick": 49,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:53",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 50,
+        "sim_time": 30000,
+        "phase": "morning"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 30000,
+      "target": "global",
+      "tick": 50,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:54",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 51,
+        "sim_time": 30600,
+        "phase": "morning"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 30600,
+      "target": "global",
+      "tick": 51,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:55",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 52,
+        "sim_time": 31200,
+        "phase": "morning"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 31200,
+      "target": "global",
+      "tick": 52,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:56",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 53,
+        "sim_time": 31800,
+        "phase": "morning"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 31800,
+      "target": "global",
+      "tick": 53,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:57",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 54,
+        "sim_time": 32400,
+        "phase": "workday"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 32400,
+      "target": "global",
+      "tick": 54,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "maribel_calls",
+      "detail": "rule.fired",
+      "event_id": "office-world-v0:58",
+      "kind": "rule.fired",
+      "payload": {
+        "rule": "maribel_calls",
+        "tick": 54,
+        "sim_time": 32400,
+        "phase": "workday"
+      },
+      "provenance": "mechanical",
+      "scope": "room:office-floor:office-hall",
+      "sim_time": 32400,
+      "target": "room:office-floor:office-hall",
+      "tick": 54,
+      "type": "rule.fired"
+    },
+    {
+      "actor": "@world",
+      "detail": "Maribel calls: she found the contractor texts.",
+      "event_id": "office-world-v0:59",
+      "kind": "world.message",
+      "payload": {
+        "action": "moltnet:message",
+        "rule": "maribel_calls",
+        "content": "Maribel calls: she found the contractor texts.",
+        "tick": 54,
+        "sim_time": 32400,
+        "phase": "workday"
+      },
+      "provenance": "mechanical",
+      "scope": "room:office-floor:office-hall",
+      "sim_time": 32400,
+      "target": "room:office-floor:office-hall",
+      "tick": 54,
+      "type": "world.message"
+    },
+    {
+      "actor": "witness_revealed",
+      "detail": "rule.fired",
+      "event_id": "office-world-v0:60",
+      "kind": "rule.fired",
+      "payload": {
+        "rule": "witness_revealed",
+        "tick": 54,
+        "sim_time": 32400,
+        "phase": "workday"
+      },
+      "provenance": "mechanical",
+      "scope": "room:office-floor:case-warroom",
+      "sim_time": 32400,
+      "target": "room:office-floor:case-warroom",
+      "tick": 54,
+      "type": "rule.fired"
+    },
+    {
+      "actor": "@world",
+      "detail": "The witness is Rosa Delgado. Her name stays in this room.",
+      "event_id": "office-world-v0:61",
+      "kind": "world.message",
+      "payload": {
+        "action": "moltnet:message",
+        "rule": "witness_revealed",
+        "content": "The witness is Rosa Delgado. Her name stays in this room.",
+        "tick": 54,
+        "sim_time": 32400,
+        "phase": "workday"
+      },
+      "provenance": "mechanical",
+      "scope": "room:office-floor:case-warroom",
+      "sim_time": 32400,
+      "target": "room:office-floor:case-warroom",
+      "tick": 54,
+      "type": "world.message"
+    },
+    {
+      "actor": "@world",
+      "detail": "Private perception: the landlord's lawyer sent Eleanor a terse letter.",
+      "event_id": "office-world-v0:62",
+      "kind": "world.dm",
+      "payload": {
+        "action": "moltnet:dm",
+        "rule": "witness_revealed",
+        "content": "Private perception: the landlord's lawyer sent Eleanor a terse letter.",
+        "tick": 54,
+        "sim_time": 32400,
+        "phase": "workday"
+      },
+      "provenance": "mechanical",
+      "scope": "agent:eleanor",
+      "sim_time": 32400,
+      "target": "agent:eleanor",
+      "tick": 54,
+      "type": "world.dm"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:63",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 55,
+        "sim_time": 33000,
+        "phase": "workday"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 33000,
+      "target": "global",
+      "tick": 55,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:64",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 56,
+        "sim_time": 33600,
+        "phase": "workday"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 33600,
+      "target": "global",
+      "tick": 56,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:65",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 57,
+        "sim_time": 34200,
+        "phase": "workday"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 34200,
+      "target": "global",
+      "tick": 57,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:66",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 58,
+        "sim_time": 34800,
+        "phase": "workday"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 34800,
+      "target": "global",
+      "tick": 58,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:67",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 59,
+        "sim_time": 35400,
+        "phase": "workday"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 35400,
+      "target": "global",
+      "tick": 59,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:68",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 60,
+        "sim_time": 36000,
+        "phase": "workday"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 36000,
+      "target": "global",
+      "tick": 60,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:69",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 61,
+        "sim_time": 36600,
+        "phase": "workday"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 36600,
+      "target": "global",
+      "tick": 61,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:70",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 62,
+        "sim_time": 37200,
+        "phase": "workday"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 37200,
+      "target": "global",
+      "tick": 62,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:71",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 63,
+        "sim_time": 37800,
+        "phase": "workday"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 37800,
+      "target": "global",
+      "tick": 63,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:72",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 64,
+        "sim_time": 38400,
+        "phase": "workday"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 38400,
+      "target": "global",
+      "tick": 64,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:73",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 65,
+        "sim_time": 39000,
+        "phase": "workday"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 39000,
+      "target": "global",
+      "tick": 65,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:74",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 66,
+        "sim_time": 39600,
+        "phase": "workday"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 39600,
+      "target": "global",
+      "tick": 66,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:75",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 67,
+        "sim_time": 40200,
+        "phase": "workday"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 40200,
+      "target": "global",
+      "tick": 67,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:76",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 68,
+        "sim_time": 40800,
+        "phase": "workday"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 40800,
+      "target": "global",
+      "tick": 68,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:77",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 69,
+        "sim_time": 41400,
+        "phase": "workday"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 41400,
+      "target": "global",
+      "tick": 69,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:78",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 70,
+        "sim_time": 42000,
+        "phase": "workday"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 42000,
+      "target": "global",
+      "tick": 70,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:79",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 71,
+        "sim_time": 42600,
+        "phase": "workday"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 42600,
+      "target": "global",
+      "tick": 71,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:80",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 72,
+        "sim_time": 43200,
+        "phase": "workday"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 43200,
+      "target": "global",
+      "tick": 72,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:81",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 73,
+        "sim_time": 43800,
+        "phase": "workday"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 43800,
+      "target": "global",
+      "tick": 73,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:82",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 74,
+        "sim_time": 44400,
+        "phase": "workday"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 44400,
+      "target": "global",
+      "tick": 74,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:83",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 75,
+        "sim_time": 45000,
+        "phase": "workday"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 45000,
+      "target": "global",
+      "tick": 75,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:84",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 76,
+        "sim_time": 45600,
+        "phase": "workday"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 45600,
+      "target": "global",
+      "tick": 76,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:85",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 77,
+        "sim_time": 46200,
+        "phase": "workday"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 46200,
+      "target": "global",
+      "tick": 77,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:86",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 78,
+        "sim_time": 46800,
+        "phase": "workday"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 46800,
+      "target": "global",
+      "tick": 78,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:87",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 79,
+        "sim_time": 47400,
+        "phase": "workday"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 47400,
+      "target": "global",
+      "tick": 79,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:88",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 80,
+        "sim_time": 48000,
+        "phase": "workday"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 48000,
+      "target": "global",
+      "tick": 80,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:89",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 81,
+        "sim_time": 48600,
+        "phase": "workday"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 48600,
+      "target": "global",
+      "tick": 81,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:90",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 82,
+        "sim_time": 49200,
+        "phase": "workday"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 49200,
+      "target": "global",
+      "tick": 82,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:91",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 83,
+        "sim_time": 49800,
+        "phase": "workday"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 49800,
+      "target": "global",
+      "tick": 83,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:92",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 84,
+        "sim_time": 50400,
+        "phase": "workday"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 50400,
+      "target": "global",
+      "tick": 84,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:93",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 85,
+        "sim_time": 51000,
+        "phase": "workday"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 51000,
+      "target": "global",
+      "tick": 85,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:94",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 86,
+        "sim_time": 51600,
+        "phase": "workday"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 51600,
+      "target": "global",
+      "tick": 86,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:95",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 87,
+        "sim_time": 52200,
+        "phase": "workday"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 52200,
+      "target": "global",
+      "tick": 87,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:96",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 88,
+        "sim_time": 52800,
+        "phase": "workday"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 52800,
+      "target": "global",
+      "tick": 88,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:97",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 89,
+        "sim_time": 53400,
+        "phase": "workday"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 53400,
+      "target": "global",
+      "tick": 89,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:98",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 90,
+        "sim_time": 54000,
+        "phase": "workday"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 54000,
+      "target": "global",
+      "tick": 90,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:99",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 91,
+        "sim_time": 54600,
+        "phase": "workday"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 54600,
+      "target": "global",
+      "tick": 91,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:100",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 92,
+        "sim_time": 55200,
+        "phase": "workday"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 55200,
+      "target": "global",
+      "tick": 92,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:101",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 93,
+        "sim_time": 55800,
+        "phase": "workday"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 55800,
+      "target": "global",
+      "tick": 93,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:102",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 94,
+        "sim_time": 56400,
+        "phase": "workday"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 56400,
+      "target": "global",
+      "tick": 94,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:103",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 95,
+        "sim_time": 57000,
+        "phase": "workday"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 57000,
+      "target": "global",
+      "tick": 95,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:104",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 96,
+        "sim_time": 57600,
+        "phase": "workday"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 57600,
+      "target": "global",
+      "tick": 96,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:105",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 97,
+        "sim_time": 58200,
+        "phase": "workday"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 58200,
+      "target": "global",
+      "tick": 97,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:106",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 98,
+        "sim_time": 58800,
+        "phase": "workday"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 58800,
+      "target": "global",
+      "tick": 98,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:107",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 99,
+        "sim_time": 59400,
+        "phase": "workday"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 59400,
+      "target": "global",
+      "tick": 99,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "deadline_bites",
+      "detail": "rule.fired",
+      "event_id": "office-world-v0:108",
+      "kind": "rule.fired",
+      "payload": {
+        "rule": "deadline_bites",
+        "tick": 99,
+        "sim_time": 59400,
+        "phase": "workday"
+      },
+      "provenance": "mechanical",
+      "scope": "room:office-floor:case-warroom",
+      "sim_time": 59400,
+      "target": "room:office-floor:case-warroom",
+      "tick": 99,
+      "type": "rule.fired"
+    },
+    {
+      "actor": "deadline_bites",
+      "detail": "deadline_bites",
+      "event_id": "office-world-v0:109",
+      "kind": "wake.recommended",
+      "payload": {
+        "action": "wake:recommend",
+        "reason": "deadline_bites",
+        "target": "room:office-floor:case-warroom",
+        "tick": 99,
+        "sim_time": 59400,
+        "phase": "workday"
+      },
+      "provenance": "mechanical",
+      "scope": "room:office-floor:case-warroom",
+      "sim_time": 59400,
+      "target": "room:office-floor:case-warroom",
+      "tick": 99,
+      "type": "wake.recommended"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:110",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 100,
+        "sim_time": 60000,
+        "phase": "workday"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 60000,
+      "target": "global",
+      "tick": 100,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:111",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 101,
+        "sim_time": 60600,
+        "phase": "workday"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 60600,
+      "target": "global",
+      "tick": 101,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:112",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 102,
+        "sim_time": 61200,
+        "phase": "workday"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 61200,
+      "target": "global",
+      "tick": 102,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:113",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 103,
+        "sim_time": 61800,
+        "phase": "workday"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 61800,
+      "target": "global",
+      "tick": 103,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:114",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 104,
+        "sim_time": 62400,
+        "phase": "workday"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 62400,
+      "target": "global",
+      "tick": 104,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:115",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 105,
+        "sim_time": 63000,
+        "phase": "workday"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 63000,
+      "target": "global",
+      "tick": 105,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:116",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 106,
+        "sim_time": 63600,
+        "phase": "workday"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 63600,
+      "target": "global",
+      "tick": 106,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:117",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 107,
+        "sim_time": 64200,
+        "phase": "workday"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 64200,
+      "target": "global",
+      "tick": 107,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:118",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 108,
+        "sim_time": 64800,
+        "phase": "evening"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 64800,
+      "target": "global",
+      "tick": 108,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:119",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 109,
+        "sim_time": 65400,
+        "phase": "evening"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 65400,
+      "target": "global",
+      "tick": 109,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:120",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 110,
+        "sim_time": 66000,
+        "phase": "evening"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 66000,
+      "target": "global",
+      "tick": 110,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:121",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 111,
+        "sim_time": 66600,
+        "phase": "evening"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 66600,
+      "target": "global",
+      "tick": 111,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:122",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 112,
+        "sim_time": 67200,
+        "phase": "evening"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 67200,
+      "target": "global",
+      "tick": 112,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:123",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 113,
+        "sim_time": 67800,
+        "phase": "evening"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 67800,
+      "target": "global",
+      "tick": 113,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:124",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 114,
+        "sim_time": 68400,
+        "phase": "evening"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 68400,
+      "target": "global",
+      "tick": 114,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:125",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 115,
+        "sim_time": 69000,
+        "phase": "evening"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 69000,
+      "target": "global",
+      "tick": 115,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:126",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 116,
+        "sim_time": 69600,
+        "phase": "evening"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 69600,
+      "target": "global",
+      "tick": 116,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:127",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 117,
+        "sim_time": 70200,
+        "phase": "evening"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 70200,
+      "target": "global",
+      "tick": 117,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:128",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 118,
+        "sim_time": 70800,
+        "phase": "evening"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 70800,
+      "target": "global",
+      "tick": 118,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "@world",
+      "detail": "clock.sync",
+      "event_id": "office-world-v0:129",
+      "kind": "clock.sync",
+      "payload": {
+        "tick": 119,
+        "sim_time": 71400,
+        "phase": "evening"
+      },
+      "provenance": "mechanical",
+      "scope": "global",
+      "sim_time": 71400,
+      "target": "global",
+      "tick": 119,
+      "type": "clock.sync"
+    },
+    {
+      "actor": "tenant_name",
+      "detail": "marker.seen",
+      "event_id": "office-world-v0:130",
+      "kind": "marker.seen",
+      "payload": {
+        "alias": "rosa delgado",
+        "marker": "tenant_name",
+        "source_event_id": "office-world-v0:61",
+        "source_event_kind": "world.message"
+      },
+      "provenance": "mechanical",
+      "scope": "room:office-floor:case-warroom",
+      "sim_time": 32400,
+      "target": "room:office-floor:case-warroom",
+      "tick": 54,
+      "type": "marker.seen"
+    },
+    {
+      "actor": "moon_phrase",
+      "detail": "marker.seen",
+      "event_id": "office-world-v0:131",
+      "kind": "marker.seen",
+      "payload": {
+        "alias": "full moon over the office",
+        "marker": "moon_phrase",
+        "source_event_id": "office-world-v0:3",
+        "source_event_kind": "world.message"
+      },
+      "provenance": "mechanical",
+      "scope": "room:office-floor:after-work-chat",
+      "sim_time": 0,
+      "target": "room:office-floor:after-work-chat",
+      "tick": 0,
+      "type": "marker.seen"
+    }
+  ],
+  "presence": [],
+  "rooms": [
+    {
+      "id": "after-work-chat",
+      "label": "after-work-chat",
+      "members": [],
+      "scene": [
+        -1.2,
+        -0.93,
+        0
+      ],
+      "scale": [
+        1.4,
+        0.9
+      ],
+      "scope": "room:office-floor:after-work-chat"
+    },
+    {
+      "id": "case-warroom",
+      "label": "case-warroom",
+      "members": [],
+      "scene": [
+        1.2,
+        -0.93,
+        0
+      ],
+      "scale": [
+        1.4,
+        0.9
+      ],
+      "scope": "room:office-floor:case-warroom"
+    },
+    {
+      "id": "office-hall",
+      "label": "office-hall",
+      "members": [],
+      "scene": [
+        -1.2,
+        0.93,
+        0
+      ],
+      "scale": [
+        1.4,
+        0.9
+      ],
+      "scope": "room:office-floor:office-hall"
+    }
+  ],
+  "run_id": "office-world-v0",
+  "run_name": "office-world-v0",
+  "signals": [
+    {
+      "detail": "Final variable value from runtime samples.",
+      "id": "filing_pressure",
+      "kind": "variable",
+      "label": "filing_pressure",
+      "scene": [
+        1.2,
+        -1.73,
+        0.58
+      ],
+      "scope": "room:office-floor:case-warroom",
+      "value": "0.82"
+    },
+    {
+      "detail": "Final variable value from runtime samples.",
+      "id": "evening_pull",
+      "kind": "variable",
+      "label": "evening_pull",
+      "scene": [
+        0.22,
+        -0.8,
+        0.58
+      ],
+      "scope": "global",
+      "value": "1"
+    },
+    {
+      "detail": "Final variable value from runtime samples.",
+      "id": "moon_fullness",
+      "kind": "variable",
+      "label": "moon_fullness",
+      "scene": [
+        0.44,
+        -0.8,
+        0.58
+      ],
+      "scope": "global",
+      "value": "0.96"
+    },
+    {
+      "detail": "Final variable value from runtime samples.",
+      "id": "social_weather",
+      "kind": "variable",
+      "label": "social_weather",
+      "scene": [
+        0.66,
+        -0.8,
+        0.58
+      ],
+      "scope": "global",
+      "value": "0.984"
+    },
+    {
+      "detail": "contained marker stayed within declared scopes",
+      "id": "tenant_name",
+      "kind": "marker",
+      "label": "tenant_name",
+      "scene": [
+        1.2,
+        -1.73,
+        0.58
+      ],
+      "scope": "room:office-floor:case-warroom",
+      "value": "pass"
+    },
+    {
+      "detail": "marker reached required propagation scope(s)",
+      "id": "moon_phrase",
+      "kind": "marker",
+      "label": "moon_phrase",
+      "scene": [
+        -0.98,
+        -1.73,
+        0.58
+      ],
+      "scope": "room:office-floor:after-work-chat",
+      "value": "pass"
+    },
+    {
+      "detail": "1 matching event(s)",
+      "id": "deadline_observed",
+      "kind": "probe",
+      "label": "deadline_observed",
+      "scene": [
+        0,
+        -1.8,
+        0.58
+      ],
+      "scope": "probe:deadline_observed",
+      "value": "pass"
+    },
+    {
+      "detail": "7 matching event(s)",
+      "id": "pressure_peaked",
+      "kind": "probe",
+      "label": "pressure_peaked",
+      "scene": [
+        0.26,
+        -1.8,
+        0.58
+      ],
+      "scope": "probe:pressure_peaked",
+      "value": "pass"
+    }
+  ],
+  "version": "viewer.trace.v1"
+}

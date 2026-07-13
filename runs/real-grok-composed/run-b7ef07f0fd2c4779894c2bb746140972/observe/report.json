@@ -1,0 +1,34 @@
+{
+  "version": "simfile.observe.v1",
+  "run_id": "run-b7ef07f0fd2c4779894c2bb746140972",
+  "contract_versions": {
+    "causal-event.v1": "noopolis.causal-event.v1",
+    "simfile.observe.v1": "simfile.observe.v1",
+    "simfile.run-manifest.v1": "simfile.run-manifest.v1"
+  },
+  "participants": [
+    "eleanor",
+    "sam"
+  ],
+  "agent_turns": {
+    "count": 3,
+    "sequence": [
+      "eleanor",
+      "sam",
+      "eleanor"
+    ]
+  },
+  "chains": {
+    "complete": 22,
+    "incomplete": []
+  },
+  "memory": [
+    {
+      "bank": "office-recall",
+      "events": 10,
+      "recalls": 2,
+      "memory_write_source": "events-fallback"
+    }
+  ],
+  "failures": []
+}
