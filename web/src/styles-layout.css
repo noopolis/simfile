@@ -30,6 +30,118 @@
   gap: 12px;
 }
 
+.world-hud {
+  display: grid;
+  gap: 7px;
+  border: 1px solid var(--line-soft);
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--bg) 92%, var(--accent));
+  padding: 8px;
+}
+
+.world-hud > header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--mute);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+}
+
+.world-hud > header span:nth-child(2) {
+  color: var(--faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.world-hud > header strong {
+  margin-left: auto;
+  color: var(--sub);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+.world-hud > header strong + strong {
+  margin-left: 0;
+}
+
+.world-hud > header b {
+  color: var(--ink);
+  font-size: 14px;
+}
+
+.world-hud-agents {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 7px;
+}
+
+.world-hud-agents button {
+  display: grid;
+  grid-template-columns: minmax(88px, 1.2fr) repeat(4, minmax(62px, 1fr));
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  border: 1px solid var(--line-soft);
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.015);
+  color: var(--sub);
+  padding: 6px 8px;
+  text-align: left;
+}
+
+.world-hud-agents button:hover,
+.world-hud-agents button.selected {
+  border-color: var(--accent);
+  background: var(--tint);
+}
+
+.world-hud-agents button > span {
+  min-width: 0;
+}
+
+.world-hud-agents small,
+.world-hud-agents b {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.world-hud-agents small {
+  color: var(--faint);
+  font-size: 8px;
+  font-weight: 400;
+  text-transform: uppercase;
+}
+
+.world-hud-agents b {
+  color: var(--ink);
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.world-hud-agent-title {
+  display: grid;
+  grid-template-columns: 7px minmax(0, 1fr);
+  align-items: center;
+  column-gap: 6px;
+}
+
+.world-hud-agent-title i {
+  grid-row: 1 / 3;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--accent);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--accent) 58%, transparent);
+}
+
+.world-hud-agent-title strong {
+  color: var(--ink);
+  line-height: 1.1;
+}
+
 .panel {
   position: relative;
   min-width: 0;
@@ -225,7 +337,7 @@
   white-space: nowrap;
 }
 
-@media (max-width: 1100px) {
+@media (max-width: 1380px) {
   .console-grid {
     grid-template-columns: 240px minmax(0, 1fr);
   }
@@ -246,5 +358,14 @@
 
   .topbar {
     grid-template-columns: 1fr;
+  }
+
+  .world-hud-agents button {
+    grid-template-columns: minmax(86px, 1.2fr) repeat(2, minmax(62px, 1fr));
+  }
+
+  .world-hud-agents button > span:nth-child(4),
+  .world-hud-agents button > span:nth-child(5) {
+    display: none;
   }
 }

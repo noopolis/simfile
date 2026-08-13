@@ -1,6 +1,6 @@
 import type { RuntimeTraceEvent } from "../runtime/types.js";
 
-export const WORLD_MESSAGE_EVENT_KINDS = ["world.message", "world.dm", "wake.recommended"] as const;
+export const WORLD_MESSAGE_EVENT_KINDS = ["world.message", "world.dm"] as const;
 type WorldMessageEventKind = (typeof WORLD_MESSAGE_EVENT_KINDS)[number];
 
 const WORLD_ACTOR_ID = "world";
@@ -120,7 +120,7 @@ const defaultDmId = (network: string, agentId: string, event: RuntimeTraceEvent)
 
 const deriveActorNetworkId = (event: RuntimeTraceEvent, options: MoltnetWorldDeliveryOptions): string | undefined => {
   if (options.networkId) return options.networkId;
-  if (event.kind === "world.message" || event.kind === "wake.recommended") {
+  if (event.kind === "world.message") {
     return asRoomScope(event.target).network;
   }
   return undefined;

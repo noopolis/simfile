@@ -47,13 +47,10 @@ const viewClassForCausalType = (type: string): TimelineViewClass => {
     case "turn.output.completed": return "turn.output";
     case "memory.recalled": return "memory.recalled";
     // World-authority additions (increment 3, `buildWorldRecord` below):
-    // `world.message` is a message like any other room chat line;
-    // `wake.recommended` shares the daimon `control.wake.accepted` class
-    // (both mean "a wake was recommended/accepted for an agent").
+    // `world.message` is a message like any other room chat line.
     case "clock.sync": return "clock";
     case "marker.seen": return "marker";
     case "world.message": return "message";
-    case "wake.recommended": return "wake";
     default: return "other";
   }
 };
@@ -185,7 +182,7 @@ const worldTargetRef = (payload: Record<string, unknown> | undefined): ElementRe
  * off the event's own payload — never invented — and turned into
  * `variable:<id>` subjects so the variable's storyline
  * (`eventsForElement(timeline, "variable:<id>")`) includes the rule firing
- * and the message/dm/wake it caused. Absent on a `clock.sync` (every tick,
+ * and the message/dm it caused. Absent on a `clock.sync` (every tick,
  * not this rule's own event) and on any rule with no variable condition.
  */
 const variableRefsFromPayload = (payload: Record<string, unknown> | undefined): ElementRef[] => {
@@ -211,8 +208,8 @@ const variableRefsFromPayload = (payload: Record<string, unknown> | undefined): 
  * - `world.act` is attributed directly to the fed variable it wrote
  *   (`payload.target` IS the variable id for this event type, unlike every
  *   other world event kind where `target` is a room/agent ref).
- * - `wake.recommended` and any other world event type (`rule.fired`, ...)
- *   fall back to the event's own `target` ref, or the run's single room
+ * - Any other world event type (`rule.fired`, ...) falls back to the event's
+ *   own `target` ref, or the run's single room
  *   when `target` doesn't resolve to one.
  * - Every branch additionally folds in `variable:<id>` subjects from the
  *   event's own `payload.variables` (`variableRefsFromPayload`) when

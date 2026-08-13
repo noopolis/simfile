@@ -40,10 +40,29 @@ Node.js 22+.
 
 ```bash
 simfile validate ./Simfile.yaml     # check a world
+simfile run ./Simfile --view        # run a linked world + organization, then watch it
+simfile run ./Simfile --local --ticks 200  # bounded mechanics-only diagnostic
 simfile view runs/<id>              # replay a sealed run — scrub, descend, watch spread
 simfile view --state .sim           # watch a live world
 simfile observe runs/<id>           # reconcile causal chains + measure spread → report.json
 ```
+
+For a linked project, `simfile run` performs lifecycle composition: it starts
+the world paused on `simfile.world-sidecar-runtime.v1`, delegates organization
+lifecycle to Spawnfile's public CLI, attests the topology and any separately
+manifested capability extensions, and atomically activates both owners. Tick 1
+and every later tick have no agent barrier. Organization-declared schedules
+wake autonomous runtimes; Simfile never selects, wakes, invokes, polls, or
+waits for cognition. Observation recommendations are optional pull-only sense
+metadata, never deliveries or wake authority.
+
+A future `simfile dev` wrapper may add watch/debug ergonomics, but must reuse
+this lifecycle rather than own another one.
+
+The live receipt also binds Spawnfile's pinned
+`spawnfile.moltnet-release-identity.v1`: architecture, asset digest, release
+version, source revision, and the exact `pi-bridge` capability. Unpinned
+`latest` is not a live input.
 
 ## What you can see
 
@@ -65,7 +84,7 @@ A `Simfile` declares world mechanics, kept deliberately genre-neutral:
 | **clock** | ticks, phases, sim-time |
 | **variables** | scoped state with ranges |
 | **generators** | deterministic or stochastic drivers that move variables |
-| **rules** | `when` conditions → effects (wake an agent, post a world message) |
+| **rules** | `when` conditions → mechanical effects or observation metadata |
 | **markers** | scan room traffic for tokens (a seeded secret, a name) |
 | **probes** | scored assertions evaluated over a run |
 | **run ledger** | the canonical, causally-ordered record everything else is measured against |
@@ -102,8 +121,9 @@ rules:
   deadline_bites:
     when: { variable: filing_pressure, above: 0.85 }
     do:
-      - action: wake:recommend
+      - action: moltnet:message
         to: room:office-floor:case-warroom
+        content: "Filing pressure crossed the deadline threshold."
 
 markers:
   tenant_name:
@@ -113,7 +133,7 @@ markers:
 
 probes:
   deadline_observed:
-    when: { event: wake.recommended, target: room:office-floor:case-warroom }
+    when: { event: world.message, target: room:office-floor:case-warroom }
     expect: { at_least: 1 }
 ```
 
@@ -128,7 +148,6 @@ src/schema      v0.1 world schema + validator
 src/runtime     deterministic world kernel (clock, generators, rules, markers, probes)
 src/observe     causal reconciliation + spread measurement
 src/view + web  the run-replay viewer (React), served by `simfile view`
-src/sims        composed-run drivers (shell Spawnfile, seed, observe)
 docs/           design + research (DESIGN, VIEW_DESIGN, VIEW_STYLEGUIDE, …)
 ```
 

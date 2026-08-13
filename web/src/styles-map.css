@@ -12,6 +12,200 @@
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03);
 }
 
+.map-stage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid var(--line-soft);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent 14%),
+    radial-gradient(circle at top, rgba(255, 255, 255, 0.04), transparent 36%),
+    #050708;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+}
+
+.map-stage .glyph-camera,
+.map-stage .glyph-host,
+.map-stage .glyph-scene {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.map-stage .glyph-output {
+  margin: 0;
+}
+
+.map-stage .static-glyph-camera {
+  z-index: 1;
+}
+
+.map-stage .dynamic-glyph-camera {
+  z-index: 2;
+  pointer-events: none;
+}
+
+.map-stage .dynamic-glyph-host,
+.map-stage .dynamic-glyph-host .glyph-output {
+  background: transparent;
+  pointer-events: none;
+}
+
+.world-map-renderer-host,
+.world-map-renderer-host > :first-child {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.world-map-renderer-host [data-selected="true"] {
+  filter: drop-shadow(0 0 8px var(--accent-hi));
+}
+
+.projected-label-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.dynamic-scene-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.dynamic-scene-entity {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: grid;
+  grid-template-columns: auto auto;
+  align-items: center;
+  gap: 4px;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  padding: 5px;
+  pointer-events: auto;
+  will-change: transform;
+}
+
+.dynamic-scene-entity i {
+  display: block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(255, 255, 255, 0.92);
+  border-radius: 3px;
+  background: var(--accent);
+  box-shadow: 0 0 9px color-mix(in srgb, var(--accent) 70%, transparent);
+}
+
+.dynamic-scene-entity span {
+  border-radius: 2px;
+  background: rgba(5, 7, 8, 0.82);
+  padding: 1px 3px;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.dynamic-scene-entity.signal i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #f6f7f8;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.9);
+}
+
+.dynamic-scene-entity.selected i {
+  outline: 2px solid var(--accent-hi);
+  outline-offset: 2px;
+}
+
+.scene-label {
+  position: absolute;
+  max-width: 150px;
+  border: 1px solid var(--line-soft);
+  border-radius: 3px;
+  background: rgba(5, 7, 8, 0.86);
+  color: var(--sub);
+  padding: 2px 5px;
+  pointer-events: auto;
+  transform: translate(-50%, -110%);
+  white-space: nowrap;
+}
+
+.scene-label strong,
+.scene-label span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.scene-label strong {
+  color: var(--ink);
+  font-size: 9px;
+  font-weight: 600;
+}
+
+.scene-label span {
+  color: var(--faint);
+  font-size: 8px;
+}
+
+.scene-label.selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--accent) 36%, transparent);
+}
+
+.scene-label.moving {
+  border-color: var(--cyan);
+}
+
+.map-controls-bar {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 8px;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-top: 1px solid var(--line-soft);
+  background: linear-gradient(180deg, transparent, rgba(5, 7, 8, 0.96) 34%);
+  color: var(--faint);
+  padding-top: 14px;
+  font-size: 9px;
+}
+
+.map-controls-bar button {
+  border: 1px solid var(--line-soft);
+  border-radius: 3px;
+  background: rgba(5, 7, 8, 0.9);
+  color: var(--sub);
+  padding: 3px 7px;
+}
+
+.map-controls-bar button.selected {
+  border-color: var(--accent);
+  color: var(--ink);
+}
+
+.map-controls-bar span:first-of-type {
+  margin-left: auto;
+}
+
 .ascii-grid,
 .ascii-overlay {
   position: absolute;
@@ -89,6 +283,11 @@ button.tile-cell {
 .tone-agent {
   color: var(--tile-agent);
   text-shadow: 0 0 8px color-mix(in srgb, var(--tile-agent) 48%, transparent);
+}
+
+.tone-transit {
+  color: color-mix(in srgb, var(--tile-agent) 60%, transparent);
+  text-shadow: 0 0 10px color-mix(in srgb, var(--tile-agent) 55%, transparent);
 }
 
 .tone-variable {

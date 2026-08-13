@@ -1,0 +1,15 @@
+#!/bin/sh
+# A fast-forward merge creates no commit, so neither pre-commit nor pre-merge-commit
+# runs. post-merge always runs, but git ignores its exit code — so this cannot refuse
+# the merge, only make a stale census impossible to miss at the moment it lands.
+if node "$(dirname "$0")/fixture-ownership-census-guard.mjs"; then
+  exit 0
+fi
+echo "" >&2
+echo "########################################################################" >&2
+echo "# THE MERGE YOU JUST LANDED LEFT THE FIXTURE OWNERSHIP CENSUS STALE.   #" >&2
+echo "# post-merge cannot refuse a fast-forward. Regenerate and amend NOW,   #" >&2
+echo "# or the next lane reads a failure it did not cause.                   #" >&2
+echo "########################################################################" >&2
+echo "" >&2
+exit 0

@@ -12,5 +12,8 @@
     "noEmit": true,
     "types": ["vite/client", "react", "react-dom", "node"]
   },
-  "include": ["web/src/**/*.ts", "web/src/**/*.tsx"]
+  "include": [
+    "web/src/**/*.ts",
+    "web/src/**/*.tsx"
+  ]
 }

@@ -1,5 +1,7 @@
-import { readFile, readdir } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import path from "node:path";
+
+import { findRunRawFiles, rawBank } from "./rawFiles.js";
 
 /**
  * Memetics increment (b): the extra sealed-artifact reads `seedSpread.ts`'s
@@ -23,20 +25,6 @@ export interface SpreadMnemeEvent {
   text: string;
 }
 
-const walkFiles = async (root: string): Promise<string[]> => {
-  const entries = await readdir(root, { withFileTypes: true }).catch(() => []);
-  const files: string[] = [];
-  for (const entry of entries) {
-    const entryPath = path.join(root, entry.name);
-    if (entry.isDirectory()) {
-      files.push(...(await walkFiles(entryPath)));
-    } else if (entry.isFile()) {
-      files.push(entryPath);
-    }
-  }
-  return files;
-};
-
 const messageText = (parts: readonly { kind?: string; text?: string }[] | undefined): string =>
   (parts ?? [])
     .filter((part) => part.kind === "text" && typeof part.text === "string")
@@ -59,12 +47,15 @@ interface RawExportedMessage {
  * hand-authored golden-fixture shape (which never carries `seed_declaration`).
  */
 export const readSpreadTranscriptMessages = async (runDir: string): Promise<SpreadTranscriptMessage[]> => {
-  const moltnetDir = path.join(runDir, "raw", "moltnet");
-  const files = (await walkFiles(moltnetDir)).filter((file) => file.endsWith("transcript.json")).sort();
+  const files = (await findRunRawFiles(runDir)).filter(({ rawRelativePath }) => {
+    const segments = rawRelativePath.split(path.sep);
+    return segments[0] === "raw" && segments[1] === "moltnet"
+      && segments.at(-1) === "transcript.json";
+  });
 
   const messages: SpreadTranscriptMessage[] = [];
   for (const file of files) {
-    const raw = JSON.parse(await readFile(file, "utf8")) as { conversations?: { messages?: RawExportedMessage[] }[] };
+    const raw = JSON.parse(await readFile(file.absolutePath, "utf8")) as { conversations?: { messages?: RawExportedMessage[] }[] };
     for (const conversation of raw.conversations ?? []) {
       for (const message of conversation.messages ?? []) {
         if (typeof message.id !== "string") continue;
@@ -109,14 +100,15 @@ const parseJsonlLines = (text: string): unknown[] => {
 export const readSpreadMnemeEventsByBank = async (
   runDir: string
 ): Promise<Map<string, SpreadMnemeEvent[]>> => {
-  const mnemeDir = path.join(runDir, "raw", "mneme");
-  const bankDirs = await readdir(mnemeDir, { withFileTypes: true }).catch(() => []);
-
   const byBank = new Map<string, SpreadMnemeEvent[]>();
-  for (const entry of bankDirs) {
-    if (!entry.isDirectory()) continue;
-    const text = await readFile(path.join(mnemeDir, entry.name, "events.jsonl"), "utf8").catch(() => null);
-    if (text === null) continue;
+  const files = (await findRunRawFiles(runDir)).filter(({ rawRelativePath }) => {
+    const segments = rawRelativePath.split(path.sep);
+    return segments.length === 4 && rawBank(rawRelativePath) !== undefined
+      && segments[3] === "events.jsonl";
+  });
+  for (const file of files) {
+    const bank = rawBank(file.rawRelativePath)!;
+    const text = await readFile(file.absolutePath, "utf8");
 
     const events: SpreadMnemeEvent[] = [];
     for (const line of parseJsonlLines(text)) {
@@ -124,7 +116,7 @@ export const readSpreadMnemeEventsByBank = async (
       if (typeof row.id !== "string" || typeof row.type !== "string") continue;
       events.push({ id: row.id, type: row.type, agentId: row.principal?.agentId, text: row.content?.text ?? "" });
     }
-    byBank.set(entry.name, events);
+    byBank.set(bank, [...(byBank.get(bank) ?? []), ...events]);
   }
   return byBank;
 };
@@ -135,7 +127,7 @@ export const readSpreadMnemeEventsByBank = async (
  * `{tick, message_ids}`) into a `message_id -> tick` map: the one exact,
  * non-wall-clock fact the live world loop recorded about when it folded a
  * given Moltnet message into the run. Absent entirely for a run that wasn't
- * world-driven (batch `composedOfficeSimDriver`-style runs never write this
+ * world-driven (batch composed-driver runs never write this
  * file) — returns an empty map rather than failing.
  */
 export const readTickByIngestedMessageId = async (runDir: string): Promise<Map<string, number>> => {

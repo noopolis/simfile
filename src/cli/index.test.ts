@@ -1,91 +1,37 @@
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, stat, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, stat, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, it } from "node:test";
+import { pathToFileURL } from "node:url";
 
-import { scanMarkers } from "../ledger/markers.js";
 import { parseCanonicalLedgerJsonl } from "../ledger/validation.js";
-import { parseSimfileSource } from "../schema/parse.js";
-import { runCli } from "./index.js";
-
-const captureStdout = async <T>(operation: () => Promise<T>): Promise<{ output: string; result: T }> => {
-  const chunks: string[] = [];
-  const original = process.stdout.write;
-  process.stdout.write = ((chunk: string | Uint8Array) => {
-    chunks.push(String(chunk));
-    return true;
-  }) as typeof process.stdout.write;
-
-  try {
-    const result = await operation();
-    return { output: chunks.join(""), result };
-  } finally {
-    process.stdout.write = original;
-  }
-};
-
-const cliTranscriptSimfileSource = `
-simfile_version: "0.1"
-name: cli-run-world
-clock:
-  seed: cli-test
-  tick: 1m
-variables:
-  pressure:
-    scope: room:office-floor:case-warroom
-    initial: 0.8
-    range: 0..1
-generators:
-  ramp:
-    kind: deterministic
-    variable: pressure
-    delta: 0.1
-rules:
-  deadline:
-    when:
-      variable: pressure
-      above: 0.85
-    do:
-      - action: moltnet:message
-        to: room:office-floor:case-warroom
-        content: "Rosa Delgado belongs here."
-      - action: moltnet:dm
-        to: agent:eleanor
-        content: "Private follow-up."
-      - action: wake:recommend
-        to: room:office-floor:case-warroom
-markers:
-  tenant_name:
-    text:
-      - "Rosa Delgado"
-    mode: containment
-    scopes:
-      - room:office-floor:case-warroom
-`;
-const parsedCliTranscriptSimfile = parseSimfileSource(cliTranscriptSimfileSource, { path: "Simfile.yaml" }).simfile;
-
-const markerIdsByEvent = (ledgerSource: string) => {
-  const events = parseCanonicalLedgerJsonl(ledgerSource, { runId: "smoke" });
-  const hits = scanMarkers(events, parsedCliTranscriptSimfile.markers);
-  const markerIds = new Map<string, string[]>();
-
-  for (const markerHits of Object.values(hits)) {
-    for (const hit of markerHits) {
-      const existing = markerIds.get(hit.eventId) ?? [];
-      existing.push(hit.markerId);
-      markerIds.set(hit.eventId, existing);
-    }
-  }
-
-  for (const entry of markerIds.values()) {
-    entry.sort();
-  }
-
-  return markerIds;
-};
+import { isCliEntrypoint, runCli } from "./index.js";
+import {
+  captureStdout,
+  cliTranscriptSimfileSource,
+  markerIdsByEvent,
+} from "./index.test-helper.js";
 
 describe("runCli", () => {
+  it("recognizes an npm-style symlinked executable without treating imports as entrypoints", {
+    skip: process.platform === "win32" ? "raw symlink creation is not portable on Windows" : false,
+  }, async () => {
+    const dir = await mkdtemp(path.join(tmpdir(), "simfile-cli-entrypoint-"));
+    const modulePath = path.join(dir, "index.js");
+    const binPath = path.join(dir, "simfile");
+    const importedPath = path.join(dir, "importer.js");
+    await writeFile(modulePath, "export {};\n", "utf8");
+    await writeFile(importedPath, "export {};\n", "utf8");
+    await symlink(modulePath, binPath);
+
+    const moduleUrl = pathToFileURL(modulePath).href;
+    assert.equal(isCliEntrypoint(moduleUrl, binPath), true);
+    assert.equal(isCliEntrypoint(moduleUrl, importedPath), false);
+    assert.equal(isCliEntrypoint(moduleUrl, undefined), false);
+    assert.equal(isCliEntrypoint(moduleUrl, path.join(dir, "missing")), false);
+  });
+
   it("validates a Simfile path", async () => {
     const dir = await mkdtemp(path.join(tmpdir(), "simfile-cli-"));
     const file = path.join(dir, "Simfile.yaml");
@@ -141,7 +87,7 @@ variables:
 rules:
   hello:
     when:
-      event: wake.recommended
+      event: world.message
       scope: room:office:desk
     do:
       - action: moltnet:message
@@ -178,7 +124,7 @@ clock:
 rules:
   hello:
     when:
-      event: wake.recommended
+      event: world.message
       target: room:office:missing-room
     do:
       - action: moltnet:message
@@ -224,12 +170,13 @@ rules:
       variable: pressure
       above: 0.85
     do:
-      - action: wake:recommend
+      - action: moltnet:message
         to: room:office-floor:case-warroom
+        content: "Observation notice."
 probes:
   deadline_seen:
     when:
-      event: wake.recommended
+      event: world.message
       target: room:office-floor:case-warroom
     expect:
       at_least: 1
@@ -239,7 +186,7 @@ probes:
     assert.equal(code, 0);
     await stat(path.join(out, "manifest.yaml"));
     const ledger = await readFile(path.join(out, "ledger.jsonl"), "utf8");
-    assert.match(ledger, /"kind":"wake.recommended"/);
+    assert.match(ledger, /"kind":"world.message"/);
     const report = JSON.parse(await readFile(path.join(out, "report.json"), "utf8")) as { probes: Array<{ passed: boolean }> };
     assert.equal(report.probes[0]?.passed, true);
     const telemetry = JSON.parse(await readFile(path.join(out, "telemetry.json"), "utf8")) as {
@@ -296,7 +243,7 @@ probes:
     assert.equal(transcript.source, "harness-derived");
     assert.deepEqual(
       transcript.entries.map((entry) => entry.kind),
-      ["world.message", "world.dm", "wake.recommended"]
+      ["world.message", "world.dm", "world.message"]
     );
     assert.deepEqual(
       transcript.entries.find((entry) => entry.kind === "world.message")
@@ -352,8 +299,9 @@ rules:
       variable: pressure
       above: 0.85
     do:
-      - action: wake:recommend
+      - action: moltnet:message
         to: room:office-floor:case-warroom
+        content: "Observation notice."
 `, "utf8");
     await writeFile(report, JSON.stringify({
       nodes: [
@@ -372,5 +320,48 @@ rules:
     const code = await runCli(["run", file, "--ticks", "1", "--out", out, "--run-id", "smoke", "--spawnfile-report", report]);
     assert.equal(code, 0);
     await stat(path.join(out, "manifest.yaml"));
+  });
+  it("runs a compliant dynamics provider through the CLI", async () => {
+    const { createDynamicsTestProject, removeDynamicsTestProject } =
+      await import("../dynamics/testSupport.test-helper.js");
+    const project = await createDynamicsTestProject();
+    try {
+      const out = path.join(project.directory, "run");
+      const { output, result } = await captureStdout(() => runCli(
+        ["run", project.simfilePath, "--ticks", "2", "--out", out]));
+      assert.equal(result, 0);
+      assert.equal(output, `wrote run dynamics-seed to ${out}\n`);
+      await stat(path.join(out, "replay/final-session.json"));
+    } finally {
+      await removeDynamicsTestProject(project);
+    }
+  });
+
+  it("rejects --acts on a dynamics run before output work", async () => {
+    const { createDynamicsTestProject, removeDynamicsTestProject } =
+      await import("../dynamics/testSupport.test-helper.js");
+    const project = await createDynamicsTestProject();
+    try {
+      const out = path.join(project.directory, "run");
+      assert.equal(await runCli(["run", project.simfilePath, "--ticks", "1",
+        "--out", out, "--acts", path.join(project.directory, "missing")]), 1);
+      await assert.rejects(stat(out));
+    } finally {
+      await removeDynamicsTestProject(project);
+    }
+  });
+
+  it("rejects --moltnet-artifact on a dynamics run before output work", async () => {
+    const { createDynamicsTestProject, removeDynamicsTestProject } =
+      await import("../dynamics/testSupport.test-helper.js");
+    const project = await createDynamicsTestProject();
+    try {
+      const out = path.join(project.directory, "run");
+      assert.equal(await runCli(["run", project.simfilePath, "--ticks", "1",
+        "--out", out, "--moltnet-artifact", "transcript"]), 1);
+      await assert.rejects(stat(out));
+    } finally {
+      await removeDynamicsTestProject(project);
+    }
   });
 });

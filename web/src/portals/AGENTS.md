@@ -10,10 +10,10 @@ a portal).
   (`agent:` | `room:` | `bank:` | `team:` | `variable:` refs all render
   through this same component — no per-kind portal code): opened by
   `../store/timeline.ts`'s `focusAndOpenPortal`, called from the map
-  (room anchor, agent body, and now the synthesized `team:` node), the chat
-  pane (author name), and the minds rail (bank header, per-agent
-  sub-header). Multiple portals can be open at once (`openPortals` is a
-  stack); `stackIndex` offsets each instance so they don't overlap. The
+  (room anchor or agent body), the chat pane (author name), and the minds
+  rail (bank header, per-agent sub-header). Multiple portals can be open at
+  once (`openPortals` is a stack); `stackIndex` offsets each instance so
+  they don't overlap. The
   branch that decides content is pure data presence
   (`../store/timeline.ts`'s `membraneForRef`): when `elementRef` names a
   real `RunTimeline.membranes` entry, it renders `MembraneView` (the
@@ -35,7 +35,13 @@ a portal).
   `VariableSparkline` of the trajectory (`../viewer/variableModel.ts`'s
   `sampleAtTick`/`trajectoryUpToTick`, fed by the `variableSamples`/
   `variableTick` props `RunReplayShell.tsx` passes to every open portal),
-  plus a scrollable tick→value list. The samples themselves are RECORDS
+  plus a scrollable tick→value list.
+  That `variableTick` is the run's one world tick as of the event cursor,
+  computed once through `../viewer/variableModel.ts`'s `tickAtCursor` ->
+  `../chrome/playbackCadence.ts`'s `playbackTickAtCursor`; the membrane branch
+  threads the same value through `StorylinePortal` -> `MembraneView` ->
+  `AsciiMap`, while `undefined` means the record states no time. The samples
+  themselves are RECORDS
   from `world/telemetry.json`, not `TimelineEvent`s, so they render here
   rather than through `StorylineRows`; the "caused" rule-firing/message
   events still come from the ordinary `eventsForElement` slice below them
@@ -46,11 +52,16 @@ a portal).
   `membrane.interiorWorld`, the same `buildViewerWorld`/`AsciiMap` the outer
   map uses — one map renderer, not two), the interior room's `ChatPane`
   (scoped via its `roomFilter` prop to `membrane.interiorRooms`), and a
-  `MindsRail` filtered to `agentsForMembrane`/`banksForMembrane`. All three
-  read the store's cursor directly — no private clock. A "crossings" tab
-  keeps the membrane's own flat storyline available (the representative's
-  combined interior+exterior storyline — where interior meets exterior),
-  reusing `StorylineRows`.
+  `MindsRail` filtered to `agentsForMembrane`/`banksForMembrane`. Chat, minds,
+  and the crossings storyline read the store cursor. The interior map renders
+  the run's one world tick, computed once by `RunReplayShell` through
+  `variableModel.tickAtCursor` -> `playbackCadence.playbackTickAtCursor` and
+  threaded `StorylinePortal` -> `MembraneView` -> `AsciiMap`; `undefined`
+  means the record states no time. The cursor is an event index and must never
+  be passed as a map tick. This shared wiring keeps the portal free of a
+  private clock. A "crossings" tab keeps the membrane's own flat storyline
+  available (the representative's combined interior+exterior storyline —
+  where interior meets exterior), reusing `StorylineRows`.
 - `StorylineRows.tsx` — the shared vertical "now"-lined event-row list, split
   out of `StorylinePortal.tsx` so both the flat leaf rendering and
   `MembraneView`'s "crossings" tab use one row renderer, never two copies of

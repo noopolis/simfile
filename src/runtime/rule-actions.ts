@@ -1,7 +1,8 @@
 import { createCanonicalEventEnvelope, DEFAULT_EMITTER_STREAM_ID, DEFAULT_PRINCIPAL_ID } from "../ledger/stable.js";
 import type { SimfileRuleAction } from "../schema/model.js";
 import { clampAndRound, type RangeSpec } from "./numeric.js";
-import type { RuntimeTraceEvent } from "./types.js";
+import { routeKey } from "./trace-compile.js";
+import type { RuntimeTraceEvent, TransitState } from "./types.js";
 
 const WORLD_ACTOR = "@world";
 
@@ -23,7 +24,7 @@ const actId = (runId: string, seq: number): string => `${runId}:act:${seq}`;
 const createActionEvent = (
   runId: string,
   seq: number,
-  kind: "world.message" | "world.dm" | "wake.recommended",
+  kind: "presence.left" | "world.message" | "world.dm",
   simTime: number,
   actor: string,
   target: string,
@@ -47,8 +48,8 @@ const createActionEvent = (
 
 /**
  * world.act payload minimum: {sim_time, provenance, actor, target, scope,
- * act_id, action, value}. Rule-emitted world events (world.message, world.dm,
- * wake.recommended) are simfile's world.act variants, so every one of these
+ * act_id, action, value}. Rule-emitted world events (world.message and world.dm)
+ * are simfile's world.act variants, so every one of these
  * carries the minimum keys directly in payload alongside its existing fields.
  */
 const worldActPayload = (
@@ -79,6 +80,15 @@ const worldActPayload = (
 const variablesExtra = (variableIds: readonly string[]): { variables?: string[] } =>
   variableIds.length > 0 ? { variables: [...variableIds] } : {};
 
+export interface SpatialActionContext {
+  presence: Record<string, string>;
+  transit: Map<string, TransitState>;
+  travelTicksByRoute: ReadonlyMap<string, number>;
+}
+
+const transitingAgentTarget = (target: string, transit: ReadonlyMap<string, TransitState>): boolean =>
+  transit.has(target) || (target.startsWith("agent:") && transit.has(target.slice("agent:".length)));
+
 const emitRuleActionEvents = (
   runId: string,
   seq: number,
@@ -91,9 +101,42 @@ const emitRuleActionEvents = (
   precision: number,
   causeEventIds: readonly string[],
   variableIds: readonly string[],
+  spatial: SpatialActionContext,
   emit: (event: RuntimeTraceEvent) => void
 ): number => {
   if (action.action === "variable:set" || action.action === "variable:delta") {
+    return seq;
+  }
+
+  if (action.action === "move") {
+    if (spatial.transit.has(action.agent)) {
+      return seq;
+    }
+    const from = spatial.presence[action.agent];
+    const travelTicks = from === undefined
+      ? undefined
+      : spatial.travelTicksByRoute.get(routeKey(from, action.to));
+    if (from === undefined || travelTicks === undefined) {
+      return seq;
+    }
+    delete spatial.presence[action.agent];
+    spatial.transit.set(action.agent, {
+      agent: action.agent,
+      from,
+      to: action.to,
+      arrivalTick: tick + travelTicks
+    });
+    emit(createActionEvent(runId, seq, "presence.left", simTime, action.agent, from, from, {
+      agent: action.agent,
+      place: from,
+      tick
+    }, causeEventIds));
+    return seq + 1;
+  }
+
+  // Frozen-in-transit agents cannot receive agent-targeted effects. The
+  // ignored action emits no event, making the deterministic no-op observable.
+  if (action.action === "moltnet:dm" && transitingAgentTarget(action.to, spatial.transit)) {
     return seq;
   }
 
@@ -115,11 +158,7 @@ const emitRuleActionEvents = (
     return seq + 1;
   }
 
-  emit(createActionEvent(runId, seq, "wake.recommended", simTime, ruleId, action.to, action.to, worldActPayload(
-    { simTime, actor: ruleId, target: action.to, scope: action.to, seq, runId, action: action.action, value: null },
-    { reason: ruleId, target: action.to, tick, phase, ...variablesExtra(variableIds) }
-  ), causeEventIds));
-  return seq + 1;
+  return seq;
 };
 
 export const runRuleActions = (
@@ -136,6 +175,7 @@ export const runRuleActions = (
   nextVariables: Record<string, number>,
   causeEventIds: readonly string[],
   variableIds: readonly string[],
+  spatial: SpatialActionContext,
   emit: (event: RuntimeTraceEvent) => void
 ): number => {
   let nextSeq = seq;
@@ -170,6 +210,7 @@ export const runRuleActions = (
       precision,
       causeEventIds,
       variableIds,
+      spatial,
       emit
     );
   }

@@ -3,14 +3,20 @@ import type { RoomGeometry, RoomPath, ViewerNode, ViewerPresenceEvent } from "./
 export type Vec3 = [number, number, number];
 
 export interface AgentPlacement {
+  animation: {
+    clip: "idle" | "walk" | "run";
+    phase: number;
+    timeScale: number;
+  };
   heading: number;
   labelPosition: Vec3;
   moving: boolean;
   nextRoomId: string;
   node: ViewerNode;
   position: Vec3;
-  stride: number;
   roomId: string;
+  speedMps: number;
+  stride: number;
 }
 
 const floorZ = 0.055;
@@ -88,14 +94,13 @@ const placementForAgent = ({
     }
     const progress = easedProgress(inTransit, tick);
     const { point, target } = samplePath(path.path, progress);
-    const movement = progress > 0.001 && progress < 0.999;
     return makePlacement(
       agent,
       point,
       target,
       inTransit.from_room,
       inTransit.to_room,
-      movement,
+      true,
       strideByTime(tick, index),
     );
   }
@@ -137,6 +142,7 @@ const makePlacement = (
   moving: boolean,
   stride: number,
 ): AgentPlacement => ({
+  animation: { clip: "idle", phase: 0, timeScale: 0 },
   heading: angleToward(target, position),
   labelPosition: [position[0], position[1], position[2] + 0.72],
   moving,
@@ -144,6 +150,7 @@ const makePlacement = (
   node,
   position,
   roomId,
+  speedMps: 0,
   stride,
 });
 
@@ -152,7 +159,7 @@ const mostRecentInTransit = (
   tick: number
 ): Extract<ViewerPresenceEvent, { type: "presence.in_transit" }> | undefined => {
   const candidates = events.filter((event) =>
-    event.type === "presence.in_transit" && event.started_at <= tick && tick <= event.arrived_at,
+    event.type === "presence.in_transit" && event.started_at <= tick && tick < event.arrived_at,
   );
   return candidates.at(-1) as Extract<ViewerPresenceEvent, { type: "presence.in_transit" }> | undefined;
 };

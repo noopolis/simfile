@@ -18,16 +18,37 @@ import { StorylineRows } from "./StorylineRows.js";
 /**
  * The membrane interior view (`VIEW_DESIGN.md` rule 5, "descend into a
  * mind"): a mini map + the interior room's chat + a minds rail filtered to
- * the membrane's own members, all reading the SAME store cursor as the outer
- * map/chat/minds (rule 7 — nothing here keeps a private clock). A "crossings"
- * tab keeps the membrane's own flat storyline available (the representative's
- * combined interior+exterior storyline — "the events where interior meets
- * exterior"), reusing `StorylineRows` rather than a second row renderer.
+ * the membrane's own members. Chat, minds, and storyline panes read the same
+ * store cursor as their outer counterparts. The interior map instead renders
+ * the record's own simulated world tick supplied by the app's one cursor
+ * mapping owner, because a map tick is world time and the cursor is an event
+ * index. That is the same tick the outer map renders, so nothing here keeps a
+ * private clock (rule 7). A "crossings" tab keeps the membrane's own flat
+ * storyline available (the representative's combined interior+exterior
+ * storyline — "the events where interior meets exterior"), reusing
+ * `StorylineRows` rather than a second row renderer.
  */
 
 type MembraneTab = "interior" | "crossings";
 
-export function MembraneView({ timeline, membrane }: { timeline: RunTimeline; membrane: RunTimelineMembrane }) {
+export function MembraneView({
+  membrane,
+  tick,
+  timeline,
+}: {
+  membrane: RunTimelineMembrane;
+  /**
+   * The record's own simulated world tick "as of" the scrub cursor, from the
+   * app's single cursor->tick owner (`../chrome/playbackCadence.ts`'s
+   * `playbackTickAtCursor` via `../viewer/variableModel.ts`'s `tickAtCursor`),
+   * computed once by `../viewer/RunReplayShell.tsx` and threaded through
+   * `StorylinePortal`. `undefined` means the record states no time — the
+   * interior map then renders `AsciiMap`'s timeless frame, exactly as the outer
+   * map does. NEVER pass the store cursor here: the cursor is an event index.
+   */
+  tick?: number;
+  timeline: RunTimeline;
+}) {
   const { cursor, selection, highlightedEventIds } = useTimelineStore();
   const [tab, setTab] = useState<MembraneTab>("interior");
 
@@ -84,6 +105,10 @@ export function MembraneView({ timeline, membrane }: { timeline: RunTimeline; me
                 rooms={interiorWorld.roomGeometries}
                 selectedNode={selectedNode}
                 selectedSkin={skin}
+                presenceByAgent={interiorWorld.presenceByAgent}
+                spatialSamples={interiorWorld.spatialSamples}
+                tick={tick}
+                tickDurationMs={interiorWorld.tickDurationMs}
               />
             ) : null}
           </div>

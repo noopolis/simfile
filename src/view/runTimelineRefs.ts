@@ -1,5 +1,3 @@
-import path from "node:path";
-
 import type { RawTranscriptMessage } from "./runViewModelTypes.js";
 import type { ElementRef } from "./runTimelineTypes.js";
 
@@ -40,6 +38,9 @@ export const agentIdFromStreamId = (streamId: string): string | undefined => str
 export const networkIdFromStreamId = (streamId: string): string | undefined => streamId.match(/^network:(.+)$/u)?.[1];
 
 export const bankFromRelativePath = (relativePath: string): string | undefined => {
-  const segments = relativePath.split(path.sep);
-  return segments[0] === "raw" && segments[1] === "mneme" ? segments[2] : undefined;
+  const segments = relativePath.split(/[\\/]/u);
+  const rawIndex = segments.indexOf("raw");
+  return rawIndex >= 0 && segments[rawIndex + 1] === "mneme"
+    ? segments[rawIndex + 2]
+    : undefined;
 };

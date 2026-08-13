@@ -123,6 +123,14 @@ export interface RunViewModel {
    * `office-secret-v0-golden`, which drives no variable).
    */
   variableSamples?: RunTelemetrySample[];
+  pace?: RunWorldPace;
+}
+
+export interface RunWorldPace {
+  measured_wall_elapsed_seconds: number;
+  declared_sim_seconds_per_tick: number;
+  target_sim_seconds: number;
+  kept_up: boolean;
 }
 
 /** One `world/telemetry.json` sample row (`simfile.telemetry.v1`, `src/runtime/run-record.ts`'s `TelemetryArtifact`). */
@@ -131,6 +139,18 @@ export interface RunTelemetrySample {
   simTime: number;
   phase?: string;
   variables: Record<string, number>;
+  /** Present only on place-bearing runtime telemetry. */
+  occupancy?: Record<string, string[]>;
+  /** Present only on place-bearing runtime telemetry. */
+  transit?: RunTelemetryTransit[];
+}
+
+/** Exact composed-runtime wire shape from `RuntimeVariableSample.transit`. */
+export interface RunTelemetryTransit {
+  agent: string;
+  from: string;
+  to: string;
+  ticksRemaining: number;
 }
 
 /** The raw `raw/moltnet/transcript.json` shape this package writes and reads. */
@@ -141,7 +161,7 @@ export interface RawTranscriptMessage {
    * `data` is the `simfile_event_id`/`simfile_event_kind`/`simfile_rule_id`
    * breadcrumb `src/moltnet/world-participant.ts`'s `metadataFromEvent`
    * attaches to a message that originated from a world action
-   * (`world.message`/`world.dm`/`wake.recommended`) — absent on a genuine
+   * (`world.message`/`world.dm`) — absent on a genuine
    * agent-authored message.
    */
   parts: { kind: string; text?: string; data?: Record<string, unknown> }[];

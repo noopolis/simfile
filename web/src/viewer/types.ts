@@ -32,11 +32,9 @@ export interface ViewerNode {
   id: string;
   label: string;
   /**
-   * `team` is a synthesized map node (`RunReplayShell.tsx`'s
-   * `withMembraneNodes`, never emitted by any server trace): the descendable
-   * self-membrane body next to its representative's own body — clicking it
-   * calls `focusAndOpenPortal(membrane.ref)` directly (`VIEW_DESIGN.md`
-   * rule 5, "the luna team node on the map").
+   * `team` remains part of the renderer's genre-neutral node vocabulary.
+   * Membrane descent does not synthesize one: its affordance is carried by
+   * the representative's own `agent` node (`VIEW_DESIGN.md` rule 5).
    */
   kind: "room" | "agent" | "org" | "marker" | "variable" | "probe" | "event" | "team";
   scope: string;
@@ -49,6 +47,10 @@ export interface ViewerNode {
   scene: [number, number, number];
   scale: [number, number, number] | number;
   colorRole: ViewerColorRole;
+  geometry?: "cube" | "sphere";
+  /** Viewer-owned, tick-relative movement state; never part of the trace contract. */
+  in_transit?: boolean;
+  transit_heading?: number;
 }
 
 export type ViewerNodeKind = ViewerNode["kind"];
@@ -69,16 +71,33 @@ export interface ViewerContractTrace {
   version: "viewer.trace.v1";
   run_id: string;
   run_name: string;
+  /** Public ingestion lifecycle; omitted by older and non-live producers. */
+  playback_status?: "live" | "completed" | "failed";
   rooms: ViewerTraceRoom[];
   corridors: ViewerTraceCorridor[];
   agents: ViewerTraceAgent[];
   presence: ViewerPresenceEvent[];
   ledger_facts: ViewerLedgerFact[];
+  /** Bounded producer-authored public facts for the selected node. */
+  inspections?: ViewerTraceInspection[];
+  /** Bounded, redacted inspector changes keyed to the replay cursor. */
+  inspection_samples?: ViewerTraceInspectionSample[];
   signals: ViewerSignal[];
+  /** Full spatial state at each runtime tick. Optional for older/chat-only traces. */
+  spatial_samples?: ViewerSpatialSample[];
+  /** Authoritative simulated milliseconds represented by one tick. */
+  tick_duration_ms?: number;
+  /** Opaque extension-owned presentation data keyed by extension id. */
+  viewer_extension_data?: Readonly<Record<string, unknown>>;
+  viewer_extensions?: readonly Readonly<{
+    id: string;
+    status: "recorded" | "unsealed/local";
+  }>[];
 }
 
 export interface ViewerTraceRoom {
   id: string;
+  kind?: "room" | "square";
   label: string;
   scope: string;
   members: string[];
@@ -86,14 +105,17 @@ export interface ViewerTraceRoom {
   scale?: [number, number];
   wall_height?: number;
   access_hint?: string;
+  place_id?: string;
 }
 
 export interface ViewerTraceCorridor {
+  direction?: "bidirectional" | "one_way";
   id: string;
   from_room: string;
   to_room: string;
   path: ViewerPathPoint[];
   width?: number;
+  travel_ticks?: number;
 }
 
 export interface ViewerPathPoint {
@@ -142,7 +164,7 @@ export type ViewerPresenceEvent =
   | ViewerPresenceArrivedEvent;
 
 export interface ViewerLedgerFact {
-  type: "clock.sync" | "world.message" | "world.dm" | "wake.recommended" | "rule.fired" | "marker.seen" | "probe" | "other";
+  type: "clock.sync" | "presence.arrived" | "presence.left" | "world.message" | "world.dm" | "wake.recommended" | "rule.fired" | "marker.seen" | "probe" | "other";
   tick: number;
   event_id: string;
   kind: string;
@@ -156,6 +178,7 @@ export interface ViewerLedgerFact {
 }
 
 export interface ViewerSignal {
+  geometry?: "cube" | "sphere";
   kind: "variable" | "marker" | "probe";
   id: string;
   scope: string;
@@ -163,6 +186,7 @@ export interface ViewerSignal {
   value: string;
   detail: string;
   scene: [number, number, number];
+  scale?: number | [number, number, number];
 }
 
 export interface ViewerEventRow {
@@ -174,11 +198,57 @@ export interface ViewerEventRow {
 }
 
 export interface ViewerDerivedWorld {
+  inspectionsByNode: Record<string, ViewerTraceInspection>;
+  inspectionSamples: ViewerTraceInspectionSample[];
   nodes: ViewerNode[];
   roomGeometries: RoomGeometry[];
   roomPaths: RoomPath[];
   ledgerRows: ViewerEventRow[];
   presenceByAgent: Record<string, ViewerPresenceEvent[]>;
+  spatialSamples: ViewerSpatialSample[];
+  tickDurationMs: number;
+  viewerExtensionData?: Readonly<Record<string, unknown>>;
+  viewerExtensionIdentities?: ViewerContractTrace["viewer_extensions"];
+}
+
+export interface ViewerSpatialTransit {
+  agent: string;
+  from_room: string;
+  path_id: string;
+  ticks_remaining: number;
+  to_room: string;
+}
+
+export interface ViewerSpatialSample {
+  /** Object ids that cut directly to this authoritative sample. */
+  discontinuities?: string[];
+  occupancy: Record<string, string[]>;
+  /** Exact world-space samples; omitted by chat-only traces. */
+  objects?: ViewerSpatialObjectSample[];
+  tick: number;
+  transit: ViewerSpatialTransit[];
+}
+
+export interface ViewerSpatialObjectSample {
+  id: string;
+  position: [number, number];
+  /** World units per authoritative simulation tick. */
+  velocity?: [number, number];
+}
+
+export interface ViewerInspectionField {
+  label: string;
+  value: string;
+}
+
+export interface ViewerTraceInspection {
+  fields: ViewerInspectionField[];
+  node_id: string;
+}
+
+export interface ViewerTraceInspectionSample {
+  inspections: ViewerTraceInspection[];
+  tick: number;
 }
 
 export interface ViewerWorldResponse {

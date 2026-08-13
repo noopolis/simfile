@@ -138,7 +138,7 @@ const startFakeMoltnetServer = async (): Promise<{
 };
 
 describe("Simfile Moltnet world participant", () => {
-  it("posts world.message, world.dm, and wake.recommended events with event id metadata", async () => {
+  it("posts only explicit world.message and world.dm events with event id metadata", async () => {
     const simfile = parseSimfileSource(`
 simfile_version: "0.1"
 name: world-participant-world
@@ -156,15 +156,12 @@ rules:
       - action: moltnet:dm
         to: agent:alice
         content: "Private alert for alice"
-      - action: wake:recommend
-        to: room:office-floor:ops-room
 `, { path: "Simfile.yaml" }).simfile;
 
     const trace = runSimfileTrace(simfile, { runId: "run-world", seed: "seed", ticks: 1 });
     const worldEvents = trace.events.filter(isWorldMessageEvent);
-    assert.equal(worldEvents.length, 3);
+    assert.equal(worldEvents.length, 2);
     assert.deepEqual(worldEvents.map((event) => event.kind).sort(), [
-      "wake.recommended",
       "world.dm",
       "world.message"
     ]);
@@ -176,8 +173,8 @@ rules:
         baseUrl,
         networkId: "office-floor"
       });
-      assert.equal(results.length, 3);
-      assert.equal(requests.length, 3);
+      assert.equal(results.length, 2);
+      assert.equal(requests.length, 2);
       assert.equal(
         requests.every((entry) => entry.path === "/v1/messages"),
         true
@@ -195,7 +192,7 @@ rules:
         }
         return payload.target.kind;
       }).sort();
-      assert.deepEqual(kinds, ["dm", "room", "room"]);
+      assert.deepEqual(kinds, ["dm", "room"]);
 
       const eventIds = new Set(worldEvents.map((event) => event.event_id));
       for (const payload of payloads) {
@@ -218,7 +215,7 @@ rules:
       const roomTargets = payloads
         .map((payload) => (payload.target as { kind?: string; room_id?: string }).room_id)
         .filter((roomId): roomId is string => typeof roomId === "string");
-      assert.deepEqual(roomTargets, ["ops-room", "ops-room"]);
+      assert.deepEqual(roomTargets, ["ops-room"]);
 
       const dmTarget = payloads
         .map((payload) => payload.target as { kind?: string; dm_id?: string; participant_ids?: unknown })
@@ -270,5 +267,29 @@ rules:
     } as const;
 
     return assert.rejects(() => sendWorldEventToMoltnet(unsupportedEvent, { baseUrl: "http://127.0.0.1:1" }));
+  });
+
+  it("cannot build or send a targeted recommendation event", async () => {
+    let fetchCalls = 0;
+    const recommendation = {
+      event_id: "run-id:recommendation",
+      kind: "wake.recommended",
+      sim_time: 0,
+      provenance: "mechanical",
+      actor: "rule",
+      target: "room:network:operations",
+      scope: "room:network:operations",
+      payload: { recipient: "agent:member" }
+    } as const;
+
+    await assert.rejects(() => sendWorldEventToMoltnet(recommendation, {
+      baseUrl: "http://127.0.0.1:1",
+      fetchFn: async () => {
+        fetchCalls += 1;
+        return new Response(null, { status: 202 });
+      }
+    }), /unsupported event kind/u);
+    assert.equal(fetchCalls, 0);
+    assert.equal(isWorldMessageEvent(recommendation), false);
   });
 });

@@ -123,6 +123,7 @@ See [Memetics Experiment](/guides/memetics/) for the seeded, replacement, and un
 | `chains` | Complete event-record count and flagged incomplete records. |
 | `memory` | Per-bank writes, recalls, and provenance. |
 | `failures` | Causal turn/wake failures and excluded instrument spread hits. |
+| `world_grants` | Optional recorded world-grant status; omission means no marker was recorded. |
 | `seed_spread` | Optional channel-level appearances for a seed-declared run. |
 | `spread_summary` | Optional reach, first appearance, and tick latency. |
 | `wake_diff` | Reserved optional expected-wake comparison; current observation does not populate it. |

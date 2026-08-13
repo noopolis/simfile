@@ -33,17 +33,15 @@ simfile run ./world/Simfile \
 
 The report lets Simfile verify referenced agents, teams, and rooms in variable and marker scopes, rule and probe event filters, and rule action targets. Passing the report still does not turn `simfile run` into an agent-backed composition.
 
-## The composed-run path
+## The production composition boundary
 
-The shipped repository drivers under `src/sims/` perform the real lifecycle:
+Simfile does not ship a generic agent-orchestration driver. Production
+composition is fixture-owned; the Tiny Football production runner is the
+reference integration path. It delegates organization lifecycle to Spawnfile,
+advances world mechanics at a fixed cadence, and admits independently
+originated actions without waiting for cognition or conversation completion.
 
-```text
-runWorldDrivenOfficeSim       live Simfile ticks around one office network
-runComposedOfficeSim          simpler single-network composition
-runComposedJungianSim         multi-network composition with interior teams
-```
-
-They use Spawnfile only through these documented command families:
+Lifecycle composition uses these documented Spawnfile command families:
 
 ```bash
 spawnfile up <org> --detach --name <container> --deployment <name> --out <compiled> --json
@@ -51,9 +49,11 @@ spawnfile artifacts export <org> --deployment <name> --compiled <compiled> --out
 spawnfile down <org> --deployment <name> --compiled <compiled> --json
 ```
 
-Between `up` and export, the world communicates through Moltnet. Export always happens before teardown. The driver then adds its transcript and world artifacts and writes `manifest.json` last, so a directory is never presented as sealed before all declared evidence exists.
-
-These drivers are repository dev/ops APIs exported from `src/sims/index.ts`. They are not a public npm export and there is currently no `simfile compose` command. This is the real path used by the office memetics and recursive Jungian fixtures; the CLI should not be documented as doing work it does not do.
+Between `up` and export, agents and the world communicate through declared
+provider and action-ingress contracts. Export happens before teardown, and a
+fixture runner seals its manifest only after all declared artifacts exist.
+There is no public `simfile compose` command or generic package export for
+agent-backed composition.
 
 ## The artifact boundary
 
@@ -90,6 +90,9 @@ This keeps the causal path observable. A hidden wake or prompt injection would m
 
 ## Recursive organizations
 
-The Jungian composed driver also copies the resolved Spawnfile report into the run. The viewer uses its team nodes, representative bindings, and managed-network room plans to derive membranes. It can then show the representative on the outer floor and the inner council as one causally linked society.
+A fixture runner may copy the resolved Spawnfile report into the run. The
+viewer uses its team nodes, representative bindings, and managed-network room
+plans to derive membranes. It can then show representatives and interior teams
+as one causally linked society.
 
 No special “mind” key enters the Simfile schema. Recursion is a property of the Spawnfile graph and the exported rooms.

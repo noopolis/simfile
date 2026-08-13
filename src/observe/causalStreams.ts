@@ -1,10 +1,11 @@
-import { readdir, readFile } from "node:fs/promises";
-import path from "node:path";
+import { readFile } from "node:fs/promises";
 
 import { parseCausalJsonl, type CausalEvent, type CausalJsonlParseError } from "@noopolis/stele";
 
+import { findRunRawFiles, rawAuthority } from "./rawFiles.js";
+
 export interface CausalStreamSource {
-  /** The authority directory name directly under `raw/` (e.g. "moltnet", "daimon", "mneme"). */
+  /** The authority directory name directly under a `raw/` namespace. */
   authority: string;
   errors: CausalJsonlParseError[];
   events: CausalEvent[];
@@ -12,39 +13,22 @@ export interface CausalStreamSource {
   relativePath: string;
 }
 
-const walkFiles = async (root: string): Promise<string[]> => {
-  const entries = await readdir(root, { withFileTypes: true }).catch(() => []);
-  const files: string[] = [];
-  for (const entry of entries) {
-    const entryPath = path.join(root, entry.name);
-    if (entry.isDirectory()) {
-      files.push(...(await walkFiles(entryPath)));
-    } else if (entry.isFile()) {
-      files.push(entryPath);
-    }
-  }
-  return files;
-};
-
 /**
- * Reads and parses every `causal.jsonl` file under `<runDir>/raw/**`,
- * tagging each stream by the authority directory it lives under
- * (`raw/<authority>/...causal.jsonl`). Never reads any other file kind here
- * — that keeps this module a single-purpose causal-stream collector; other
- * per-authority artifacts (transcripts, bank event logs) are read by their
- * own modules.
+ * Reads and parses every discoverable `raw/<authority>/.../causal.jsonl`.
+ * Top-level raw trees retain their legacy behavior; nested raw artifacts are
+ * admitted only through the sealed manifest (`rawFiles.ts`). Never reads any
+ * other file kind here.
  */
 export const collectCausalStreams = async (runDir: string): Promise<CausalStreamSource[]> => {
-  const rawDir = path.join(runDir, "raw");
-  const files = (await walkFiles(rawDir)).filter((file) => file.endsWith("causal.jsonl")).sort();
+  const files = (await findRunRawFiles(runDir))
+    .filter(({ rawRelativePath }) => rawRelativePath.endsWith("causal.jsonl"));
 
   const sources: CausalStreamSource[] = [];
   for (const file of files) {
-    const relativePath = path.relative(runDir, file);
-    const authority = relativePath.split(path.sep)[1] ?? "unknown";
-    const text = await readFile(file, "utf8");
+    const authority = rawAuthority(file.rawRelativePath);
+    const text = await readFile(file.absolutePath, "utf8");
     const { errors, events } = parseCausalJsonl(text);
-    sources.push({ authority, errors, events, relativePath });
+    sources.push({ authority, errors, events, relativePath: file.relativePath });
   }
   return sources;
 };

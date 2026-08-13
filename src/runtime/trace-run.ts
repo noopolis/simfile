@@ -4,8 +4,9 @@ import { parseClockSpec } from "./clock.js";
 import { clampAndRound } from "./numeric.js";
 import { createTraceEvent, stepSimfileTick } from "./step-tick.js";
 import { compileRuntime } from "./trace-compile.js";
-import type { RuntimeOptions, RuntimeTrace, RuntimeTraceEvent, RuntimeVariableSample } from "./types.js";
+import type { RuntimeOptions, RuntimeTrace, RuntimeTraceEvent, RuntimeVariableSample, TransitState } from "./types.js";
 import { ingestWorldActs } from "./world-act.js";
+import { assertLegacyRuntimeCanExecute } from "./dynamics-guard.js";
 
 const DEFAULT_PRECISION = 6;
 const EVENT_FUSE_LIMIT = 5_000;
@@ -28,12 +29,15 @@ const validateNonNegativeInteger = (value: number, name: string): void => {
  * from before the extraction (see `trace.test.ts`, which is untouched).
  */
 export const runSimfileTrace = (simfile: Simfile, options: RuntimeOptions): RuntimeTrace => {
+  assertLegacyRuntimeCanExecute(simfile, "runSimfileTrace");
   const precision = Math.max(0, Math.floor(options.precision ?? DEFAULT_PRECISION));
   validateNonNegativeInteger(precision, "precision");
   validateNonNegativeInteger(options.ticks, "ticks");
 
   const clock = parseClockSpec(simfile.clock);
   const runtime = compileRuntime(simfile);
+  const presence = { ...runtime.initialPresence };
+  const transit = new Map<string, TransitState>();
   const state: Record<string, number> = {};
   for (const [id, value] of Object.entries(runtime.initialState)) {
     const range = runtime.ranges.get(id);
@@ -66,6 +70,8 @@ export const runSimfileTrace = (simfile: Simfile, options: RuntimeOptions): Runt
       precision,
       clock,
       runtime,
+      presence,
+      transit,
       state,
       seq,
       worldActsForTick: worldActIngestion.queueByTick.get(tick),

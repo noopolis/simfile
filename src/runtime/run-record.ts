@@ -14,6 +14,7 @@ import { parseCanonicalLedgerJsonl } from "../ledger/validation.js";
 import { evaluateProbe, type ProbeDefinition, type ProbeEvaluationResult } from "../report/probes.js";
 import { evaluateTranscriptAcceptance, type TranscriptAcceptanceResult } from "../report/transcripts.js";
 import type { Simfile } from "../schema/model.js";
+import { emptyProjectViewerExtensionsBytes } from "../viewer-extension/projectDeclaration.js";
 import { serializeCanonicalEvents } from "./trace-export.js";
 import { runSimfileTrace } from "./trace-run.js";
 import type { QueuedWorldAct, RuntimeTrace, RuntimeVariableSample, WorldActResult } from "./types.js";
@@ -36,6 +37,7 @@ export interface RunRecordOptions {
   sourceText: string;
   ticks: number;
   worldActs?: readonly QueuedWorldAct[];
+  viewerExtensionsBytes?: Uint8Array;
 }
 
 export interface RunReport {
@@ -61,7 +63,7 @@ export type MoltnetArtifactKind = "delivery" | "transcript";
 
 export interface MoltnetArtifactEntry {
   event_id: string;
-  kind: "wake.recommended" | "world.dm" | "world.message";
+  kind: "world.dm" | "world.message";
   marker_ids: string[];
   rule_id?: string;
   scope: string;
@@ -119,6 +121,7 @@ const manifestFor = (options: RunRecordOptions): Record<string, unknown> => {
     ledger: "ledger.jsonl",
     report: "report.json",
     telemetry: "telemetry.json",
+    viewer_extensions: "viewer-extensions.json",
     viewer_trace: "viewer-trace.json"
   };
 
@@ -155,7 +158,7 @@ const telemetryFor = (simfile: Simfile, trace: RuntimeTrace): TelemetryArtifact 
   };
 };
 
-const MOLTNET_EVENT_KINDS = new Set(["wake.recommended", "world.dm", "world.message"]);
+const MOLTNET_EVENT_KINDS = new Set(["world.dm", "world.message"]);
 
 const markerIdsByEvent = (simfile: Simfile, trace: RuntimeTrace): Map<string, string[]> => {
   const hits = scanMarkers(trace.events, simfile.markers);
@@ -263,6 +266,7 @@ export const writeRunRecord = async (options: RunRecordOptions): Promise<RunReco
   const reportPath = join(options.outDir, "report.json");
   const telemetryPath = join(options.outDir, "telemetry.json");
   const viewerTracePath = join(options.outDir, "viewer-trace.json");
+  const viewerExtensionsPath = join(options.outDir, "viewer-extensions.json");
   const moltnetArtifactPath = options.moltnetArtifact
     ? join(options.outDir, `moltnet-${options.moltnetArtifact}.json`)
     : undefined;
@@ -274,6 +278,10 @@ export const writeRunRecord = async (options: RunRecordOptions): Promise<RunReco
   await writeFile(reportPath, `${JSON.stringify(report, null, 2)}\n`, "utf8");
   await writeFile(telemetryPath, `${JSON.stringify(telemetry, null, 2)}\n`, "utf8");
   await writeFile(viewerTracePath, `${JSON.stringify(viewerTrace, null, 2)}\n`, "utf8");
+  await writeFile(
+    viewerExtensionsPath,
+    options.viewerExtensionsBytes ?? emptyProjectViewerExtensionsBytes()
+  );
   if (options.moltnetArtifact && moltnetArtifactPath) {
     const moltnetArtifact = buildMoltnetArtifact(options.moltnetArtifact, options.simfile, trace);
     await writeFile(moltnetArtifactPath, `${JSON.stringify(moltnetArtifact, null, 2)}\n`, "utf8");

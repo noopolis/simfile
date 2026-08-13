@@ -188,7 +188,7 @@ Schema conventions, chosen for readability:
   There is no sugar — two dialects cost more than the lines they save. The
   only shorthands are lexical (`range: 0..1`, duration literals), which
   expand in the lexer; the schema sees only canonical records. Former sugar
-  keys (`once_at`, `say_in`, `say_to`, `recommend_wake`, `when_above`,
+  keys (`once_at`, `say_in`, `say_to`, `when_above`,
   `when_below`) are validation errors that point at the canonical form.
 - No flow mappings in documented examples — anything with keys gets block
   form. Short flow sequences of scalars (`uniform: [-0.01, 0.03]`) are
@@ -282,13 +282,6 @@ rules:
       - action: moltnet:dm
         to: agent:eleanor
         content: "The landlord's lawyer sends a terse letter."
-  deadline_bites:
-    when:
-      variable: filing_pressure
-      above: 0.85
-    do:
-      - action: wake:recommend
-        to: room:office-floor:case-warroom
   hall_goes_quiet:
     when:
       all:
@@ -324,12 +317,6 @@ markers:
     scopes: [room:office-floor:office-hall, room:office-floor:break-room]
 
 probes:
-  deadline_observed:
-    when:
-      event: wake.recommended
-      target: room:office-floor:case-warroom
-    expect:
-      at_least: 1
   pressure_peaked:
     when:
       variable: filing_pressure
@@ -360,12 +347,11 @@ Two sections are configuration, not primitives, and add no world semantics:
 `ledger.store` configure storage and reporting. The seven-primitives rule
 applies to world mechanics; tracer and storage configuration sit outside it.
 
-`spawnfile:` is a flat source pointer — it names the sibling organization for
-humans and for `simfile dev`; a `uses:` wrapper block would be structure for a
-future that has not arrived. Planning never parses it: `simfile plan`
-consumes the compile report passed via `--spawnfile-plan`, and `simfile dev`
-may produce that report by shelling out to `spawnfile compile`, printing the
-exact command first.
+`spawnfile:` is a flat source pointer naming the sibling organization linked to
+the world. A `uses:` wrapper block would be structure for a future that has not
+arrived. The resolved pointer routes `simfile run` to lifecycle composition;
+planning and composition consume only Spawnfile's public artifacts, CLI
+operations, and versioned receipts.
 
 Governance is intentionally absent from the first example. It is v3 machinery.
 The first thing a reader sees should be the kernel, not the proposal workflow.
@@ -557,8 +543,9 @@ Generators generate; speech belongs to rules.
 After each application the variable clamps to its range and rounds to the
 fixed precision. Variable motion never emits ledger events: variable history
 is telemetry, refreshed in the observe snapshot only when the stored value
-actually changed. The ledger records speech, wakes, marker sightings,
-lifecycle, and external/agentic writes — never mechanical variable motion,
+actually changed. The ledger records speech, optional local observation
+recommendations, marker sightings, lifecycle, and external/agentic writes —
+never mechanical variable motion,
 which is re-derivable by definition.
 
 Anything richer should be modeled as a Spawnfile agent.
@@ -576,8 +563,8 @@ firing read the same clock and state. The discipline is the `fire:` field:
 of the block) or `once` (story: fires on the first tick the block holds, then
 is spent). What used to be a separate "beats" construct is exactly a
 `fire: once` rule, and dissolving it bought real semantics: every firing now
-has an id, is ledgered as `rule.fired`, keys wake coalescing, and is
-probe-referenceable. Story sequencing is explicit rather than implied:
+has an id, is ledgered as `rule.fired`, and is probe-referenceable. Story
+sequencing is explicit rather than implied:
 a follow-on scene triggers on its predecessor via the `event:` atom
 (`event: rule.fired` with `actor: <rule id>` — `rule.fired` events carry the
 rule id as their actor).
@@ -637,7 +624,6 @@ extended only by spec bump:
 moltnet:message   to: <room scope> · content     world speech into a room
 moltnet:dm        to: <agent> · content          private perception; validation
                                                  error if the network has DMs off
-wake:recommend    to: <room scope>               coalescing semantics unchanged
 variable:set      variable · value               clamped; mechanical and
                                                  re-derivable, so not ledgered
 variable:delta    variable · value               clamped; mechanical and
@@ -665,13 +651,13 @@ to measure how far the symbol penetrates conversation and memory.
 ### Events And Ledger
 
 The ledger records acts, not motion. The event-kind vocabulary (v1, frozen):
-`world.message` · `world.dm` · `wake.recommended` · `rule.fired` ·
+`world.message` · `world.dm` · `rule.fired` ·
 `marker.seen` · `clock.sync`; the space module adds `presence.changed`,
 `transit.started`, `transit.arrived`; v3 reserves `entity.*` and
 `proposal.*`. Naming convention, stated once: actions are imperatives
 (`ns:verb`), the events they ledger are records (`ns.verbed`) —
-`wake:recommend` ledgers `wake.recommended`, `moltnet:message` ledgers
-`world.message`, `moltnet:dm` ledgers `world.dm`. `rule.fired` carries the
+`moltnet:message` ledgers `world.message`, and `moltnet:dm` ledgers `world.dm`.
+`rule.fired` carries the
 rule id as its `actor`. Entity lifecycle uses game verbs: `entity.spawned`,
 `entity.despawned`. Mechanical
 variable motion is telemetry — re-derivable from source + seed + pinned
@@ -718,7 +704,7 @@ probe-only vocabulary:
 - `after:` + `within:` — optional sequence modifiers: the `when:` block is
   evaluated only after the `after:` block has matched, within the window.
   This covers the temporal claims fixtures actually make: the leak happened
-  after the DM; the wake landed within 3 ticks of the crossing; propagation
+  after the DM; a marker landed within 3 ticks of the crossing; propagation
   reached room B before room C; pressure fell after the intervention.
 
 Reuse pays in expressiveness: invariants ("morale stayed above 0.2 all run"
@@ -833,26 +819,27 @@ may need a relation qualifier (in / on / worn / part-of carry different
 physical meaning). Deferred until a fixture needs more than "inside."
 
 This primitive is dormant through v0.1–v2: nothing in the kernel can create an
-entity — generators move variables, rules emit variable effects, wakes, and
-speech, and `world.act`/`world.propose` are deferred. `entity.spawned` and
+entity — generators move variables, rules emit variable effects and speech,
+and `world.act`/`world.propose` are deferred. `entity.spawned` and
 `entity.despawned` are reserved vocabulary. The primitive activates with v3,
 when the proposal path gives it its first writers.
 
 ## World-To-Agent Channels
 
-The world reaches agents through exactly four channels. Three are in-world;
-the two push channels are recorded as events. Ambient reads are not recorded —
-the ledger explains every world utterance and state change, not what agents
-looked at. The fourth channel is out-of-world and reserved.
+The world exposes three in-world channels plus one reserved operator channel.
+Authored speech and private perceptions are recorded as events. Ambient reads
+are not recorded — the ledger explains every world utterance and state change,
+not what agents looked at. Observation recommendations belong only to ambient
+observation; they are not another delivery channel.
 
 ```text
 ambient        pull  · world.status / world.observe tools, mounted state
-                       the agent looks; no wake, no speech
-public event   push  · world.message to a room, as a Moltnet participant
-                       shared perception; everyone in the room sees the same
-private        push  · world direct message to one agent
-perception             pair-scoped memory (the agent's sensorium); DMs must
-                       be enabled on the network for this channel to exist
+                       the agent looks; no speech or cognition trigger
+public event         · world.message to a room, as a Moltnet participant
+                       shared authored speech; everyone in the room sees it
+private              · world direct message to one agent
+perception             pair-scoped authored perception; DMs must be enabled
+                       on the network for this channel to exist
 operator       out-of-world · Daimon control endpoint
                        humans, tests, and operator organizations only;
                        never used by world mechanics
@@ -862,16 +849,16 @@ The guardrail that keeps this honest is an influence ladder with an
 enforceable top rung:
 
 ```text
-observation   raw state exposed for the agent to pull — the snapshot
-stimulus      a world event the agent perceives — speech, DM perceptions
-nudge         routing without content mandate — wake:recommend
+observation   raw state and local metadata exposed for the agent to pull
+stimulus      an authored world event the agent perceives — speech or a DM
 command       never kernel. Commanding voices exist only as an authored
               god-agent (rule 6: content, not infrastructure) or through
               the operator tier, ledgered as external
 ```
 
-The kernel machinery tops out at nudge — that boundary is structural, not
-philosophical. This is the sharpest contrast with the closest published
+The kernel machinery tops out at stimulus, while a recommendation stays on the
+observation rung. That boundary is structural, not philosophical. This is the
+sharpest contrast with the closest published
 cousin, DeepMind's Concordia: there a single LLM Game Master adjudicates every
 agent action by interpreting natural language into world outcomes — world
 state is LLM-mediated at the resolution step, so it is nondeterministic and
@@ -889,11 +876,17 @@ whatever an agent hallucinated it to be. Within stimulus, the authoring norm sta
 direct ("rain is hammering the windows", not "you should go home") — a norm
 because authored beat content cannot be machine-checked, and named as such.
 
-World content always travels in-world (rooms or DMs, recorded, policy-gated)
-so that transcripts and the ledger explain every world utterance and state
-change. Operator actions that touch world state or wake agents are ledgered
-with `provenance: external`; only pure control-plane actions (pause, resume,
-status reads) go unrecorded. World mechanics never use the operator channel.
+Authored world speech always travels in-world (rooms or DMs, recorded and
+policy-gated) so transcripts and the ledger explain every world utterance and
+state change. A recommendation is instead local, optional, non-blocking,
+state-derived metadata in the world event/projection stream. It appears only
+through an ordinary granted sense after an agent independently wakes and
+chooses to observe; the agent may ignore it. Recommendation publication is
+never a Moltnet message, mention, principal-addressed delivery, wake, nudge, or
+source of decision authority, and it cannot affect world timing. Operator
+actions that touch world state or wake agents are ledgered with
+`provenance: external`; only pure control-plane actions (pause, resume, status
+reads) go unrecorded. World mechanics never use the operator channel.
 
 ## Command Set
 
@@ -935,7 +928,8 @@ missing run seed.
 ### v2: World Runtime
 
 ```bash
-simfile run    [./Simfile] --state .sim/ [--seed X] [--until day:3|ticks:500]
+simfile run    ./Simfile --view
+simfile run    ./Simfile --local --ticks 500 [--seed X]
 simfile status --state .sim/
 simfile clock  pause|resume|step [n] --state .sim/
 simfile ledger --state .sim/ [--follow] [--since 1h] [--scope team:office]
@@ -945,18 +939,40 @@ simfile report --state .sim/ --out runs/<run_id>/ [--collect]
 simfile runs   list | diff <a> <b> | archive <id>
 ```
 
-The runtime owns the mechanical world state and event ledger. Runtime behavior
-rules:
+When the resolved Simfile links a Spawnfile, `simfile run` is the product
+command for the complete simulation lifecycle. Its lifecycle-composition layer
+starts the world paused and pristine on the base
+`simfile.world-sidecar-runtime.v1` ABI, delegates organization lifecycle
+operations to the documented Spawnfile CLI, verifies both sides, and atomically
+activates the topology. Separately manifested capabilities extend the base ABI
+without changing it; `simfile.world-decision-claim.v1` is optional for a world
+sidecar but required and attested for the live decision-claim path. A
+first-tick receipt proves tick 1 follows activation without a participant
+action. Organization-owned schedules then wake autonomous runtimes while the
+world ticks independently. This composition never selects an agent, invokes
+cognition, waits for an answer, or makes an agent action a clock barrier.
 
-- Wake coalescing: at most one pending `wake.recommended` per
-  `(target, reason)`; a newer recommendation supersedes, never queues. The
-  clock does not wait for agents. `reason` is the id of the emitting rule.
-- Wake delivery: a `wake:recommend` action is delivered as world speech — a
-  directed Moltnet message to the target room (mentioning the room's lead
-  when it has one) — riding the existing bridge wake machinery.
-  `wake.recommended` is the ledger record of that speech act. The world owns
-  no wake path because speech is its wake path; no new transport exists, and
-  the operator endpoint stays untouched.
+The organization receipt must carry a pinned
+`spawnfile.moltnet-release-identity.v1` whose architecture, asset digest,
+release version, source revision, and sole `pi-bridge` capability match the
+checked-in authority. A stamp is corroborating evidence, not authority;
+unpinned `latest` is rejected.
+
+`--local --ticks N` is the explicit bounded deterministic diagnostic. During
+migration an unlinked Simfile may keep the existing local `--ticks` behavior,
+but it cannot produce live-agent evidence. The `src/run/` implementation remains
+the timer-free local deterministic writer; the generic lifecycle composer is a
+separate layer.
+
+The world runtime owns the mechanical world state and event ledger. Runtime
+behavior rules:
+
+- Observation recommendations are bounded, local, optional, non-blocking,
+  state-derived metadata in the world event/projection stream. They are exposed
+  through an ordinary granted sense and never use Moltnet, a message, mention,
+  wake, nudge, principal-addressed delivery, or decision authority. An agent
+  can encounter one only after waking independently and choosing to observe;
+  it may ignore the metadata. The clock does not wait for agents.
 - Event fuse: a per-tick maximum event count aborts a runaway tick loudly
   instead of flooding the ledger.
 - Single writer: the world runtime is the only ledger writer on every backend.
@@ -970,7 +986,8 @@ v2 delivery is limited to:
   snapshot (no IPC).
 
 HTTP and MCP are later delivery forms, not v2 scope. Nothing in v2 requires a
-new transport: wakes travel as Moltnet speech, observation travels as files.
+new transport: authored speech uses its declared channel, while observation
+and recommendation metadata remain pull-only files or sense data.
 
 ### v3: Governance And Evolution
 
@@ -989,16 +1006,16 @@ These commands turn agent-originated world changes into reviewable artifacts.
 Simfile can create ephemeral runtime state immediately, but durable topology
 changes should become patches or pull requests.
 
-`simfile dev` ships with v2 — it wraps the world runtime and the Spawnfile org
-together, so it has no earlier home. It should print the exact `spawnfile`
-command it would run before it runs anything. Legibility wins over magic.
+`simfile dev` is an optional future developer wrapper for rebuild, watch, and
+debug ergonomics. It must reuse the same composed lifecycle as `simfile run`;
+it cannot own a second startup, supervision, or teardown implementation.
 
 ## Storage And Scale
 
 The ledger and telemetry are different things and are stored differently.
 
 - Ledger: semantically meaningful, replay-relevant events — world messages,
-  rule firings, wake recommendations, marker sightings, entity lifecycle,
+  rule firings, local observation recommendations, marker sightings, entity lifecycle,
   and — once acts land — agentic `world.act`. Low rate.
 - Telemetry: high-frequency variable series. Not ledgered. Variable state is
   re-derivable from source + seed plus the replayed agentic/external event
@@ -1083,8 +1100,8 @@ normative contract:
   previous-tick values), then measured variables refresh their windows, then
   derived variables recompute in topological order, then rules evaluate in
   lexicographic id order. Rule `variable:*` actions and agentic/external
-  events land at the next tick boundary, in ledger order; rule speech and
-  wakes flush at end of tick.
+  events land at the next tick boundary, in ledger order; rule speech flushes
+  at end of tick.
 - Stochastic streams: each draw is
   `SHA-256(run_seed + ":" + generator_id + ":" + tick + ":" + draw_index)`,
   mapped to the declared distribution. No generator shares stream state with
@@ -1111,20 +1128,31 @@ normative contract:
   part of replay identity. Time: `sim_time = tick_index × sim_per_tick`; wall
   cadence (`tick:`) never affects sim semantics.
 
-## Orchestrating Spawnfile
+## Composing The Spawnfile Lifecycle
 
-Simfile should orchestrate Spawnfile indirectly.
+Simfile may compose a linked Spawnfile organization through documented public
+CLI operations and versioned, secret-free receipts. This is lifecycle
+composition, not agent orchestration.
+
+The sequence is world-first: prepare and start the world service, verify its
+paused pristine readiness over `simfile.world-sidecar-runtime.v1`, then start
+and verify the organization, attest topology and any optional capability
+manifests, publish one activation, and observe tick 1. Member schedules and
+wake policies remain organization data executed by their runtimes. The world
+and Simfile never become a scheduler for cognition.
 
 Allowed:
 
 - consume a Spawnfile resolved graph artifact to validate ids and topology;
 - generate tools or resources that Spawnfile can mount;
 - post world events through Moltnet as a participant;
-- emit wake recommendations as directed Moltnet messages, ledgered as
-  `wake.recommended`;
+- emit optional observation-recommendation metadata through ordinary world
+  events/projections and granted senses, never through wake-eligible transport;
 - create patches that modify Spawnfile/Simfile source files;
-- run a local development loop that shells out to `spawnfile up` only when the
-  user explicitly chooses that mode.
+- delegate organization prepare/start/export/stop operations to Spawnfile's
+  documented CLI while retaining no target, auth, or deployment authority.
+- consume the pinned Pi-bridge Moltnet release identity carried by Spawnfile's
+  receipts without selecting, downloading, or trusting a release itself.
 
 Not allowed:
 
@@ -1139,24 +1167,21 @@ registered like any agent, subject to room write policy, declared and mounted
 through Spawnfile like any other member's. The world holds credentials, not
 privileges.
 
-A practical local flow:
+A linked project's product flow:
 
 ```bash
-spawnfile compile ./Spawnfile --out ./plan
-spawnfile up ./Spawnfile --detach
-simfile run ./Simfile --spawnfile-plan ./plan/spawnfile-report.json --state .sim/
-simfile ledger --state .sim/ --follow
+simfile run ./Simfile --view
 ```
 
-A higher-level dev flow can later wrap both commands:
+For a bounded mechanics-only diagnostic:
 
 ```bash
-simfile dev ./Simfile --spawnfile ./Spawnfile
+simfile run ./Simfile --local --ticks 200
 ```
 
-`simfile dev` may start the world runtime and the Spawnfile org together, but it
-should report the exact Spawnfile command it runs and where deployment records
-live.
+An optional future `simfile dev ./Simfile` wrapper may add rebuild/watch/debug
+ergonomics, but it must call the same lifecycle implementation and report the
+underlying public operations and deployment-record locations.
 
 ## Operator Organizations
 
@@ -1480,7 +1505,8 @@ matters; v3-tagged items are deferred along with governance:
 - variable motion is telemetry, never ledger events; post-run
   probe evaluation re-derives the mechanical series and matches streaming
   verdicts exactly (v2);
-- wake coalescing supersedes stale recommendations instead of queueing them;
+- local observation recommendation metadata is bounded and may supersede stale
+  metadata; it never queues a delivery;
 - the event fuse aborts a runaway tick loudly;
 - marker tracer passes containment mode and propagation mode tests by content
   scan, ignoring annotations;
@@ -1539,12 +1565,12 @@ Boundaries, named so nobody discovers them by surprise:
   is different and is designed: discrete entities with single-location
   custody conserve by construction — see the Objects sketch in the Space
   Module section.
-- No ensembles over agent behavior in the always-on mode. Replay is audit,
+- No ensembles over live-agent behavior in the always-on mode. Replay is audit,
   not re-experiment: agentic events are pinned inputs, and wall-time
   concurrency reorders turns regardless of model settings. Controlled
-  ensembles become real in lockstep mode with pinned local engines and
-  seeded sampling — see Lockstep Mode. API-backed asynchronous societies
-  stay audit-only.
+  local scripted ensembles are available only in the deferred diagnostic
+  lockstep mode with pinned engines and seeded sampling. They are not
+  live-agent evidence. API-backed asynchronous societies stay audit-only.
 - Sim time is chained to wall time through LLM inference. Compression trades
   directly against agent agency: a month-in-a-day world is one its
   inhabitants act in only a few times per sim-day. This is stack physics, not
@@ -1763,15 +1789,15 @@ Minds stay clean: Daimon and OpenClaw do memory, reasoning, and agency; the
 world does situation. No agent prompt ever contains cab dynamics — only
 "you arrive at the office; it is 9:12."
 
-## Lockstep Mode (Designed, Deferred)
+## Local Scripted Lockstep Diagnostic (Designed, Deferred)
 
-The always-on architecture makes ensembles over agent behavior impossible:
-wall-time concurrency reorders turns, prompts diverge, cascades follow. But
-the deterministic e2e harness already runs the other way — one-shot cycles in
-a fixed order — and lockstep mode absorbs that execution model for real
-engines:
+The always-on architecture makes controlled ensembles over live-agent behavior
+impossible: wall-time concurrency reorders turns, prompts diverge, cascades
+follow. The deterministic e2e harness already runs the other way — one-shot
+scripted cycles in a fixed order — and a local-only lockstep diagnostic can
+absorb that execution model for pinned engines:
 
-- The clock waits: a tick does not advance until its scheduled turns
+- The diagnostic clock waits: a tick does not advance until its scripted turns
   complete, executed in deterministic order.
 - Sampling is seeded: each turn's sampling seed is
   `hash(run_seed:agent_id:turn_index)`, passed to the engine (ollama's `seed`
@@ -1781,10 +1807,12 @@ engines:
   certification, not an assumption (GPU float-reduction order can flip logit
   ties). API engines are excluded by nature.
 
-Under those conditions, N seeds are N controlled samples of agent behavior —
-ensembles become experiments, not anecdotes. Lockstep is a run mode
-(`simfile run --lockstep`), not a schema change; worlds author identically in
-both modes.
+Under those conditions, N seeds are N controlled samples of scripted or pinned
+local engine behavior. If implemented, `--lockstep` is accepted only with
+explicit local diagnostic mode (for example,
+`simfile run ./Simfile --local --lockstep --ticks 200`). It is ineligible for
+live-agent evidence and never changes the composed runtime rule that the world
+clock cannot wait for agent cognition.
 
 ## Prior Art
 
@@ -1826,7 +1854,8 @@ instrument (which is why markers trace content through the ledger).
 - `simfile plan` consumes the existing Spawnfile compile report first. A
   machine-only plan file is introduced only if the report proves too unstable
   as a contract.
-- `simfile dev` prints the exact Spawnfile command before running anything.
+- Any future `simfile dev` wrapper reuses the `simfile run` composed lifecycle
+  and prints the delegated public operations before running anything.
 - Durable proposals create real git branches, not loose diff files.
 - Math lives in the closed `eq` grammar (v1, frozen function list); rule
   conditions and effects remain data records. There is no general-purpose

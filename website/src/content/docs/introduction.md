@@ -15,11 +15,11 @@ The package now covers the full instrument loop:
 
 - `simfile validate` checks a world and can bind its agent, team, and room references against a Spawnfile compile report.
 - `simfile run` executes a bounded deterministic kernel trace and writes a replayable run record.
-- the repository's composed-run drivers start a Spawnfile organization, drive the world through Moltnet, export every authority's artifacts, and seal a `simfile.run-manifest.v1` directory;
+- fixture-owned production runners compose the organization lifecycle around the Simfile world, export every authority's artifacts, and seal a `simfile.run-manifest.v1` directory;
 - `simfile observe` verifies those artifacts and reconciles causal streams without inventing missing links;
 - `simfile view` opens either the world replay or, for a composed run, the run-replay application with one timeline, a map, room chat, minds, storylines, memetic spread, and recursive mind portals.
 
-There is no public `simfile compose` command yet. The distinction matters: CLI `run` is the finite world kernel; agent-backed composition currently lives in the source drivers. The [quickstart](/quickstart/) shows both paths without pretending they are the same command.
+There is no public `simfile compose` command yet. The distinction matters: CLI `run` is the finite world kernel; agent-backed composition belongs to fixture-owned production runners. The [quickstart](/quickstart/) shows both paths without pretending they are the same command.
 
 ## The first result
 
@@ -37,7 +37,7 @@ The stack has three distinct responsibilities:
 - **Moltnet carries the rooms.** World messages and agent messages use the same social transport.
 - **Simfile authors and observes the world.** It supplies deterministic pressure and produces measurements from public artifacts.
 
-Simfile does not compile Docker images, own runtime authentication, or deploy agents. Its composed-run drivers call Spawnfile through its documented CLI and versioned receipts; the viewer and observer consume sealed machine-readable artifacts rather than importing Spawnfile internals.
+Simfile does not compile Docker images, own runtime authentication, or deploy agents. Fixture-owned production runners use Spawnfile's documented lifecycle interface and versioned receipts; the viewer and observer consume sealed machine-readable artifacts rather than importing Spawnfile internals.
 
 ## An instrument, not a screensaver
 

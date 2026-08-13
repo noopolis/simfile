@@ -76,8 +76,9 @@ rules:
       variable: filing_pressure
       above: 0.85
     do:
-      - action: wake:recommend
+      - action: moltnet:message
         to: room:office-floor:case-warroom
+        content: "Observation notice."
   hall_goes_quiet:
     when:
       all:
@@ -115,7 +116,7 @@ markers:
 probes:
   deadline_observed:
     when:
-      event: wake.recommended
+      event: world.message
       target: room:office-floor:case-warroom
     expect:
       at_least: 1
@@ -231,8 +232,9 @@ rules:
     when:
       event: user.clicked
     do:
-      - action: wake:recommend
+      - action: moltnet:message
         to: room:office-floor:case-warroom
+        content: "Observation notice."
 `, { path: "Simfile.yaml" }), /clock\.sync|wake\.recommended|marker\.seen/);
   });
 
@@ -246,7 +248,7 @@ clock:
 probes:
   bad_window:
     when:
-      event: wake.recommended
+      event: world.message
     after:
       event: world.message
     expect:
@@ -262,7 +264,7 @@ clock:
 probes:
   bad_window:
     when:
-      event: wake.recommended
+      event: world.message
     within: 10m
     expect:
       at_least: 1

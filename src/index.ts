@@ -1,7 +1,11 @@
 export * from "./schema/index.js";
 export * from "./kernel/index.js";
 export * from "./ledger/index.js";
-export * from "./moltnet/index.js";
+export * from "./moltnet/root.js";
 export * from "./report/index.js";
 export * from "./runtime/trace.js";
 export * from "./coverage/index.js";
+export { dynamicsRunStagingPrefix } from "./run/dynamics-run-artifacts.js";
+export * from "./dynamics/root.js";
+export * from "./world/index.js";
+export * from "./world-artifact/index.js";

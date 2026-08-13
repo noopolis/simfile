@@ -1,5 +1,5 @@
 import { runObserve } from "../observe/index.js";
-import { computeEngineProvenance, type EngineEntry } from "./engineProvenance.js";
+import { computeEngineProvenance, decisionSourceFromUnknown, type EngineEntry } from "./engineProvenance.js";
 import { computeMinds, computeProvenance, computeThread, computeVerdict } from "./runViewModelCompute.js";
 import {
   hasVariableSamples,
@@ -43,6 +43,7 @@ export const buildRunViewModel = async (runDir: string): Promise<RunViewModel> =
 
   const world = observed.manifest.world;
   const members = world?.members;
+  const decisionSource = decisionSourceFromUnknown(world?.decision_source);
 
   // Prefer the up-receipt's per-agent engines[] (finer-grained, catches a
   // mixed run) when the run-dir has one; otherwise fall back to the
@@ -57,7 +58,7 @@ export const buildRunViewModel = async (runDir: string): Promise<RunViewModel> =
     runId: observed.manifest.run_id,
     createdAt: observed.manifest.created_at,
     engine: observed.manifest.engine,
-    engineProvenance: computeEngineProvenance(engineEntries),
+    engineProvenance: computeEngineProvenance(engineEntries, decisionSource),
     world: world
       ? {
           networkId: stringField(world, "network_id"),
@@ -74,6 +75,7 @@ export const buildRunViewModel = async (runDir: string): Promise<RunViewModel> =
     provenance: computeProvenance(observed.manifest, observed.report, observed.artifactIntegrity),
     seedSpread: observed.report.seed_spread,
     spreadSummary: observed.report.spread_summary,
-    variableSamples: hasVariableSamples(telemetrySamples) ? telemetrySamples! : undefined
+    variableSamples: hasVariableSamples(telemetrySamples) ? telemetrySamples! : undefined,
+    pace: observed.report.world_evidence?.pace
   };
 };

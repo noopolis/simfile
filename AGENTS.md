@@ -14,7 +14,7 @@ of the Simfile v0.1 world mechanics package.
 ├── package.json           # npm package metadata and CLI scripts
 ├── tsconfig.json          # Typecheck config
 ├── tsconfig.build.json    # Build-only emit config
-└── src/                   # Schema, CLI, and runtime-neutral modules
+└── src/                   # Schema, dynamics, CLI, and runtime-neutral modules
 ```
 
 ## Rules
@@ -28,3 +28,9 @@ of the Simfile v0.1 world mechanics package.
 - Keep CLI handlers thin; schema, planning, ledger, and runtime logic belong in modules.
 - Do not import Spawnfile internals. Consume explicit machine-readable artifacts.
 - Do not add Docker compilation, runtime auth, or deployment ownership here.
+- `simfile run` may compose a linked Spawnfile lifecycle only through documented
+  CLI operations and versioned receipts. Lifecycle composition never selects,
+  wakes, invokes, polls, or waits for agent cognition.
+- Keep `src/run/` as the timer-free local deterministic writer. Generic composed
+  lifecycle code belongs in its own implementation folder and must be reused by
+  any future `simfile dev` watch/debug wrapper.

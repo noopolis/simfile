@@ -1,9 +1,10 @@
-import { readdir, readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 
 import type { CausalEvent } from "@noopolis/stele";
 
 import type { MemoryWriteSource } from "./report.js";
+import { findRunRawFiles, rawBank } from "./rawFiles.js";
 
 export interface MemoryBankCounts {
   bank: string;
@@ -71,18 +72,32 @@ export const collectMemoryBankCounts = async (
   runDir: string,
   causalEventsByBank: ReadonlyMap<string, CausalEvent[]>
 ): Promise<MemoryBankCounts[]> => {
-  const mnemeDir = path.join(runDir, "raw", "mneme");
-  const bankDirs = await readdir(mnemeDir, { withFileTypes: true }).catch(() => []);
+  const rawFiles = await findRunRawFiles(runDir);
+  const topLevelBanks = (await readdir(path.join(runDir, "raw", "mneme"),
+    { withFileTypes: true }).catch(() => []))
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name);
+  const banks = new Set([
+    ...causalEventsByBank.keys(),
+    ...topLevelBanks,
+    ...rawFiles.flatMap(({ rawRelativePath }) => {
+      const bank = rawBank(rawRelativePath);
+      return bank === undefined ? [] : [bank];
+    }),
+  ]);
 
   const results: MemoryBankCounts[] = [];
-  for (const entry of bankDirs) {
-    if (!entry.isDirectory()) continue;
-    const bank = entry.name;
+  for (const bank of banks) {
     const bankCausalEvents = causalEventsByBank.get(bank) ?? [];
-
-    const eventsPath = path.join(mnemeDir, bank, "events.jsonl");
-    const eventsText = await readFile(eventsPath, "utf8").catch(() => null);
-    const eventsJsonlLines = eventsText !== null ? countJsonlLines(eventsText) : null;
+    const eventFiles = rawFiles.filter(({ rawRelativePath }) => {
+      const segments = rawRelativePath.split(path.sep);
+      return segments.length === 4 && rawBank(rawRelativePath) === bank
+        && segments[3] === "events.jsonl";
+    });
+    const eventsJsonlLines = eventFiles.length === 0
+      ? null
+      : (await Promise.all(eventFiles.map(({ absolutePath }) =>
+        readFile(absolutePath, "utf8")))).flatMap(countJsonlLines);
 
     const recalls =
       eventsJsonlLines !== null

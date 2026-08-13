@@ -1,41 +1,25 @@
-import { access, readdir, readFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import path from "node:path";
 
 /**
- * Detects a compose-and-observe run directory (`simfile.run-manifest.v1` + at
- * least one moltnet transcript) so `simfile view <dir>` can pick the
- * run-reader replay mode instead of the world/3D replay mode. Deliberately
- * narrow: it only checks the two artifacts that make the golden fixtures
- * (`fixtures/observe/office-sim-golden/`, `fixtures/observe/jungian-daimon-org-golden/`)
- * and any future real run directory renderable, never a full manifest parse —
- * `runObserve` does the real validation once this returns true. A transcript
- * may be the single-network flat `raw/moltnet/transcript.json` OR any
- * multi-network per-network `raw/moltnet/<network_id>/transcript.json`.
+ * Detects a run-record directory (`manifest.json` @ `simfile.run-manifest.v1`)
+ * so `simfile view <dir>` can pick the run-reader replay mode instead of the
+ * world/3D replay mode. Deliberately narrow: it checks the one artifact that
+ * names the family, never a full manifest parse — `runObserve` does the real
+ * validation once this returns true.
+ *
+ * This used to ALSO require a moltnet transcript
+ * (`raw/moltnet/transcript.json`, or a per-network
+ * `raw/moltnet/<network_id>/transcript.json`), which silently assumed every
+ * run-manifest.v1 directory came from a compose-and-observe run with transport
+ * transcripts. A local `simfile run` has no moltnet and no reason to fabricate
+ * one, so detection returned false and `simfile view` fell through to the
+ * world/3D replay mode, whose artifacts (`manifest.yaml`, `viewer-trace.json`)
+ * that run never produced — the "Replay artifact check failed" bug (B192).
+ * The transcript was never what made the directory readable; the manifest is.
+ * Do not reintroduce a transport-shaped precondition here.
  */
-const hasMoltnetTranscript = async (dirPath: string): Promise<boolean> => {
-  const moltnetDir = path.join(dirPath, "raw", "moltnet");
-  try {
-    await access(path.join(moltnetDir, "transcript.json"));
-    return true;
-  } catch {
-    // fall through to the per-network scan
-  }
-  const entries = await readdir(moltnetDir, { withFileTypes: true }).catch(() => []);
-  for (const entry of entries) {
-    if (!entry.isDirectory()) continue;
-    try {
-      await access(path.join(moltnetDir, entry.name, "transcript.json"));
-      return true;
-    } catch {
-      // keep scanning
-    }
-  }
-  return false;
-};
-
 export const isObserveRunDir = async (dirPath: string): Promise<boolean> => {
-  if (!(await hasMoltnetTranscript(dirPath))) return false;
-
   try {
     const raw = JSON.parse(await readFile(path.join(dirPath, "manifest.json"), "utf8")) as { version?: unknown };
     return raw.version === "simfile.run-manifest.v1";

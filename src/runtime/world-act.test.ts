@@ -33,8 +33,9 @@ rules:
       event: world.act
       actor: lead
     do:
-      - action: wake:recommend
+      - action: moltnet:message
         to: room:office-floor:case-warroom
+        content: "Observation notice."
 `);
 
 const act = (overrides: Partial<QueuedWorldAct> = {}): QueuedWorldAct => ({

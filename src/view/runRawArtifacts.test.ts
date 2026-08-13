@@ -9,6 +9,7 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const GOLDEN_DIR = path.resolve(here, "..", "..", "fixtures", "observe", "office-sim-golden");
 const WORLD_GOLDEN_DIR = path.resolve(here, "..", "..", "fixtures", "observe", "office-secret-v0-golden");
 const VARIABLE_GOLDEN_DIR = path.resolve(here, "..", "..", "fixtures", "observe", "office-pressure-v0-golden");
+const SPATIAL_GOLDEN_DIR = path.resolve(here, "..", "..", "fixtures", "observe", "office-psyche-golden");
 const REAL_RUN_DIR = path.resolve(
   here,
   "..",
@@ -111,5 +112,18 @@ describe("readWorldTelemetry / hasVariableSamples (increment 3/4: the variable g
     // Never a fabricated/rounded value — real numbers straight off the run's
     // own world/telemetry.json, ramping strictly (0.7 -> 1.0) before it clamps.
     assert.ok(samples![0]!.variables.filing_pressure! < samples![1]!.variables.filing_pressure!);
+  });
+
+  it("preserves the runtime's exact occupancy/transit shapes for a spatial composed run", async () => {
+    const samples = await readWorldTelemetry(SPATIAL_GOLDEN_DIR);
+    assert.ok(samples);
+    assert.deepEqual(samples![3]!.occupancy, { home: ["mara"], office: ["sam"] });
+    assert.deepEqual(samples![3]!.transit, [{
+      agent: "eleanor",
+      from: "office",
+      to: "home",
+      ticksRemaining: 2,
+    }]);
+    assert.equal(hasVariableSamples(samples), false);
   });
 });

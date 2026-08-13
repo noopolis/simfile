@@ -1,10 +1,15 @@
 import { GlyphMesh } from "@glyphcss/react";
 import type { Polygon } from "@glyphcss/core";
+import { useMemo } from "react";
 
 import type { RoomGeometry, RoomPath, ViewerNode } from "./types.js";
 import type { ViewerSkin } from "./worldModel.js";
 import type { RenderSettings } from "./renderSettings.js";
 import type { AgentPlacement, Vec3 } from "./sceneMotion.js";
+import {
+  avatarTransforms,
+  tintAvatarModel,
+} from "./avatarModel.js";
 
 interface SceneSegment {
   id: string;
@@ -70,7 +75,9 @@ export function RoomMeshes({ paths, renderSettings, room, selected, skin }: {
           scale={wall.scale}
         />
       ))}
-      <RoomFurniture color={furnitureColor} depth={depth} room={room} width={width} />
+      {room.node.value === "square"
+        ? null
+        : <RoomFurniture color={furnitureColor} depth={depth} room={room} width={width} />}
     </>
   );
 }
@@ -82,30 +89,38 @@ export function AgentAvatar({ placement, polygons, renderSettings, selected, ski
   selected: boolean;
   skin: ViewerSkin;
 }) {
-  const [x, y, z] = placement.position;
-  const color = selected ? skin.colors.probe : placement.moving ? skin.colors.pressure : skin.colors.agent;
-  const modelScale = 0.0064 * renderSettings.agentScale;
-  const floorOffset = 30 * modelScale;
-  const baseScale = 0.28 * renderSettings.agentScale;
+  const color = selected
+    ? skin.colors.probe
+    : placement.moving ? skin.colors.pressure : skin.colors.agent;
+  const transforms = avatarTransforms(placement, renderSettings);
+  const tintedPolygons = useMemo(
+    () => polygons ? tintAvatarModel(polygons, color) : null,
+    [color, polygons],
+  );
   return (
     <>
-      <GlyphMesh color={color} geometry="cube" position={[x, y, z + 0.018]} scale={[baseScale, baseScale, 0.035]} />
-      {polygons && polygons.length > 0 ? (
+      <GlyphMesh
+        color={color}
+        geometry="cube"
+        position={transforms.base.position}
+        scale={transforms.base.scale}
+      />
+      {tintedPolygons && tintedPolygons.length > 0 ? (
         <GlyphMesh
-          polygons={polygons}
-          position={[x, y, z + floorOffset]}
-          rotation={[0, 0, placement.heading - Math.PI / 2]}
-          scale={modelScale}
+          polygons={tintedPolygons}
+          position={transforms.model.position}
+          rotation={transforms.model.rotation}
+          scale={transforms.model.scale}
         />
       ) : (
         <GlyphMesh
           color={color}
           geometry="cube"
-          position={[x, y, z + 0.14 * renderSettings.agentScale]}
+          position={transforms.model.position}
           scale={[
-            0.14 * renderSettings.agentScale,
-            0.14 * renderSettings.agentScale,
-            0.28 * renderSettings.agentScale,
+            0.35 * renderSettings.agentScale,
+            0.35 * renderSettings.agentScale,
+            1.75 * renderSettings.agentScale,
           ]}
         />
       )}
@@ -117,7 +132,7 @@ export function SignalMesh({ node, skin }: { node: ViewerNode; skin: ViewerSkin 
   return (
     <GlyphMesh
       color={skin.colors[node.colorRole]}
-      geometry={node.kind === "marker" ? "sphere" : "cube"}
+      geometry={node.geometry ?? (node.kind === "marker" ? "sphere" : "cube")}
       position={node.scene}
       scale={node.scale}
     />

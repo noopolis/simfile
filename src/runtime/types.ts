@@ -56,10 +56,28 @@ export type RuntimeTraceEventPayload = Record<string, unknown> | Array<unknown> 
 export type RuntimeTraceEvent = LedgerEventEnvelope<RuntimeTraceEventPayload>;
 
 export interface RuntimeVariableSample {
+  occupancy: Record<string, string[]>;
+  transit: TransitSample[];
   phase: string | undefined;
   sim_time: number;
   tick: number;
   variables: Record<string, number>;
+}
+
+/** Canonical per-sample view of an agent that currently occupies no place. */
+export interface TransitSample {
+  agent: string;
+  from: string;
+  to: string;
+  ticksRemaining: number;
+}
+
+/** Mutable runtime form; arrivalTick makes replay timing explicit. */
+export interface TransitState {
+  agent: string;
+  from: string;
+  to: string;
+  arrivalTick: number;
 }
 
 export interface RuntimeTrace {

@@ -14,6 +14,7 @@ import type {
   ViewerTraceCorridor,
   ViewerTraceRoom,
   ViewerNode,
+  ViewerSpatialSample,
 } from "./types.js";
 
 const floorZ = 0.055;
@@ -104,13 +105,58 @@ export const buildViewerWorld = (trace: ViewerContractTrace): ViewerDerivedWorld
     ...trace.signals.map((signal) => toSignalNode(signal)),
   ];
 
+  const tickDurationMs = Number.isFinite(trace.tick_duration_ms)
+    && (trace.tick_duration_ms ?? 0) > 0
+    ? trace.tick_duration_ms!
+    : 20;
   return {
+    inspectionsByNode: Object.fromEntries((trace.inspections ?? []).map((entry) => [entry.node_id, entry])),
+    inspectionSamples: trace.inspection_samples ?? [],
     nodes,
     roomGeometries,
     roomPaths,
     ledgerRows: toLedgerRows(trace.ledger_facts),
     presenceByAgent,
+    spatialSamples: trimUnpresentableSpatialPrefix(
+      trace.spatial_samples ?? [],
+      tickDurationMs,
+    ),
+    tickDurationMs,
+    ...(trace.viewer_extension_data === undefined
+      ? {}
+      : { viewerExtensionData: trace.viewer_extension_data }),
+    ...(trace.viewer_extensions === undefined
+      ? {}
+      : { viewerExtensionIdentities: trace.viewer_extensions }),
   };
+};
+
+/**
+ * Older bounded traces could leave one orphaned opening keyframe before a
+ * multi-second authored reset. No position exists to present inside that gap,
+ * so replay begins at the first post-reset sample rather than showing a long
+ * false freeze.
+ */
+export const trimUnpresentableSpatialPrefix = (
+  samples: ViewerSpatialSample[],
+  tickDurationMs: number,
+): ViewerSpatialSample[] => {
+  let start = 0;
+  while (start + 1 < samples.length) {
+    const prior = samples[start]!;
+    const next = samples[start + 1]!;
+    const gapMs = (next.tick - prior.tick) * tickDurationMs;
+    const priorIds = prior.objects?.map((object) => object.id) ?? [];
+    if (
+      gapMs <= 2_000
+      || priorIds.length === 0
+      || !priorIds.every((id) => next.discontinuities?.includes(id))
+    ) {
+      break;
+    }
+    start += 1;
+  }
+  return start === 0 ? samples : samples.slice(start);
 };
 
 const buildRoomGeometries = (rooms: ViewerTraceRoom[]): RoomGeometry[] =>
@@ -183,9 +229,11 @@ const toRoomNode = (room: ViewerTraceRoom): ViewerNode => ({
   label: room.label,
   kind: "room",
   scope: room.scope,
-  subtitle: `${room.members.length} agents access`,
-  detail: "Room layout and connectivity from trace contract.",
-  value: "room",
+  subtitle: `${room.kind ?? "room"} · ${room.members.length} known occupants`,
+  detail: room.place_id
+    ? `Spatial place ${room.place_id}; occupancy follows the replay tick.`
+    : "Room layout and connectivity from trace contract.",
+  value: room.kind ?? "room",
   x: 0,
   y: 0,
   camera: [0.5, 0.5],
@@ -239,6 +287,7 @@ const inferStartingRoom = (
 };
 
 const toSignalNode = (signal: ViewerSignal): ViewerNode => ({
+  ...(signal.geometry === undefined ? {} : { geometry: signal.geometry }),
   id: signal.id,
   label: signal.label,
   kind: signal.kind,
@@ -250,7 +299,7 @@ const toSignalNode = (signal: ViewerSignal): ViewerNode => ({
   y: 0,
   camera: [0.5, 0.5],
   scene: signal.scene,
-  scale: 0.18,
+  scale: signal.scale ?? 0.18,
   colorRole: signal.kind,
 });
 

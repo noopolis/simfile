@@ -1,6 +1,7 @@
-import { readFile, readdir } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import path from "node:path";
 
+import { findRunRawFiles, rawBank } from "../observe/rawFiles.js";
 import type { EngineEntry } from "./engineProvenance.js";
 import type { RawMnemeEvent, RawTranscript, RawTranscriptMessage, RunTelemetrySample } from "./runViewModelTypes.js";
 
@@ -22,15 +23,16 @@ const parseJsonlLines = (text: string): unknown[] =>
     .map((line) => JSON.parse(line) as unknown);
 
 export const readMnemeEventsByBank = async (runDir: string): Promise<Map<string, RawMnemeEvent[]>> => {
-  const mnemeDir = path.join(runDir, "raw", "mneme");
-  const bankDirs = await readdir(mnemeDir, { withFileTypes: true }).catch(() => []);
-
   const byBank = new Map<string, RawMnemeEvent[]>();
-  for (const entry of bankDirs) {
-    if (!entry.isDirectory()) continue;
-    const text = await readFile(path.join(mnemeDir, entry.name, "events.jsonl"), "utf8").catch(() => null);
-    if (text === null) continue;
-    byBank.set(entry.name, parseJsonlLines(text) as RawMnemeEvent[]);
+  const files = (await findRunRawFiles(runDir)).filter(({ rawRelativePath }) => {
+    const segments = rawRelativePath.split(path.sep);
+    return segments.length === 4 && segments[0] === "raw"
+      && segments[1] === "mneme" && segments[3] === "events.jsonl";
+  });
+  for (const file of files) {
+    const bank = rawBank(file.rawRelativePath)!;
+    const events = parseJsonlLines(await readFile(file.absolutePath, "utf8")) as RawMnemeEvent[];
+    byBank.set(bank, [...(byBank.get(bank) ?? []), ...events]);
   }
   return byBank;
 };
@@ -85,18 +87,17 @@ export const normalizeRawTranscript = (raw: unknown): RawTranscript => {
  * a flat re-sort of the union is a correct chronological interleave.
  */
 export const readTranscript = async (runDir: string): Promise<RawTranscript> => {
-  const moltnetDir = path.join(runDir, "raw", "moltnet");
-  const files: string[] = [path.join(moltnetDir, "transcript.json")];
-  const entries = await readdir(moltnetDir, { withFileTypes: true }).catch(() => []);
-  for (const entry of entries) {
-    if (entry.isDirectory()) files.push(path.join(moltnetDir, entry.name, "transcript.json"));
-  }
+  const files = (await findRunRawFiles(runDir)).filter(({ rawRelativePath }) => {
+    const segments = rawRelativePath.split(path.sep);
+    return segments[0] === "raw" && segments[1] === "moltnet"
+      && (segments.length === 3 || segments.length === 4)
+      && segments.at(-1) === "transcript.json";
+  });
 
   let seedMessageText: string | undefined;
   const merged: RawTranscriptMessage[] = [];
   for (const file of files) {
-    const text = await readFile(file, "utf8").catch(() => null);
-    if (text === null) continue;
+    const text = await readFile(file.absolutePath, "utf8");
     const normalized = normalizeRawTranscript(JSON.parse(text) as unknown);
     if (seedMessageText === undefined && normalized.seedMessageText !== undefined) {
       seedMessageText = normalized.seedMessageText;
@@ -111,9 +112,37 @@ export const readTranscript = async (runDir: string): Promise<RawTranscript> => 
 /** The `world/telemetry.json` shape written by `src/runtime/run-record.ts`'s `TelemetryArtifact`. */
 interface RawTelemetryArtifact {
   run_id: string;
-  samples: { tick: number; sim_time: number; phase?: string; variables: Record<string, number> }[];
+  samples: {
+    tick: number;
+    sim_time: number;
+    phase?: string;
+    variables: Record<string, number>;
+    occupancy?: unknown;
+    transit?: unknown;
+  }[];
   version: string;
 }
+
+const telemetryOccupancy = (value: unknown): Record<string, string[]> | undefined => {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return undefined;
+  const entries = Object.entries(value);
+  if (!entries.every(([, agents]) => Array.isArray(agents) && agents.every((agent) => typeof agent === "string"))) {
+    return undefined;
+  }
+  return Object.fromEntries(entries.map(([place, agents]) => [place, [...(agents as string[])]]));
+};
+
+const telemetryTransit = (value: unknown): RunTelemetrySample["transit"] => {
+  if (!Array.isArray(value)) return undefined;
+  const entries = value.filter((entry): entry is { agent: string; from: string; to: string; ticksRemaining: number } =>
+    typeof entry === "object" && entry !== null
+    && typeof (entry as { agent?: unknown }).agent === "string"
+    && typeof (entry as { from?: unknown }).from === "string"
+    && typeof (entry as { to?: unknown }).to === "string"
+    && typeof (entry as { ticksRemaining?: unknown }).ticksRemaining === "number"
+  );
+  return entries.length === value.length ? entries : undefined;
+};
 
 /**
  * Reads `world/telemetry.json` when present (world-driven runs only —
@@ -128,12 +157,18 @@ export const readWorldTelemetry = async (runDir: string): Promise<RunTelemetrySa
   try {
     const parsed = JSON.parse(raw) as RawTelemetryArtifact;
     if (!Array.isArray(parsed.samples)) return null;
-    return parsed.samples.map((sample) => ({
-      tick: sample.tick,
-      simTime: sample.sim_time,
-      phase: sample.phase,
-      variables: sample.variables ?? {},
-    }));
+    return parsed.samples.map((sample) => {
+      const occupancy = telemetryOccupancy(sample.occupancy);
+      const transit = telemetryTransit(sample.transit);
+      return {
+        tick: sample.tick,
+        simTime: sample.sim_time,
+        phase: sample.phase,
+        variables: sample.variables ?? {},
+        ...(occupancy ? { occupancy } : {}),
+        ...(transit ? { transit } : {}),
+      };
+    });
   } catch {
     return null;
   }
@@ -150,7 +185,7 @@ export const hasVariableSamples = (samples: readonly RunTelemetrySample[] | null
  * layered on top of the manifest's own single `engine` field, so a
  * malformed/partial file degrades to `undefined` (the caller falls back to
  * `manifest.engine`) rather than throwing. No run-dir currently ships this
- * file, but a composed driver's `spawnfileReceipts.ts` up-receipt schema
+ * file, but the neutral `spawnfile/receipts.ts` up-receipt schema
  * already carries `engines` when a real deployment reports mixed per-agent
  * engines, so this reads it the moment one does.
  */

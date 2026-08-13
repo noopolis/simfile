@@ -2,11 +2,10 @@ simfile_version: "0.1"
 name: office-secret-v0-world
 spawnfile: ../org/Spawnfile
 
-# Memetics increment (a): a real clock with phases, driven live tick-by-tick
-# by the world-driven composed driver (`src/sims/worldDrivenOfficeSimDriver.ts`)
-# instead of the batch `runSimfileTrace`. `workday` starts at the day
+# Memetics increment (a): a real clock with phases, captured live tick-by-tick
+# instead of through the batch `runSimfileTrace`. `workday` starts at the day
 # boundary so the `kickoff` rule below fires on the very first tick — the
-# live driver still steps the world one real tick at a time, it just doesn't
+# captured run still steps the world one real tick at a time; it just doesn't
 # need many ticks for this scenario's single kickoff to land.
 clock:
   seed: office-secret-v0-seed

@@ -3,6 +3,8 @@
 This folder contains deterministic Simfile runtime helpers.
 
 - `clock.ts` resolves tick, simulated time, and phases.
+- `dynamics-guard.ts` makes legacy trace/live runtimes fail closed when a
+  Simfile declares a dynamics module they would otherwise ignore.
 - `condition.ts` evaluates the shared `when:` condition tree. Also exports
   `conditionVariableIds` (variable storyline increment): every variable id a
   condition tree references, deduped — `[]` for a phase/event condition.
@@ -17,7 +19,7 @@ This folder contains deterministic Simfile runtime helpers.
   `variableScopes` (declared scope per variable) — both consumed by
   `world-act.ts` for act authorization and envelope scope.
 - `rule-actions.ts` lowers a fired rule's `do:` actions into world-effect
-  events (`world.message`, `world.dm`, `wake.recommended`) or variable
+  events (`world.message`, `world.dm`) or variable
   mutations. Every world-effect event is a world.act variant and carries the
   payload minimum `{sim_time, provenance, actor, target, scope, act_id,
   action, value}`. `runRuleActions`/`emitRuleActionEvents` additionally
@@ -44,9 +46,9 @@ This folder contains deterministic Simfile runtime helpers.
   returning the tick's events + variable sample + next seq. It also owns
   `createTraceEvent`, the one canonical-envelope constructor every
   simfile-native trace event (batch or live) is stamped through. This is the
-  seam a live driver calls once per wall-clock tick
-  (`../sims/worldTickLoop.ts`) instead of only ever inside one big batch
-  loop; the batch loop below is now a thin caller of it. `runRule` also
+  public seam for a fixture-owned fixed-step production runner instead of
+  requiring one big batch loop; the batch loop below is now a thin caller of
+  it. `runRule` also
   stamps `variables: rule.variableIds` onto that rule's own `rule.fired`
   payload (when non-empty) and threads the same list into `runRuleActions`.
 - `trace-run.ts` loops `stepSimfileTick` once per tick over the whole bounded
@@ -64,6 +66,8 @@ This folder contains deterministic Simfile runtime helpers.
 - `causal-fixture.ts` maps a runtime trace event onto the
   `noopolis.causal-event.v1` wire shape (root `specs/causal-event.v1.schema.json`
   — referenced, never imported). This is B92's real conformance target.
+- `causalRecordingContract.ts` owns the immutable causal-recording wire types,
+  limits, and version while `causalRecording.ts` owns construction and validation.
 - `emit-causal-fixture.ts` is the thin `npm run emit-causal-fixture` entry
   point: prints one schema-shaped JSONL record per line to stdout, no banner.
 - `run-record.ts` writes sealed run-record artifacts and re-exports the
@@ -73,3 +77,9 @@ This folder contains deterministic Simfile runtime helpers.
 Runtime modules must stay independent from Spawnfile internals and browser UI code.
 They may produce public artifacts for the viewer, but they must not add Simfile
 authoring surface for presentation concerns.
+
+The type-only `simfile/runtime` subpath exports `RuntimeTraceEvent`,
+`ViewerContractTrace`, `ViewerTraceFact`, `ViewerTraceInspection`, and
+`ViewerTraceInspectionSample`. The four viewer-trace types support fixture-owned
+producers of the public viewer artifact; types with no subpath consumer do not
+belong on this surface.

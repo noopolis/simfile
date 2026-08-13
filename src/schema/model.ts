@@ -1,10 +1,61 @@
 import { z } from "zod";
 
-const identifierPattern = "[a-z][a-z0-9]*(?:[-_][a-z0-9]+)*";
+import { cloneDynamicsJsonObject } from "../dynamics/canonicalJson.js";
+import { DYNAMICS_BUILD_CONTRACT } from "../dynamics/buildInput.js";
+import { DYNAMICS_LIMITS } from "../dynamics/limits.js";
+import type { DynamicsJsonObject } from "../dynamics/types.js";
+import { parseLocalResourceReference, parseWorldId, type LocalResourceReference, type WorldId } from "../world/index.js";
+import { simfileIdentifierPattern, simfileIdentifierSchema } from "./identifier.js";
 
-export const simfileIdentifierSchema = z.string().regex(new RegExp(`^${identifierPattern}$`), {
-  message: "expected lowercase identifier with letters, numbers, dashes, or underscores"
+export { simfileIdentifierSchema } from "./identifier.js";
+
+const parsedWorldIdSchema = z.unknown().transform((value, context): WorldId => {
+  try {
+    return parseWorldId(value);
+  } catch (error) {
+    context.addIssue({ code: z.ZodIssueCode.custom, message: error instanceof Error ? error.message : String(error) });
+    return z.NEVER;
+  }
 });
+
+const parsedLocalReferenceSchema = z.unknown().transform((value, context): LocalResourceReference => {
+  try {
+    return parseLocalResourceReference(value);
+  } catch (error) {
+    context.addIssue({ code: z.ZodIssueCode.custom, message: error instanceof Error ? error.message : String(error) });
+    return z.NEVER;
+  }
+});
+
+const localReferenceOfKind = (kind: "entity" | "sense" | "affordance") =>
+  parsedLocalReferenceSchema.superRefine((reference, context) => {
+    if (!reference.startsWith(`${kind}:`)) {
+      context.addIssue({ code: z.ZodIssueCode.custom, message: `expected local ${kind}: reference` });
+    }
+  });
+
+const uniqueLocalReferences = (kind: "sense" | "affordance") =>
+  (references: readonly LocalResourceReference[], context: z.RefinementCtx): void => {
+    if (new Set(references).size !== references.length) {
+      context.addIssue({ code: z.ZodIssueCode.custom, message: `${kind} grants must be unique` });
+    }
+  };
+
+export const simfileWorldGrantSchema = z.object({
+  entity: localReferenceOfKind("entity"),
+  senses: z.array(localReferenceOfKind("sense")).default([])
+    .superRefine(uniqueLocalReferences("sense"))
+    .transform((references) => Object.freeze([...references])),
+  affordances: z.array(localReferenceOfKind("affordance")).default([])
+    .superRefine(uniqueLocalReferences("affordance"))
+    .transform((references) => Object.freeze([...references]))
+}).strict().transform((grant) => Object.freeze(grant));
+
+export const simfileWorldSchema = z.object({
+  id: parsedWorldIdSchema,
+  grants: z.record(simfileIdentifierSchema, simfileWorldGrantSchema)
+    .transform((grants) => Object.freeze({ ...grants }))
+}).strict().transform((world) => Object.freeze(world));
 
 const simfileDurationSchema = z.string().regex(/^(?:0|[1-9][0-9]*)(?:\.[0-9]+)?(?:ms|s|m|h|d|w)$/u, {
   message: "expected duration string (e.g. 20s, 1.5m, 2h)"
@@ -24,10 +75,8 @@ export const simfileRangeSchema = z.string().regex(
   }
 });
 
-const scopeAgentPattern = new RegExp(`^agent:${identifierPattern}$`);
-const scopeTeamPattern = new RegExp(`^team:${identifierPattern}$`);
-const scopeRoomPattern = new RegExp(`^room:${identifierPattern}:${identifierPattern}$`);
-const scopePairPattern = new RegExp(`^pair:${identifierPattern}:${identifierPattern}$`);
+const scopeAgentPattern = new RegExp(`^agent:${simfileIdentifierPattern}$`); const scopeTeamPattern = new RegExp(`^team:${simfileIdentifierPattern}$`);
+const scopeRoomPattern = new RegExp(`^room:${simfileIdentifierPattern}:${simfileIdentifierPattern}$`); const scopePairPattern = new RegExp(`^pair:${simfileIdentifierPattern}:${simfileIdentifierPattern}$`);
 const simfileRoomScopeSchema = z.string().regex(scopeRoomPattern, {
   message: "expected room scope (room:<network>:<room>)"
 });
@@ -46,13 +95,8 @@ const simfileScopeSchema = z.string().refine((value) => {
 });
 
 export const simfileEventKinds = [
-  "clock.sync",
-  "rule.fired",
-  "world.message",
-  "world.dm",
-  "world.act",
-  "wake.recommended",
-  "marker.seen"
+  "clock.sync", "presence.arrived", "presence.left", "rule.fired",
+  "world.message", "world.dm", "world.act", "marker.seen",
 ] as const;
 
 const simfileEventKindSchema = z.enum(simfileEventKinds);
@@ -97,6 +141,18 @@ export const simfileClockSchema = z.object({
   phases: z.record(simfileIdentifierSchema, z.string().regex(/^(?:[01]\d|2[0-3]):[0-5]\d$/u)).default({})
 }).strict();
 
+export const simfilePlaceSchema = z.object({
+  label: z.string().min(1).optional(),
+  kind: z.enum(["room", "square"]).default("room")
+}).strict();
+
+export const simfileRouteSchema = z.object({
+  from: simfileIdentifierSchema,
+  to: simfileIdentifierSchema,
+  travel_ticks: z.number().int().positive(),
+  direction: z.enum(["bidirectional", "one_way"]).default("bidirectional")
+}).strict();
+
 const simfileMeasureSchema = z.object({
   kind: z.enum(["messages_in", "token_mentions", "marker_violations", "distinct_speakers", "mentions_of", "ticks_since_last_message"]),
   scope: simfileScopeSchema.optional(),
@@ -106,6 +162,75 @@ const simfileMeasureSchema = z.object({
 const simfileDerivedSchema = z.object({
   eq: z.string().min(1)
 }).strict();
+
+const simfileDynamicsConfigSchema = z.unknown().transform((value, context): DynamicsJsonObject => {
+  try {
+    return cloneDynamicsJsonObject(value, "dynamics.config");
+  } catch (error) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: error instanceof Error ? error.message : String(error)
+    });
+    return z.NEVER;
+  }
+});
+
+const simfileDynamicsModuleSchema = z.string().trim().min(1)
+  .max(DYNAMICS_LIMITS.identifier_code_units)
+  .superRefine((value, context) => {
+    const segments = value.slice(2).split("/");
+    if (
+      !value.startsWith("./")
+      || value.startsWith("/")
+      || value.includes("\\")
+      || value.includes("\0")
+      || value.includes("?")
+      || value.includes("#")
+      || /^[a-z][a-z0-9+.-]*:/iu.test(value)
+      || segments.some((segment) => !/^[a-z0-9._-]+$/iu.test(segment) || segment === "." || segment === "..")
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "dynamics.module must be a portable project-relative path"
+      });
+    }
+    if (
+      !DYNAMICS_BUILD_CONTRACT.allowedExtensions.some((extension) => value.endsWith(extension))
+      || value.endsWith(".d.ts")
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "dynamics.module must reference a .ts or .mjs module"
+      });
+    }
+  });
+
+const simfileProjectModuleSchema = (label: string, extensions: readonly string[]) =>
+  z.string().trim().min(1).max(DYNAMICS_LIMITS.identifier_code_units)
+    .superRefine((value, context) => {
+      const segments = value.slice(2).split("/");
+      if (!value.startsWith("./") || value.startsWith("/") || value.includes("\\")
+        || value.includes("\0") || value.includes("?") || value.includes("#")
+        || /^[a-z][a-z0-9+.-]*:/iu.test(value)
+        || segments.some((segment) => !/^[a-z0-9._-]+$/iu.test(segment)
+          || segment === "." || segment === "..")
+        || !extensions.some((extension) => value.endsWith(extension))) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `${label} must be a portable project-relative ${extensions.join(" or ")} module`,
+        });
+      }
+    });
+
+export const simfileDynamicsSchema = z.object({
+  module: simfileDynamicsModuleSchema,
+  config: simfileDynamicsConfigSchema.default({})
+}).strict();
+
+export const simfileWorldSidecarSchema = z.object({
+  binding: simfileProjectModuleSchema("world_sidecar.binding", [".mjs", ".js"]),
+  composer: simfileProjectModuleSchema("world_sidecar.composer", [".ts", ".mts", ".mjs"]),
+}).strict().transform((value) => Object.freeze(value));
 
 const simfileVariableSchema = z.object({
   scope: simfileScopeSchema,
@@ -159,10 +284,6 @@ export const simfileRuleActionSchema = z.union([
     content: z.string().min(1)
   }).strict(),
   z.object({
-    action: z.literal("wake:recommend"),
-    to: simfileRoomScopeSchema
-  }).strict(),
-  z.object({
     action: z.literal("variable:set"),
     variable: simfileIdentifierSchema,
     value: z.number()
@@ -171,6 +292,11 @@ export const simfileRuleActionSchema = z.union([
     action: z.literal("variable:delta"),
     variable: simfileIdentifierSchema,
     value: z.number()
+  }).strict(),
+  z.object({
+    action: z.literal("move"),
+    agent: z.string().min(1),
+    to: simfileIdentifierSchema
   }).strict()
 ]);
 
@@ -240,20 +366,34 @@ export const simfileSchema = z.object({
   name: simfileIdentifierSchema,
   spawnfile: z.string().optional(),
   clock: simfileClockSchema,
+  places: z.record(simfileIdentifierSchema, simfilePlaceSchema).default({}),
+  routes: z.record(simfileIdentifierSchema, simfileRouteSchema).default({}),
+  presence: z.record(z.string().min(1), simfileIdentifierSchema).default({}),
   variables: z.record(simfileIdentifierSchema, simfileVariableSchema).default({}),
   generators: z.record(simfileIdentifierSchema, simfileGeneratorSchema).default({}),
   rules: z.record(simfileIdentifierSchema, simfileRuleSchema).default({}),
+  world: simfileWorldSchema.optional(),
+  world_sidecar: simfileWorldSidecarSchema.optional(),
+  dynamics: simfileDynamicsSchema.optional(),
   ledger: simfileLedgerSchema.optional(),
   telemetry: simfileTelemetrySchema.optional(),
   markers: z.record(simfileIdentifierSchema, simfileMarkerSchema).default({}),
   probes: z.record(simfileIdentifierSchema, simfileProbeSchema).default({})
-}).strict();
+}).strict().superRefine((value, context) => {
+  if (value.dynamics && value.clock.seed.length > DYNAMICS_LIMITS.identifier_code_units) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: `dynamics clock.seed must not exceed ${DYNAMICS_LIMITS.identifier_code_units} code units`,
+      path: ["clock", "seed"]
+    });
+  }
+});
 
 export type Simfile = z.infer<typeof simfileSchema>;
 export type SimfileClock = z.infer<typeof simfileClockSchema>;
-export type SimfileGenerator = z.infer<typeof simfileGeneratorSchema>;
-export type SimfileRule = z.infer<typeof simfileRuleSchema>;
-export type SimfileLedger = z.infer<typeof simfileLedgerSchema>;
-export type SimfileProbe = z.infer<typeof simfileProbeSchema>;
-export type SimfileRuleAction = z.infer<typeof simfileRuleActionSchema>;
-export type SimfileVariable = z.infer<typeof simfileVariableSchema>;
+export type SimfilePlace = z.infer<typeof simfilePlaceSchema>; export type SimfileRoute = z.infer<typeof simfileRouteSchema>;
+export type SimfileGenerator = z.infer<typeof simfileGeneratorSchema>; export type SimfileDynamics = z.infer<typeof simfileDynamicsSchema>;
+export type SimfileRule = z.infer<typeof simfileRuleSchema>; export type SimfileLedger = z.infer<typeof simfileLedgerSchema>;
+export type SimfileProbe = z.infer<typeof simfileProbeSchema>; export type SimfileRuleAction = z.infer<typeof simfileRuleActionSchema>;
+export type SimfileVariable = z.infer<typeof simfileVariableSchema>; export type SimfileWorld = z.infer<typeof simfileWorldSchema>;
+export type SimfileWorldGrant = z.infer<typeof simfileWorldGrantSchema>; export type SimfileWorldSidecar = z.infer<typeof simfileWorldSidecarSchema>;

@@ -14,6 +14,11 @@ export interface CanonicalLedgerValidationOptions {
   streamId?: string;
 }
 
+export interface CanonicalLedgerEventValidator {
+  readonly count: number;
+  validate(event: unknown): LedgerEventEnvelope;
+}
+
 const provenanceValues = new Set<Provenance>(["mechanical", "agentic", "external"]);
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -61,24 +66,21 @@ const requireEmitter = (event: Record<string, unknown>, index: number): CausalEm
   return { system: SIMFILE_EMITTER_SYSTEM, stream_id: streamId, seq };
 };
 
-/**
- * Validates and normalizes a stream of simfile causal ledger envelopes.
- *
- * Contiguity is generalized to (run_id, stream_id): every emitter.seq must be
- * 1-based and contiguous within its own (run_id, stream_id) group, even if
- * multiple streams are interleaved across the input array.
- */
-export const validateCanonicalLedgerEvents = (
-  events: readonly unknown[],
+/** Stateful validation for streaming writers that cannot retain the whole ledger. */
+export const createCanonicalLedgerEventValidator = (
   options: CanonicalLedgerValidationOptions = {}
-): LedgerEventEnvelope[] => {
+): CanonicalLedgerEventValidator => {
   let runId = options.runId;
+  let count = 0;
+  let maximumPriorSequence = 0;
   const nextSeqByStream = new Map<string, number>();
-
-  return events.map((event, index) => {
-    if (!isRecord(event)) {
-      throw new Error(`ledger event ${index} is not an object`);
-    }
+  return {
+    get count() { return count; },
+    validate: (event): LedgerEventEnvelope => {
+      const index = count;
+      if (!isRecord(event)) {
+        throw new Error(`ledger event ${index} is not an object`);
+      }
 
     const version = event.version;
     if (version !== CAUSAL_ENVELOPE_VERSION) {
@@ -101,8 +103,6 @@ export const validateCanonicalLedgerEvents = (
     if (emitter.seq !== expectedSeq) {
       throw new Error(`ledger event ${index} has non-contiguous seq for (run_id, stream_id)`);
     }
-    nextSeqByStream.set(streamKey, emitter.seq);
-
     const eventId = requireString(event, "event_id", index);
     if (eventId !== createEventId(runId, emitter.seq)) {
       throw new Error(`ledger event ${index} has invalid event_id`);
@@ -114,6 +114,25 @@ export const validateCanonicalLedgerEvents = (
       throw new Error(`ledger event ${index} has invalid recorded_at`);
     }
     const causeEventIds = requireStringArray(event, "cause_event_ids", index);
+    /*
+     * Retention only needs the acyclicity guarantee that the streaming writer can
+     * no longer derive from a fully retained ledger: a cause that names an event
+     * of *this* run must name one already emitted. What else may appear in
+     * cause_event_ids is the identifier-grammar question owned by B169, so
+     * foreign namespaces (externally supplied causes the runtime preserves
+     * verbatim) and self-namespace ids we cannot read as a sequence are left
+     * exactly as legal as they are without this validator.
+     */
+    const selfPrefix = `${SIMFILE_EMITTER_SYSTEM}:${runId}:`;
+    for (const causeEventId of causeEventIds) {
+      if (!causeEventId.startsWith(selfPrefix)) continue;
+      const causeSequenceText = causeEventId.slice(selfPrefix.length);
+      if (!/^[1-9][0-9]*$/u.test(causeSequenceText)) continue;
+      const causeSequence = Number(causeSequenceText);
+      if (!Number.isSafeInteger(causeSequence) || causeSequence > maximumPriorSequence) {
+        throw new Error(`ledger event ${index} has unknown or non-prior cause_event_id`);
+      }
+    }
 
     const simTime = event.sim_time;
     if (typeof simTime !== "number" || !Number.isFinite(simTime)) {
@@ -125,7 +144,7 @@ export const validateCanonicalLedgerEvents = (
       throw new Error(`ledger event ${index} has invalid provenance`);
     }
 
-    return {
+    const normalized: LedgerEventEnvelope = {
       version: CAUSAL_ENVELOPE_VERSION,
       run_id: runId,
       event_id: eventId,
@@ -141,7 +160,24 @@ export const validateCanonicalLedgerEvents = (
       scope: requireString(event, "scope", index),
       payload: requirePayload(event, index)
     };
-  });
+    nextSeqByStream.set(streamKey, emitter.seq);
+    count += 1;
+    maximumPriorSequence = Math.max(maximumPriorSequence, emitter.seq);
+    return normalized;
+    }
+  };
+};
+
+/**
+ * Validates and normalizes a complete stream of simfile causal envelopes.
+ * Contiguity is tracked independently for each (run_id, stream_id) pair.
+ */
+export const validateCanonicalLedgerEvents = (
+  events: readonly unknown[],
+  options: CanonicalLedgerValidationOptions = {}
+): LedgerEventEnvelope[] => {
+  const validator = createCanonicalLedgerEventValidator(options);
+  return events.map((event) => validator.validate(event));
 };
 
 export const parseCanonicalLedgerJsonl = (

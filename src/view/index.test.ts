@@ -5,11 +5,19 @@ import { parseViewArguments } from "./index.js";
 
 describe("parseViewArguments", () => {
   it("parses live view state options", () => {
-    const parsed = parseViewArguments(["--state", ".sim", "--port", "18787", "--no-open"]);
+    const parsed = parseViewArguments([
+      "--state", ".sim",
+      "--port", "18787",
+      "--no-open",
+      "--ignore-recorded-viewer-extensions",
+      "--viewer-extension", "renderer.json",
+    ]);
     assert.equal(parsed.error, undefined);
     assert.equal(parsed.options?.statePath, ".sim");
     assert.equal(parsed.options?.port, 18787);
     assert.equal(parsed.options?.openBrowser, false);
+    assert.equal(parsed.options?.ignoreRecordedViewerExtensions, true);
+    assert.deepEqual(parsed.options?.extensionDescriptors, ["renderer.json"]);
   });
 
   it("parses replay directories as the source path", () => {

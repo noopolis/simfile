@@ -1,0 +1,94 @@
+{
+  "version": "simfile.run-manifest.v1",
+  "run_id": "run-office-psyche-golden",
+  "created_at": "2026-07-14T08:00:00.000Z",
+  "contract_versions": {
+    "causal-event.v1": "noopolis.causal-event.v1",
+    "simfile.observe.v1": "simfile.observe.v1",
+    "simfile.run-manifest.v1": "simfile.run-manifest.v1"
+  },
+  "spawnfile": { "fingerprint": "sf1:officepsychegolden" },
+  "artifacts": [
+    {
+      "path": "raw/moltnet/causal.jsonl",
+      "sha256": "505ad4ca8b68f3607b5343b001dcdbf74852732883e0f650859bdd61e91d922e"
+    },
+    {
+      "path": "raw/moltnet/transcript.json",
+      "sha256": "ddd1bf00a8fb0e815942069930d4a4056948f8e9043eefbb65d6acc2189cfb99"
+    },
+    {
+      "path": "raw/daimon/eleanor/causal.jsonl",
+      "sha256": "f9badb900544667039e7911312f6cf2dab6c3d1f05d3b02f41551605a1141d4c"
+    },
+    {
+      "path": "raw/daimon/sam/causal.jsonl",
+      "sha256": "ef82bb2069456fcc8217ef2f255793e218b047e71979da9338bf8489173b7448"
+    },
+    {
+      "path": "raw/daimon/eleanor-animus/causal.jsonl",
+      "sha256": "dbf551ae9c9cc95c20d7efc257f68708bcacc08fb160fba335c618cc09d5187e"
+    },
+    {
+      "path": "raw/daimon/eleanor-shadow/causal.jsonl",
+      "sha256": "940a0c0dc06219583f607ba99209a27dbb0498e5126bebd35f347658cc53171d"
+    },
+    {
+      "path": "raw/daimon/mara/causal.jsonl",
+      "sha256": "19a2b52798db74f6b36241960c88061e092ece3a83b0dbbd472c42a3b5d5c2ab"
+    },
+    {
+      "path": "raw/mneme/northwind-recall/causal.jsonl",
+      "sha256": "c7dc6c5f98b6183ea477761d519c2a242fa2fc53789a0accb2bff3fc4420a9d7"
+    },
+    {
+      "path": "raw/mneme/northwind-recall/events.jsonl",
+      "sha256": "c595e083fef0a6d38a5fb2899ae1d5deccdb54f83b14aea38d919dc463622c2f"
+    },
+    {
+      "path": "raw/world/causal.jsonl",
+      "sha256": "d328b0e34e72bd29e62426212c45aefe5a8a6833752a0e67aae533286f74b076"
+    },
+    {
+      "path": "world/telemetry.json",
+      "sha256": "bafb415c913141e6eed1375938f70027f65b027e9837d958568182622d829eda"
+    },
+    {
+      "path": "spawnfile-report.json",
+      "sha256": "a0890f4f559255d3c7b3cb02e8619d55380f460e7a3ae3406ff7a1fc2e5b4656"
+    }
+  ],
+  "engine": "scripted",
+  "world": {
+    "network_id": "office-psyche",
+    "rooms": [
+      {
+        "network_id": "office-floor",
+        "room_id": "commons",
+        "members": ["eleanor", "sam", "mara"]
+      },
+      {
+        "network_id": "eleanor_inner",
+        "room_id": "eleanor-council",
+        "members": ["eleanor", "eleanor-animus", "eleanor-shadow"]
+      }
+    ],
+    "places": {
+      "office": { "label": "Office", "kind": "room" },
+      "home": { "label": "Home", "kind": "room" }
+    },
+    "routes": {
+      "office_home": {
+        "from": "office",
+        "to": "home",
+        "travel_ticks": 2,
+        "direction": "bidirectional"
+      }
+    },
+    "presence": {
+      "eleanor": "office",
+      "sam": "office",
+      "mara": "home"
+    }
+  }
+}

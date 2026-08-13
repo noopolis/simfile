@@ -4,6 +4,9 @@ import type { MemoryBankCounts } from "./memoryBanks.js";
 import type { SimfileRunManifest } from "./manifest.js";
 import { INCOMPLETE_CHAIN_FLAGS, OBSERVE_REPORT_VERSION, type SimfileObserveReport } from "./report.js";
 import type { SeedSpreadComputeResult } from "./seedSpread.js";
+import { worldGrantsFromManifest } from "./worldGrants.js";
+import type { WorldEvidence } from "./worldEvidence.js";
+import type { SocialPlane } from "./socialPlane.js";
 
 const FAILURE_TYPES = new Set(["turn.failed", "wake.failed"]);
 const AGENT_PRINCIPAL_PATTERN = /^agent:(.+)$/u;
@@ -109,25 +112,33 @@ export interface BuildObserveReportInput {
    * exists. `excluded` hits (instrument/operator actors) fold into
    * `failures`, never into `seed_spread`. */
   seedSpread?: SeedSpreadComputeResult;
+  worldEvidence?: WorldEvidence;
+  socialPlane?: SocialPlane;
 }
 
-export const buildObserveReport = (input: BuildObserveReportInput): SimfileObserveReport => ({
-  version: OBSERVE_REPORT_VERSION,
-  run_id: input.manifest.run_id,
-  contract_versions: input.manifest.contract_versions,
-  participants: computeParticipants(input.allEvents),
-  agent_turns: computeAgentTurns(input.allEvents),
-  chains: computeChains(input.reconciled),
-  memory: input.memoryBanks.map((bank) => ({
-    bank: bank.bank,
-    events: bank.events,
-    recalls: bank.recalls,
-    memory_write_source: bank.memory_write_source,
-    ...(bank.writes_by_agent ? { writes_by_agent: bank.writes_by_agent } : {})
-  })),
-  failures: [
-    ...computeFailures(input.allEvents),
-    ...(input.seedSpread?.excluded.map((excluded) => ({ event_id: excluded.event_id, reason: excluded.reason })) ?? [])
-  ],
-  ...(input.seedSpread ? { seed_spread: input.seedSpread.entries, spread_summary: input.seedSpread.summary } : {})
-});
+export const buildObserveReport = (input: BuildObserveReportInput): SimfileObserveReport => {
+  const worldGrants = worldGrantsFromManifest(input.manifest);
+  return {
+    version: OBSERVE_REPORT_VERSION,
+    run_id: input.manifest.run_id,
+    contract_versions: input.manifest.contract_versions,
+    participants: computeParticipants(input.allEvents),
+    agent_turns: computeAgentTurns(input.allEvents),
+    chains: computeChains(input.reconciled),
+    memory: input.memoryBanks.map((bank) => ({
+      bank: bank.bank,
+      events: bank.events,
+      recalls: bank.recalls,
+      memory_write_source: bank.memory_write_source,
+      ...(bank.writes_by_agent ? { writes_by_agent: bank.writes_by_agent } : {})
+    })),
+    failures: [
+      ...computeFailures(input.allEvents),
+      ...(input.seedSpread?.excluded.map((excluded) => ({ event_id: excluded.event_id, reason: excluded.reason })) ?? [])
+    ],
+    ...(input.seedSpread ? { seed_spread: input.seedSpread.entries, spread_summary: input.seedSpread.summary } : {}),
+    ...(worldGrants === undefined ? {} : { world_grants: worldGrants }),
+    ...(input.worldEvidence === undefined ? {} : { world_evidence: input.worldEvidence })
+    ,...(input.socialPlane === undefined ? {} : { social_plane: input.socialPlane })
+  };
+};

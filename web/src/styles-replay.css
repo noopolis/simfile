@@ -12,11 +12,21 @@
 .replay-grid {
   min-height: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) 260px;
+  grid-template-areas: "support map conversation";
+  grid-template-columns: minmax(220px, 0.75fr) minmax(520px, 2.2fr) minmax(280px, 1fr);
   gap: 14px;
   padding: 14px 16px;
   overflow: hidden;
 }
+
+.replay-secondary-stack { min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: 14px; overflow: auto; }
+.replay-left-stack { grid-area: support; }
+.replay-map { grid-area: map; }
+.replay-right-stack { grid-area: conversation; }
+.action-feed-drawer { flex: 0 0 auto; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); }
+.action-feed-drawer > summary { padding: 8px 10px; color: var(--accent); cursor: pointer; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
+.action-feed-drawer[open] { min-height: 220px; }
+.action-feed-drawer .replay-actions { height: 360px; border: 0; border-top: 1px solid var(--border); border-radius: 0; }
 
 .replay-pane {
   min-width: 0;
@@ -44,6 +54,229 @@
   min-height: 0;
   overflow: auto;
   padding: 8px 10px;
+}
+
+.feed-filter-bar {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  gap: 5px 8px;
+  min-width: 0;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.feed-filter-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  color: var(--sub);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.feed-filter-option-empty {
+  color: var(--mute);
+  cursor: default;
+  opacity: 0.72;
+}
+
+.feed-filter-count {
+  color: var(--mute);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Action feed: one record-owned role axis and one stable five-column shape. */
+
+.feed-grid-row {
+  display: grid;
+  grid-template-columns: 5ch 16ch 14ch minmax(0, 1fr) 14ch;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 62ch;
+  padding: 4px 4px 4px 6px;
+  border-bottom: 1px solid var(--dashed);
+  border-left: 2px solid transparent;
+}
+
+.feed-grid-row.feed-role-declared { border-left-color: var(--role-declared); }
+.feed-grid-row.feed-role-derived { border-left-color: var(--role-derived); }
+.feed-grid-row.feed-role-refused { border-left-color: var(--role-refused); }
+
+.feed-tick {
+  color: var(--mute);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* Every grid cell must hold one line. Only `.feed-headline` was pinned, so a
+   long actor or outcome wrapped and made the whole row several lines tall —
+   the exact failure the one-line rule exists to prevent. */
+.feed-role,
+.feed-actor,
+.feed-outcome {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.feed-role-chip {
+  display: inline-block;
+  width: 100%;
+  padding: 1px 3px;
+  border: 1px solid currentColor;
+  font-weight: 400;
+  line-height: 1.25;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.feed-role-chip.feed-role-declared {
+  color: var(--role-declared);
+  border-style: dashed;
+}
+
+.feed-role-chip.feed-role-declared.feed-role-live {
+  border-style: solid;
+  font-weight: 700;
+}
+
+.feed-role-chip.feed-role-derived {
+  color: var(--role-derived);
+}
+
+.feed-role-chip.feed-role-refused {
+  border-color: var(--role-refused);
+  background: var(--role-refused);
+  color: var(--bg);
+}
+
+.feed-actor {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.feed-participant,
+.feed-inline-button {
+  max-width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  text-decoration: underline dotted;
+  text-underline-offset: 2px;
+}
+
+.feed-participant:hover,
+.feed-inline-button:hover,
+.feed-participant:focus-visible,
+.feed-inline-button:focus-visible {
+  outline: 1px dotted currentColor;
+  outline-offset: 2px;
+  text-decoration-style: solid;
+}
+
+.feed-participant {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: bottom;
+  white-space: nowrap;
+}
+
+.feed-what {
+  min-width: 0;
+}
+
+.feed-headline {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+details.feed-what > .feed-headline {
+  cursor: pointer;
+}
+
+details.feed-what > .feed-headline::marker {
+  color: var(--mute);
+}
+
+.feed-headline-message {
+  overflow: visible;
+  overflow-wrap: anywhere;
+  text-overflow: clip;
+  white-space: normal;
+}
+
+.feed-headline .feed-inline-button {
+  overflow: inherit;
+  text-overflow: inherit;
+  white-space: inherit;
+}
+
+.feed-what-detail {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+  padding: 4px 0 0 1.2em;
+}
+
+.feed-muted,
+.feed-empty {
+  color: var(--mute);
+}
+
+.feed-empty {
+  margin: 0;
+}
+
+.feed-log-separator {
+  margin-top: 8px;
+}
+
+.feed-outcome {
+  display: flex;
+  justify-content: flex-end;
+  text-align: right;
+}
+
+.feed-outcome-badge,
+.feed-resolution-badge {
+  padding: 1px 4px;
+  border: 1px solid currentColor;
+  background: transparent;
+  font: inherit;
+}
+
+/* Was a two-row grid (chip above text), which made every standing row two
+   lines tall regardless of the one-line rule on the cells. One row. */
+.feed-resolution-badge {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  min-width: 0;
+  max-width: 100%;
+  color: var(--role-derived);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.feed-resolution-badge > .feed-role-chip {
+  flex: 0 0 auto;
+  width: auto;
+}
+
+.feed-resolution-badge > span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .replay-caption {
@@ -471,6 +704,22 @@
   overflow: hidden;
 }
 
+/*
+ * A membrane portal is a "descend into a mind" view: it carries the full
+ * interior GlyphCSS map, which has a 52x28 minimum cell grid (tileWorld.ts).
+ * At the default 320px storyline width those cells are forced below their
+ * 0.66em/1em minimum and overlap into an unreadable smear, so a mind portal
+ * gets a much wider frame and a taller interior map — enough that each grid
+ * track stays at least one glyph wide/tall.
+ */
+.storyline-portal--membrane {
+  width: min(720px, 60vw);
+}
+
+.storyline-portal--membrane .membrane-interior-map {
+  height: 340px;
+}
+
 .membrane-view .replay-chat {
   flex: 1 1 auto;
   min-height: 100px;
@@ -747,6 +996,11 @@
   background: var(--tint);
 }
 
+.engine-badge-live-pending {
+  color: var(--yellow);
+  background: var(--tint);
+}
+
 /* Verdict strip + provenance panel (increment 2 rule 3: React parity with
    the retired bespoke run page) */
 
@@ -762,6 +1016,19 @@
   font-size: 11px;
   white-space: nowrap;
   cursor: pointer;
+}
+
+.verdict-strip-pending {
+  color: var(--yellow);
+  cursor: default;
+}
+
+.run-live-sealed,
+.run-skipped-frames,
+.run-live-pending-fact {
+  color: var(--yellow);
+  font-size: 11px;
+  font-weight: 700;
 }
 
 .verdict-strip:hover {
@@ -896,6 +1163,10 @@
 
 @media (max-width: 1100px) {
   .replay-grid {
+    grid-template-areas:
+      "map"
+      "conversation"
+      "support";
     grid-template-columns: minmax(0, 1fr);
     grid-auto-rows: minmax(220px, auto);
   }
@@ -905,3 +1176,190 @@
     width: auto;
   }
 }
+
+/* Minds rail: a compact index. Detail opens in a modal so the rail stays
+   readable instead of rendering every mind expanded at once. */
+
+.mind-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto auto;
+  align-items: baseline;
+  gap: 8px;
+  width: 100%;
+  padding: 5px 6px;
+  border: 0;
+  border-bottom: 1px solid var(--dashed);
+  background: none;
+  color: var(--ink);
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.mind-row:hover,
+.mind-row:focus-visible {
+  background: var(--tint);
+  color: var(--accent-hi);
+}
+
+.mind-row-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mind-row-stat {
+  color: var(--mute);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.mind-row-open {
+  color: var(--faint);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.mind-modal-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.mind-modal {
+  display: flex;
+  flex-direction: column;
+  width: min(620px, 88vw);
+  max-height: 78vh;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--bg);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+
+.mind-modal-header {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.mind-modal-title {
+  flex: 1;
+  color: var(--accent-hi);
+  font-weight: 600;
+}
+
+.mind-modal-header button {
+  border: 0;
+  background: none;
+  color: var(--mute);
+  cursor: pointer;
+  font: inherit;
+}
+
+.mind-modal-body {
+  overflow: auto;
+  padding: 10px 12px;
+}
+
+/* Mind modal: one scrollable table, one line per row, coloured by the
+   recorded verb so the axis comes from the record and not from a list of
+   names this viewer knows. */
+
+.mind-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin: 0;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--dashed);
+  font-size: 11px;
+  color: var(--sub);
+}
+
+.mind-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.mind-legend-note {
+  color: var(--faint);
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.mind-dot {
+  width: 8px;
+  height: 8px;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.mind-table {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.mind-tr {
+  display: grid;
+  grid-template-columns: 7ch 11ch minmax(0, 1fr);
+  align-items: baseline;
+  gap: 8px;
+  padding: 3px 4px 3px 7px;
+  border-bottom: 1px solid var(--dashed);
+  border-left: 3px solid var(--line-soft);
+}
+
+.mind-tr-stale { opacity: 0.55; }
+
+.mind-td-tick,
+.mind-td-kind,
+.mind-td-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mind-td-tick {
+  color: var(--mute);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.mind-td-button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--mute);
+  cursor: pointer;
+  font: inherit;
+  text-align: right;
+  text-decoration: underline dotted;
+}
+
+.mind-td-kind {
+  color: var(--sub);
+  text-transform: uppercase;
+  font-size: 10px;
+  letter-spacing: 0.05em;
+}
+
+/* One colour per recorded verb. Unknown verbs fall back to the neutral rail
+   colour above, so a new action kind is legible before anyone styles it. */
+.mind-kind-held { border-left-color: var(--accent-hi); color: var(--accent-hi); }
+.mind-kind-set-intent { border-left-color: var(--role-declared); }
+.mind-kind-set-intent .mind-td-kind { color: var(--role-declared); }
+.mind-kind-call-play { border-left-color: var(--cyan); }
+.mind-kind-call-play .mind-td-kind { color: var(--cyan); }

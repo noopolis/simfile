@@ -36,8 +36,9 @@ rules:
       - action: moltnet:message
         to: room:office-floor:case-warroom
         content: "Rosa Delgado belongs here."
-      - action: wake:recommend
+      - action: moltnet:message
         to: room:office-floor:case-warroom
+        content: "Observation notice."
 markers:
   tenant_name:
     text:
@@ -48,7 +49,7 @@ markers:
 probes:
   deadline_seen:
     when:
-      event: wake.recommended
+      event: world.message
       target: room:office-floor:case-warroom
     expect:
       at_least: 1
@@ -157,7 +158,7 @@ describe("writeRunRecord", () => {
     assert.equal(artifact.source, "harness-derived");
     assert.deepEqual(
       artifact.deliveries.map((entry) => entry.kind),
-      ["world.message", "wake.recommended"]
+      ["world.message", "world.message"]
     );
     assert.deepEqual(
       artifact.deliveries.find((entry) => entry.kind === "world.message")
@@ -171,14 +172,14 @@ describe("writeRunRecord", () => {
       }
     );
     assert.deepEqual(
-      artifact.deliveries.find((entry) => entry.kind === "wake.recommended")
-        && (({ event_id, kind, marker_ids, rule_id, text }) => ({ event_id, kind, marker_ids, rule_id, text }))(artifact.deliveries.find((entry) => entry.kind === "wake.recommended")!),
+      artifact.deliveries[1]
+        && (({ event_id, kind, marker_ids, rule_id, text }) => ({ event_id, kind, marker_ids, rule_id, text }))(artifact.deliveries[1]),
       {
         event_id: "simfile:record-run:4",
-        kind: "wake.recommended",
+        kind: "world.message",
         marker_ids: [],
-        rule_id: undefined,
-        text: "deadline"
+        rule_id: "deadline",
+        text: "Observation notice."
       }
     );
 

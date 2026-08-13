@@ -81,7 +81,7 @@ screenshot.
   focused room's outline (the "you are here" semantics from VIEW_DESIGN rule 3
   and the viewer bridge rule in ECOSYSTEM-DESIGN section 6).
 - Right pane: a focus portal transcript with timestamped lines, one
-  `wake.recommended` line in violet, one `probe pressure_peaked PASS` line
+  `world.message` line in violet, one `probe pressure_peaked PASS` line
   using Starlight's success semantics (green), never the brand accent.
 
 Why a still and not animation: the hero must load instantly, must be honest
@@ -127,8 +127,9 @@ Section 3 content, three step cards with mini code panes:
 
 1. **The world speaks**: a rule fires, `@world` posts to a Moltnet room.
    The world is a participant, not a puppeteer.
-2. **Agents answer freely**: runtimes wake and reply through their normal
-   bridges. Nothing scripts a thought.
+2. **Agents answer freely**: their organization-owned schedules and wake
+   policies run through normal runtime bridges. Simfile never schedules or
+   scripts a thought.
 3. **The ledger judges**: every act lands in a seeded, replayable ledger;
    probes turn claims into verdicts with evidence.
 
@@ -522,7 +523,7 @@ Purpose: the world-model data contract: what gets recorded, how, and where.
 Sections: `Ledger vs Telemetry` (acts vs motion; nothing stored that can be
 recomputed) · `Event Shape` (`event_id`, `kind`, `sim_time`, `provenance`,
 `actor`, `target`, `scope`, `payload`) · `Event Kinds` (the frozen v1 table:
-`world.message`, `world.dm`, `wake.recommended`, `rule.fired`, `marker.seen`,
+`world.message`, `world.dm`, `rule.fired`, `marker.seen`,
 `clock.sync`; reserved kinds listed as reserved) · `Scope Grammar` (Mneme
 form; the provider-prefix seam noted honestly) · `Canonical Export`
 (sorted-key JSONL, stripped non-identity fields, byte-identity asserted here)

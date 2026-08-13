@@ -1,5 +1,6 @@
 import type { RunTimeline, RunTimelineMembrane } from "./runTimelineTypes.js";
 import { parseRoomRef, stripRefPrefix } from "./runTimelineRefs.js";
+import { buildSpatialRunWorldTrace, type RunSpatialWorld } from "./runWorldTraceSpatial.js";
 
 /**
  * Adapts a run-replay `RunTimeline` into the same `viewer.trace.v1` shape
@@ -11,20 +12,30 @@ import { parseRoomRef, stripRefPrefix } from "./runTimelineRefs.js";
  * package's existing src/web boundary: the contract is the JSON shape on
  * the wire, not a shared TS type.
  *
- * These moltnet-room runs have no place-bearing world (Space Module has not
- * landed): there is exactly one informational room anchor per room in the
- * `rooms` list, no corridors, no presence stream. Agents render with
- * `label_hint: "heuristic"`, which is the same "no presence stream yet"
- * treatment `worldModel.ts` already gives any agent lacking presence events
- * — nothing new to teach the renderer.
+ * A composed run carrying the explicit spatial manifest + telemetry contract
+ * is projected through `runWorldTraceSpatial.ts`. Older/chat-only runs retain
+ * the original informational-anchor branch byte-for-byte in shape.
  */
 export interface RunWorldTraceRoom {
   id: string;
+  kind: "room";
   label: string;
   scope: string;
   members: string[];
   scene: [number, number, number];
   access_hint?: string;
+  place_id?: string;
+  scale?: [number, number];
+}
+
+export interface RunWorldTraceCorridor {
+  direction?: "bidirectional" | "one_way";
+  from_room: string;
+  id: string;
+  path: Array<{ x: number; y: number }>;
+  to_room: string;
+  travel_ticks?: number;
+  width?: number;
 }
 
 export interface RunWorldTraceAgent {
@@ -37,9 +48,10 @@ export interface RunWorldTraceAgent {
 
 export type RunWorldTraceLedgerFactType =
   | "clock.sync"
+  | "presence.arrived"
+  | "presence.left"
   | "world.message"
   | "world.dm"
-  | "wake.recommended"
   | "rule.fired"
   | "marker.seen"
   | "probe"
@@ -59,24 +71,83 @@ export interface RunWorldTraceLedgerFact {
   payload: unknown;
 }
 
+export type RunWorldTracePresence =
+  | { actor: string; room: string; tick: number; type: "presence.arrived" }
+  | { actor: string; from_room: string; path_id: string; tick: number; to_room: string; type: "presence.departed" }
+  | {
+      actor: string;
+      arrived_at: number;
+      from_room: string;
+      path_id: string;
+      started_at: number;
+      tick: number;
+      to_room: string;
+      type: "presence.in_transit";
+    };
+
+/** Exact world-space bodies for this tick; absent for room-presence-only runs. */
+export interface RunWorldTraceSpatialObject {
+  id: string;
+  position: [number, number];
+  /** World units per SECOND — see `runFrames.ts` on why the unit matters. */
+  velocity: [number, number];
+}
+
+export interface RunWorldTraceSpatialSample {
+  /** Object ids that cut rather than interpolate into this sample. */
+  discontinuities?: string[];
+  objects?: RunWorldTraceSpatialObject[];
+  occupancy: Record<string, string[]>;
+  tick: number;
+  transit: Array<{
+    agent: string;
+    from_room: string;
+    path_id: string;
+    ticks_remaining: number;
+    to_room: string;
+  }>;
+}
+
 export interface RunWorldTrace {
   version: "viewer.trace.v1";
   run_id: string;
   run_name: string;
   rooms: RunWorldTraceRoom[];
-  corridors: never[];
+  corridors: RunWorldTraceCorridor[];
   agents: RunWorldTraceAgent[];
-  presence: never[];
+  presence: RunWorldTracePresence[];
   ledger_facts: RunWorldTraceLedgerFact[];
   signals: never[];
+  spatial_samples: RunWorldTraceSpatialSample[];
+  /**
+   * Simulated milliseconds per tick. The client's interpolation clock
+   * multiplies recorded velocities by a duration derived from this, so an
+   * omitted value silently falls back to 20ms and misdraws any run whose
+   * tick is not 20ms.
+   */
+  tick_duration_ms?: number;
+  /** Opaque, integrity-checked payloads keyed only by declared extension id. */
+  viewer_extension_data?: Readonly<Record<string, unknown>>;
+  /** Declared module identity and current evidence status; no executable paths. */
+  viewer_extensions?: readonly Readonly<{
+    id: string;
+    status: "recorded" | "unsealed/local";
+  }>[];
 }
 
 export const NO_PLACE_CAPTION =
   "no place-bearing world in this run — a chat-only room, rendered as an informational anchor";
 
-const ledgerFactType = (viewClass: string): RunWorldTraceLedgerFactType => {
+const ledgerFactType = (kind: string, viewClass: string): RunWorldTraceLedgerFactType => {
+  if (kind === "clock.sync" || kind === "presence.arrived" || kind === "presence.left"
+    || kind === "world.message" || kind === "world.dm"
+    || kind === "rule.fired" || kind === "marker.seen") return kind;
   if (viewClass === "message") return "world.message";
-  if (viewClass === "wake") return "wake.recommended";
+  return "other";
+};
+
+const anchorLedgerFactType = (viewClass: string): RunWorldTraceLedgerFactType => {
+  if (viewClass === "message") return "world.message";
   return "other";
 };
 
@@ -103,13 +174,27 @@ export interface BuildRunWorldTraceParams {
    * side by side (`ROOM_SPACING` apart) rather than stacked at one origin.
    */
   rooms?: BuildRunWorldTraceRoomInput[];
+  /** Defined only when the composed manifest + telemetry pass the strict spatial gate. */
+  spatialWorld?: RunSpatialWorld;
   timeline: RunTimeline;
 }
 
 /** Deterministic x-offset between room anchors when more than one room is rendered — presentation only, never fed back into the schema (rule 4). */
 const ROOM_SPACING = 3.2;
 
-export const buildRunWorldTrace = ({ runId, runName, world, rooms: roomInputs, timeline }: BuildRunWorldTraceParams): RunWorldTrace => {
+const qualifiedRoomId = (networkId: string, roomId: string): string => `room:${networkId}:${roomId}`;
+
+export const buildRunWorldTrace = ({ runId, runName, world, rooms: roomInputs, spatialWorld, timeline }: BuildRunWorldTraceParams): RunWorldTrace => {
+  if (spatialWorld) {
+    return buildSpatialRunWorldTrace({
+      runId,
+      runName,
+      spatialWorld,
+      timeline,
+      ledgerFacts: buildRunWorldLedgerFacts(timeline),
+    });
+  }
+
   const inputs: BuildRunWorldTraceRoomInput[] = roomInputs?.length
     ? roomInputs
     : [{ networkId: world?.networkId ?? "run", roomId: world?.roomId ?? "run-room", members: world?.members }];
@@ -122,10 +207,12 @@ export const buildRunWorldTrace = ({ runId, runName, world, rooms: roomInputs, t
     // states its own membership (an empty interior/outer room legitimately
     // has no members rather than borrowing every other room's agents).
     const members = input.members?.length ? input.members : inputs.length === 1 ? allAgentLabels : [];
+    const id = qualifiedRoomId(input.networkId, input.roomId);
     return {
-      id: input.roomId,
+      id,
+      kind: "room",
       label: input.roomId,
-      scope: `room:${input.networkId}:${input.roomId}`,
+      scope: id,
       members,
       scene: [index * ROOM_SPACING, 0, 0],
       access_hint: NO_PLACE_CAPTION,
@@ -142,7 +229,7 @@ export const buildRunWorldTrace = ({ runId, runName, world, rooms: roomInputs, t
   }));
 
   const ledgerFacts: RunWorldTraceLedgerFact[] = timeline.events.map((event) => ({
-    type: ledgerFactType(event.viewClass),
+    type: anchorLedgerFactType(event.viewClass),
     tick: event.t,
     event_id: event.eventId,
     kind: event.type,
@@ -165,8 +252,41 @@ export const buildRunWorldTrace = ({ runId, runName, world, rooms: roomInputs, t
     presence: [],
     ledger_facts: ledgerFacts,
     signals: [],
+    spatial_samples: [],
   };
 };
+
+const recordPayload = (payload: unknown): Record<string, unknown> =>
+  typeof payload === "object" && payload !== null && !Array.isArray(payload)
+    ? payload as Record<string, unknown>
+    : {};
+
+const payloadString = (payload: Record<string, unknown>, key: string): string | undefined =>
+  typeof payload[key] === "string" ? payload[key] : undefined;
+
+export const buildRunWorldLedgerFacts = (timeline: RunTimeline): RunWorldTraceLedgerFact[] =>
+  timeline.events.map((event) => {
+    const payload = recordPayload(event.payload);
+    const place = payloadString(payload, "place");
+    const actor = payloadString(payload, "actor") ?? payloadString(payload, "agent") ?? event.actor ?? event.authority;
+    const target = payloadString(payload, "target") ?? place ?? event.subjects[0] ?? "";
+    const scope = payloadString(payload, "scope") ?? place ?? event.subjects[0];
+    return {
+      type: ledgerFactType(event.type, event.viewClass),
+      tick: event.t,
+      event_id: event.eventId,
+      kind: event.type,
+      sim_time: typeof payload.sim_time === "number" ? payload.sim_time : event.t,
+      provenance: payload.provenance === "mechanical" || payload.provenance === "agentic" || payload.provenance === "external"
+        ? payload.provenance
+        : provenanceFor(event.authority),
+      actor,
+      target,
+      detail: event.text ?? event.type,
+      scope,
+      payload: event.payload,
+    };
+  });
 
 /**
  * Builds a `viewer.trace.v1` mini-map for every membrane, scoped to exactly

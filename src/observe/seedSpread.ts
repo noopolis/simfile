@@ -13,7 +13,7 @@ import {
 /**
  * Memetics increment (b): re-derives `seed_spread` from sealed artifacts +
  * `manifest.seed_declaration`, never from the live world loop's own
- * `marker.seen` events (`worldTickLoop.ts`'s own doc comment: polling order
+ * `marker.seen` events (polling order
  * ≠ causal order — see `diffSeedSpreadAgainstLiveMarkerSeen` below for the
  * self-check that DOES read `marker.seen`, but only to report a mismatch,
  * never to feed `seed_spread` itself).
@@ -332,9 +332,9 @@ export interface SeedSpreadSelfCheck {
 }
 
 /**
- * Diagnostic only, never authoritative (`worldTickLoop.ts`'s own doc
- * comment: the live loop's `marker.seen` is polling-order, not causal
- * order). Compares the set of Moltnet message ids the live loop flagged
+ * Diagnostic only, never authoritative: the live loop's `marker.seen` is
+ * polling-order, not causal order. Compares the set of Moltnet message ids
+ * the live loop flagged
  * against this module's independently re-derived `uttered` hits (both
  * excluded and counted ones — exclusion is instrument hygiene, not evidence
  * the live loop wouldn't have also flagged the same message) and reports

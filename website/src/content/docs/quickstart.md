@@ -60,17 +60,18 @@ This is the correct path for testing clocks, variables, generators, rules, marke
 
 ## 3. Compose a Spawnfile organization
 
-Agent-backed experiments use the source drivers under `src/sims/`:
+Agent-backed composition is fixture-owned rather than a generic Simfile
+package API. The Tiny Football production runner is the reference path: it
+delegates lifecycle operations to Spawnfile, advances fixed-step world
+mechanics during agent silence or inference, and accepts independently
+originated actions through the world ingress contract.
 
-- `runWorldDrivenOfficeSim` starts a Spawnfile org, advances the same Simfile kernel one live tick at a time, sends world actions through Moltnet, exports artifacts, tears the org down, and writes `manifest.json` last.
-- `runComposedOfficeSim` runs the simpler single-network composed office flow.
-- `runComposedJungianSim` handles multi-network organizations whose agents contain interior teams.
-
-These drivers are exported from `src/sims/index.ts` for repository dev/ops use. They are not exported from the npm package root, have no npm script, and are not a `simfile` CLI command. A driver shells this real lifecycle through Spawnfile:
+There is no `simfile compose` command. A fixture runner composes the lifecycle
+around these authority boundaries:
 
 ```text
 spawnfile up <org> --detach --name <container> --deployment <name> --out <compiled> --json
-→ Simfile world loop over Moltnet
+→ fixture-owned fixed-step Simfile world + independent action ingress
 → spawnfile artifacts export <org> --deployment <name> --compiled <compiled> --out <run-dir> --json
 → spawnfile down <org> --deployment <name> --compiled <compiled> --json
 → manifest.json written last
@@ -80,7 +81,7 @@ The result is a `simfile.run-manifest.v1` directory with `raw/**/causal.jsonl`, 
 
 ## 4. Observe the composed run
 
-Run the observer only after the composed driver has sealed the run directory:
+Run the observer only after the fixture runner has sealed the run directory:
 
 ```bash
 simfile observe runs/<run-id>

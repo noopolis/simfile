@@ -60,7 +60,7 @@ export function AgentSceneLabels({ agentPlacements, onSelect, renderSettings, se
   selectedNodeId: string;
 }) {
   const labels = useMemo(() => agentPlacements
-    .filter((placement) => selectedNodeId === placement.node.id)
+    .filter((placement) => agentPlacements.length <= 8 || selectedNodeId === placement.node.id)
     .map((placement) => ({
       at: agentLabelPosition(placement, renderSettings),
       className: `scene-label agent ${placement.moving ? "moving" : ""} ${selectedNodeId === placement.node.id ? "selected" : ""}`,
@@ -187,7 +187,11 @@ function projectionSignature(projections: Record<string, LabelProjection>): stri
 }
 
 function roomLabelPosition(room: RoomGeometry, renderSettings: RenderSettings): Vec3 {
-  return [room.center[0], room.center[1], room.wallHeight * renderSettings.wallHeightScale + 0.34];
+  return [
+    room.center[0],
+    room.center[1] - room.size[1] * renderSettings.roomScale * 0.42,
+    room.wallHeight * renderSettings.wallHeightScale + 0.34,
+  ];
 }
 
 function signalLabelPosition(node: ViewerNode): Vec3 {

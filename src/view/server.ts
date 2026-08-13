@@ -1,45 +1,46 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
-import { createReadStream, existsSync } from "node:fs";
-import { access, readFile, stat } from "node:fs/promises";
-import { dirname, resolve, relative, extname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { access, readFile } from "node:fs/promises";
+import { basename, dirname, resolve, join } from "node:path";
 
-import { isObserveRunDir } from "./runDetect.js";
-import { buildRunViewModel } from "./runViewModel.js";
-import type { RunViewModel } from "./runViewModelTypes.js";
-import { buildRunTimeline, readWorldRooms } from "./runTimeline.js";
-import type { RunTimeline } from "./runTimelineTypes.js";
-import { buildMembraneInteriorWorlds, buildRunWorldTrace } from "./runWorldTrace.js";
-import type { RunWorldTrace } from "./runWorldTrace.js";
+import { readRunFrames } from "./runFrames.js";
+import { loadRunLiveBundle } from "./runLiveBundle.js";
+import { readLiveWorld, sendRunFrames } from "./runLiveFollow.js";
+import { sendViewerEvents } from "./events.js";
+import { readPlaybackDiagnostics } from "./playbackDiagnostics.js";
+import {
+  viewerExtensionIndex,
+  type ViewerExtensionMount,
+} from "./viewerExtensions.js";
+import {
+  streamViewerExtensionFile,
+  streamViewerFile,
+} from "./viewerAssets.js";
+import { buildViewerState } from "./viewerState.js";
+import type { RunViewerExtensionIdentity } from "./runViewerExtensions.js";
+import { startRunSealFollower, type RunSealFollowerState } from "./runSealFollower.js";
+import {
+  loadRunReplayBundle,
+  runReplayMetaResponse,
+  type RunReplayBundle,
+} from "./runReplayBundle.js";
 
 export interface ViewerServerConfig {
+  extensions?: readonly ViewerExtensionMount[];
   port: number;
   sourcePath: string;
   statePath?: string;
   mode: "live" | "replay";
+  recordedViewerExtensions?: "ignored";
+  extensionIdentities?: readonly RunViewerExtensionIdentity[];
+  reconcileViewerExtensionsAtSeal?: () => Promise<readonly RunViewerExtensionIdentity[]>;
 }
 
 export interface ViewerServerHandle {
+  awaitSeal: () => Promise<RunSealFollowerState>;
   close: () => Promise<void>;
   url: string;
 }
 
-const mimeTypes: Record<string, string> = {
-  ".html": "text/html; charset=utf-8",
-  ".css": "text/css; charset=utf-8",
-  ".js": "application/javascript; charset=utf-8",
-  ".json": "application/json; charset=utf-8",
-  ".svg": "image/svg+xml",
-  ".png": "image/png",
-  ".jpg": "image/jpeg",
-  ".jpeg": "image/jpeg",
-  ".gif": "image/gif",
-};
-
-const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
-const webDistRoot = resolve(packageRoot, "web", "dist");
-const webSourceRoot = resolve(packageRoot, "web");
-const webRoot = existsSync(resolve(webDistRoot, "index.html")) ? webDistRoot : webSourceRoot;
 const replayRequiredArtifacts = ["manifest.yaml", "viewer-trace.json"] as const;
 
 const sendJson = (res: ServerResponse, body: unknown, status = 200): void => {
@@ -47,48 +48,21 @@ const sendJson = (res: ServerResponse, body: unknown, status = 200): void => {
   res.end(JSON.stringify(body));
 };
 
-const safeJoin = (base: string, target: string): string => {
-  const absolute = resolve(base, target);
-  const rel = relative(base, absolute);
-  if (rel.startsWith("..") || rel.includes("../")) {
-    throw new Error("Invalid path");
-  }
-  return absolute;
-};
-
-const streamFile = async (res: ServerResponse, requestedPath: string): Promise<void> => {
-  try {
-    const path = safeJoin(webRoot, requestedPath);
-    await access(path);
-    const stats = await stat(path);
-    if (stats.isDirectory()) {
-      res.writeHead(403, { "Content-Type": "text/plain; charset=utf-8" });
-      res.end("Forbidden");
-      return;
-    }
-
-    const contentType = mimeTypes[extname(path)] || "application/octet-stream";
-    res.writeHead(200, { "Content-Type": contentType });
-    createReadStream(path).pipe(res);
-  } catch {
-    res.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
-    res.end("Not found");
-  }
-};
+const recordedWorldResponse = (replay: RunReplayBundle): Record<string, unknown> => ({
+  now: replay.model.createdAt,
+  run_id: replay.world.run_id,
+  run_name: replay.world.run_name,
+  trace: replay.world,
+});
 
 const sendState = (
   req: IncomingMessage,
   res: ServerResponse,
   config: ViewerServerConfig,
-  effectiveMode: ViewerServerConfig["mode"] | "run-replay",
+  effectiveMode: ViewerServerConfig["mode"] | "run-replay" | "run-live",
 ): void => {
   if (req.url === undefined) return;
-  sendJson(res, {
-    mode: effectiveMode,
-    sourcePath: config.sourcePath,
-    statePath: config.statePath,
-    now: new Date().toISOString(),
-  });
+  sendJson(res, buildViewerState(config, effectiveMode));
 };
 
 const sendSkins = (_req: IncomingMessage, res: ServerResponse): void => {
@@ -159,122 +133,58 @@ const sendWorld = async (_req: IncomingMessage, res: ServerResponse, config: Vie
   });
 };
 
-const maxTraceTick = (trace: Record<string, unknown> | null): number => {
-  const facts = Array.isArray(trace?.ledger_facts) ? trace.ledger_facts : [];
-  const presence = Array.isArray(trace?.presence) ? trace.presence : [];
-  return [...facts, ...presence].reduce((max, entry) => {
-    if (typeof entry === "object" && entry !== null && typeof (entry as { tick?: unknown }).tick === "number") {
-      return Math.max(max, (entry as { tick: number }).tick);
-    }
-    return max;
-  }, 0);
-};
-
 const sendEvents = async (_req: IncomingMessage, res: ServerResponse, config: ViewerServerConfig): Promise<void> => {
   const tracePath = join(resolve(config.statePath ?? config.sourcePath), "viewer-trace.json");
-  const trace = await loadViewerTrace(tracePath);
-  const maxTick = Math.max(1, maxTraceTick(trace));
-  res.writeHead(200, {
-    "Content-Type": "text/event-stream; charset=utf-8",
-    "Cache-Control": "no-cache",
-    Connection: "keep-alive",
-  });
-  res.write(": viewer heartbeat stream\n\n");
-  let tick = 0;
-
-  const pushEvent = (payload: Record<string, unknown>): void => {
-    res.write(`data: ${JSON.stringify(payload)}\n\n`);
-  };
-
-  pushEvent({ type: "connected", at: new Date().toISOString() });
-  const timer = setInterval(() => {
-    tick = tick >= maxTick ? 0 : tick + 1;
-    pushEvent({
-      type: "sim.tick",
-      tick,
-      at: new Date().toISOString(),
-      message: `tick ${tick}`,
-    });
-  }, 2500);
-
-  const cleanup = (): void => {
-    clearInterval(timer);
-  };
-
-  res.on("close", cleanup);
-};
-
-interface RunReplayBundle {
-  model: RunViewModel;
-  timeline: RunTimeline;
-  world: RunWorldTrace;
-}
-
-/**
- * `simfile view <dir>` picks run-replay mode over the world/3D replay mode
- * purely from the run directory's shape: a sealed compose-and-observe run
- * directory (`manifest.json` @ `simfile.run-manifest.v1` +
- * `raw/moltnet/transcript.json`, see `runDetect.ts`) never has `--state`
- * set, so this only applies in replay mode. Built once at server start (the
- * run directory is sealed, not tailed) rather than per-request. Run-replay
- * mode serves the same React shell as world/live mode, fed by
- * `/api/timeline`, the `runWorldTrace` adapter's `/api/world`, and
- * `/api/run-meta` (verdict + provenance, reusing `computeVerdict`/
- * `computeProvenance` from `runViewModelCompute.ts` unchanged; increment 3
- * additionally carries `seedSpread`/`spreadSummary`/`variableSamples` when
- * the run has them). The bespoke
- * run-reader page (`runPage.ts`/`runPageScript.ts`/`runPageStyles.ts`) and
- * its `/api/run-view-model.json` endpoint are retired as of increment 2: the
- * React shell now renders verdict/provenance at parity, so `GET
- * /api/run-view-model.json` 404s (falls through to the static-asset
- * handler, same as any other unknown path).
- */
-const loadRunReplay = async (config: ViewerServerConfig): Promise<RunReplayBundle | null> => {
-  if (config.mode !== "replay" || config.statePath) return null;
-  const runDir = resolve(config.sourcePath);
-  if (!(await isObserveRunDir(runDir))) return null;
-
-  const [model, timeline, worldRooms] = await Promise.all([
-    buildRunViewModel(runDir),
-    buildRunTimeline(runDir),
-    readWorldRooms(runDir),
-  ]);
-
-  // The outer map renders every declared room that is NOT some membrane's own
-  // interior council room — for a recursive-psyche run that is the parent
-  // floor (`commons`) alone; for a flat run (no membranes) it is every room
-  // the manifest declares, unchanged from before this parameterization
-  // (`runWorldTrace.ts`'s `rooms` param, `docs/VIEW_DESIGN.md` rule 5).
-  const interiorRoomRefs = new Set(timeline.membranes?.flatMap((membrane) => membrane.interiorRooms) ?? []);
-  const outerRooms = worldRooms.filter((room) => !interiorRoomRefs.has(room.ref));
-  const world = buildRunWorldTrace({
-    runId: model.runId,
-    runName: model.runId,
-    world: model.world,
-    rooms: outerRooms.map((room) => ({ networkId: room.networkId, roomId: room.roomId, members: room.members })),
-    timeline,
-  });
-
-  // Each membrane's own "descend into a mind" mini map — populated here,
-  // once the full timeline (interior events included) exists; `deriveMembranes`
-  // itself never sees a completed `RunTimeline` (increment's ordering: the
-  // report-derived membrane shape comes first, the interior world trace after).
-  const timelineWithInteriorWorlds: RunTimeline = {
-    ...timeline,
-    membranes: buildMembraneInteriorWorlds(timeline.membranes ?? [], timeline),
-  };
-
-  return { model, timeline: timelineWithInteriorWorlds, world };
+  await sendViewerEvents(res, tracePath, config.mode);
 };
 
 export const createViewerServer = async (config: ViewerServerConfig): Promise<ViewerServerHandle> => {
-  const runReplay = await loadRunReplay(config);
+  const initialRunReplay = await loadRunReplayBundle(config);
+  const runLive = initialRunReplay === null ? await loadRunLiveBundle(config) : null;
+  const extensions = config.extensions ?? [];
+  const extensionById = new Map(extensions.map((extension) =>
+    [extension.id, extension] as const));
+  let latestPlaybackDiagnostics: Record<string, number | boolean> | null = null;
+  let playbackDiagnosticsReceivedAt: string | null = null;
+  const sealFollower = runLive === null ? undefined : startRunSealFollower({
+    initialIdentities: config.extensionIdentities,
+    reconcileAtSeal: config.reconcileViewerExtensionsAtSeal,
+    runDir: resolve(config.sourcePath),
+  });
+  const extensionState = () => sealFollower?.getState() ?? {
+    identities: config.extensionIdentities ?? [],
+    status: "recorded" as const,
+  };
+  let sealedRunReplay: RunReplayBundle | null = null;
+  let sealedRunReplayPromise: Promise<RunReplayBundle> | null = null;
+  const loadSealedRunReplay = (): Promise<RunReplayBundle> => {
+    if (initialRunReplay !== null) return Promise.resolve(initialRunReplay);
+    if (sealedRunReplay !== null) return Promise.resolve(sealedRunReplay);
+    if (sealedRunReplayPromise !== null) return sealedRunReplayPromise;
+    const seal = extensionState();
+    if (seal.status !== "recorded") {
+      return Promise.reject(new Error("run has not sealed"));
+    }
+    sealedRunReplayPromise = loadRunReplayBundle({
+      ...config,
+      extensionIdentities: seal.identities,
+    }).then((bundle) => {
+      if (bundle === null) throw new Error("sealed run replay is unavailable");
+      sealedRunReplay = bundle;
+      return bundle;
+    }).finally(() => {
+      sealedRunReplayPromise = null;
+    });
+    return sealedRunReplayPromise;
+  };
 
   const server: Server = createServer(async (req, res) => {
     const path = req.url?.split("?")[0] ?? "/";
 
     if (path === "/api/state") {
-      sendState(req, res, config, runReplay ? "run-replay" : config.mode);
+      const sealed = runLive !== null && extensionState().status === "recorded";
+      sendState(req, res, config,
+        initialRunReplay || sealed ? "run-replay" : runLive ? "run-live" : config.mode);
       return;
     }
 
@@ -283,40 +193,111 @@ export const createViewerServer = async (config: ViewerServerConfig): Promise<Vi
       return;
     }
 
+    if (path === "/api/viewer-extensions") {
+      sendJson(res, viewerExtensionIndex(extensions));
+      return;
+    }
+
+    const extensionMatch = /^\/_simfile\/viewer-extensions\/([a-z][a-z0-9-]{0,63})\/(module\.js|assets(?:\/(.*))?)$/u.exec(path);
+    if (extensionMatch) {
+      const seal = extensionState();
+      if (seal.status === "failed") {
+        sendJson(res, {
+          error: "viewer extension identity reconciliation failed closed",
+          reason: seal.error,
+        }, 409);
+        return;
+      }
+      const extension = extensionById.get(extensionMatch[1]!);
+      if (extension === undefined) {
+        res.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
+        res.end("Not found");
+        return;
+      }
+      if (extensionMatch[2] === "module.js") {
+        await streamViewerExtensionFile(
+          res,
+          dirname(extension.modulePath),
+          basename(extension.modulePath),
+          extension.moduleSha256,
+        );
+        return;
+      }
+      if (extension.assetRoot !== undefined && extensionMatch[3]) {
+        const expected = extension.assetFiles[extensionMatch[3]];
+        if (expected === undefined) {
+          res.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
+          res.end("Not found");
+          return;
+        }
+        await streamViewerExtensionFile(
+          res,
+          extension.assetRoot,
+          extensionMatch[3],
+          expected,
+        );
+        return;
+      }
+      res.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
+      res.end("Not found");
+      return;
+    }
+
+    if (path === "/api/playback-diagnostics" && req.method === "GET") {
+      sendJson(res, {
+        diagnostics: latestPlaybackDiagnostics,
+        received_at: playbackDiagnosticsReceivedAt,
+      });
+      return;
+    }
+
+    if (path === "/api/playback-diagnostics" && req.method === "POST") {
+      try {
+        latestPlaybackDiagnostics = await readPlaybackDiagnostics(req);
+        playbackDiagnosticsReceivedAt = new Date().toISOString();
+        res.writeHead(204);
+        res.end();
+      } catch {
+        sendJson(res, { error: "invalid playback diagnostics" }, 400);
+      }
+      return;
+    }
+
+    if (path === "/api/run-lifecycle" && runLive !== null) {
+      const seal = extensionState();
+      if (seal.status === "failed") {
+        sendJson(res, { error: seal.error }, 409);
+        return;
+      }
+      if (seal.status === "live") {
+        sendJson(res, { error: "run has not sealed" }, 409);
+        return;
+      }
+      const replay = await loadSealedRunReplay();
+      sendJson(res, {
+        mode: "run-replay",
+        timeline: replay.timeline,
+        world: recordedWorldResponse(replay),
+        runMeta: runReplayMetaResponse(replay),
+      });
+      return;
+    }
+
+    const runReplay = initialRunReplay
+      ?? (runLive !== null && extensionState().status === "recorded"
+        ? await loadSealedRunReplay()
+        : null);
     if (runReplay) {
       if (path === "/api/timeline") {
         sendJson(res, runReplay.timeline);
         return;
       }
       if (path === "/api/world") {
-        sendJson(res, {
-          now: new Date().toISOString(),
-          run_id: runReplay.world.run_id,
-          run_name: runReplay.world.run_name,
-          trace: runReplay.world,
-        });
+        sendJson(res, recordedWorldResponse(runReplay));
         return;
       }
       if (path === "/api/run-meta") {
-        sendJson(res, {
-          runId: runReplay.model.runId,
-          verdict: runReplay.model.verdict,
-          provenance: runReplay.model.provenance,
-          // Honesty-critical disclosure (never omitted): scripted vs
-          // real-engine vs mixed vs unknown, badged unmissably by the
-          // React shell's topbar (`EngineProvenanceBadge`).
-          engineProvenance: runReplay.model.engineProvenance,
-          // Passthrough context for the spread readout's "reach/total"
-          // denominator (never spread math itself — that stays in
-          // `spreadSummary`, computed once by `computeSeedSpread`).
-          participants: runReplay.model.participants,
-          // Increment 3: undefined on a run with no `manifest.seed_declaration`
-          // (JSON.stringify drops an undefined-valued key outright — the
-          // React shell's graceful-absence path, not an empty array/object).
-          seedSpread: runReplay.model.seedSpread,
-          spreadSummary: runReplay.model.spreadSummary,
-          variableSamples: runReplay.model.variableSamples,
-        });
+        sendJson(res, runReplayMetaResponse(runReplay));
         return;
       }
       // No `/api/events`: run-replay's cursor is scrubbed by the client
@@ -324,6 +305,39 @@ export const createViewerServer = async (config: ViewerServerConfig): Promise<Vi
       // No `/api/run-view-model.json`: retired in increment 2 — the React
       // shell's `RunMetaPanels` renders `/api/run-meta` (a subset of the
       // same computed model) instead of the bespoke `runPage.ts` page.
+    } else if (runLive) {
+      if (path === "/api/world") {
+        const seal = extensionState();
+        const dataDir = seal.status === "live"
+          ? runLive.stagingDir
+          : resolve(config.sourcePath);
+        const trace = await readLiveWorld(
+          dataDir,
+          seal.identities,
+          seal.status !== "live",
+        );
+        sendJson(res, { now: new Date().toISOString(), trace: { ...trace, run_id: undefined, run_name: undefined } });
+        return;
+      }
+      if (path === "/api/run-meta") {
+        const frames = await readRunFrames(runLive.stagingDir);
+        sendJson(res, {
+          live: true,
+          notYetComputed: ["runId", "verdict", "provenance", "engineProvenance"],
+          timing: frames?.timing,
+          simSecondsPerTick: frames?.simSecondsPerTick,
+        });
+        return;
+      }
+      if (path === "/api/run-frames" && req.method === "GET") {
+        await sendRunFrames(
+          res,
+          resolve(config.sourcePath),
+          runLive.stagingDir,
+          sealFollower,
+        );
+        return;
+      }
     } else {
       if (path === "/api/world") {
         await sendWorld(req, res, config);
@@ -337,7 +351,7 @@ export const createViewerServer = async (config: ViewerServerConfig): Promise<Vi
     }
 
     const assetPath = path === "/" || path === "/index.html" ? "index.html" : path.replace(/^\//, "");
-    await streamFile(res, assetPath);
+    await streamViewerFile(res, assetPath);
   });
 
   await new Promise<void>((resolve, reject) => {
@@ -351,7 +365,12 @@ export const createViewerServer = async (config: ViewerServerConfig): Promise<Vi
   }
 
   return {
+    awaitSeal: () => sealFollower?.awaitTerminal() ?? Promise.resolve({
+      identities: extensionState().identities,
+      status: "recorded" as const,
+    }),
     close: () => new Promise<void>((resolveClose, rejectClose) => {
+      sealFollower?.close();
       server.close((error) => {
         if (error) {
           rejectClose(error);
@@ -359,6 +378,7 @@ export const createViewerServer = async (config: ViewerServerConfig): Promise<Vi
         }
         resolveClose();
       });
+      server.closeAllConnections();
     }),
     url: `http://127.0.0.1:${address.port}`,
   };
