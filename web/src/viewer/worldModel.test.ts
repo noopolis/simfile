@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import type { ViewerContractTrace } from "./types.js";
-import { buildViewerWorld } from "./worldModel.js";
+import { buildViewerWorld, trimUnpresentableSpatialPrefix } from "./worldModel.js";
 
 const baseTrace = (): ViewerContractTrace => ({
   version: "viewer.trace.v1",
@@ -55,5 +55,35 @@ describe("buildViewerWorld", () => {
     const alice = world.nodes.find((node) => node.id === "alice");
     assert.equal(alice?.value, "office-hall");
     assert.equal(alice?.subtitle, "presence-driven");
+  });
+
+  it("starts after a legacy multi-second reset gap without trimming sparse motion", () => {
+    const objects = (position: number) => [{
+      id: "alice",
+      position: [position, 0] as [number, number],
+      velocity: [0.1, 0] as [number, number],
+    }];
+    const legacy = [
+      { occupancy: {}, objects: objects(0), tick: 0, transit: [] },
+      {
+        discontinuities: ["alice"],
+        occupancy: {},
+        objects: objects(4),
+        tick: 460,
+        transit: [],
+      },
+      { occupancy: {}, objects: objects(4.5), tick: 465, transit: [] },
+    ];
+    assert.deepEqual(
+      trimUnpresentableSpatialPrefix(legacy, 20).map((sample) => sample.tick),
+      [460, 465],
+    );
+    assert.equal(
+      trimUnpresentableSpatialPrefix([
+        legacy[0]!,
+        { ...legacy[1]!, tick: 50 },
+      ], 20).length,
+      2,
+    );
   });
 });

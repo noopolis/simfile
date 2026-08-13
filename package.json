@@ -1,6 +1,6 @@
 {
   "name": "simfile",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Declarative simulation world mechanics for agentic organizations.",
   "license": "MIT",
   "type": "module",
@@ -17,6 +17,66 @@
     "./schema": {
       "types": "./dist/schema/index.d.ts",
       "import": "./dist/schema/index.js"
+    },
+    "./moltnet": {
+      "types": "./dist/moltnet/index.d.ts",
+      "import": "./dist/moltnet/index.js"
+    },
+    "./dynamics": {
+      "types": "./dist/dynamics/index.d.ts",
+      "import": "./dist/dynamics/index.js"
+    },
+    "./observe": {
+      "types": "./dist/observe/index.d.ts",
+      "import": "./dist/observe/index.js"
+    },
+    "./runtime": {
+      "types": "./dist/runtime/index.d.ts",
+      "import": "./dist/runtime/index.js"
+    },
+    "./compose": {
+      "types": "./dist/compose/index.d.ts",
+      "import": "./dist/compose/index.js"
+    },
+    "./spawnfile": {
+      "types": "./dist/spawnfile/index.d.ts",
+      "import": "./dist/spawnfile/index.js"
+    },
+    "./world-artifact": {
+      "types": "./dist/world-artifact/index.d.ts",
+      "import": "./dist/world-artifact/index.js"
+    },
+    "./world-artifact/composer": {
+      "types": "./dist/world-artifact/entrypoint.d.ts",
+      "import": "./dist/world-artifact/entrypoint.js"
+    },
+    "./world": {
+      "types": "./dist/world/index.d.ts",
+      "import": "./dist/world/index.js"
+    },
+    "./world-server": {
+      "types": "./dist/world-server/index.d.ts",
+      "import": "./dist/world-server/index.js"
+    },
+    "./world-surface": {
+      "types": "./dist/world-surface/index.d.ts",
+      "import": "./dist/world-surface/index.js"
+    },
+    "./viewer-extension": {
+      "types": "./dist/viewer-extension/index.d.ts",
+      "import": "./dist/viewer-extension/index.js"
+    },
+    "./viewer-extension/descriptor": {
+      "types": "./dist/viewer-extension/descriptor.d.ts",
+      "import": "./dist/viewer-extension/descriptor.js"
+    },
+    "./test-support/locked-port": {
+      "types": "./dist/test-support/lockedPort.d.ts",
+      "import": "./dist/test-support/lockedPort.js"
+    },
+    "./test-support/world-controller": {
+      "types": "./dist/test-support/worldController.d.ts",
+      "import": "./dist/test-support/worldController.js"
     }
   },
   "files": [
@@ -36,22 +96,29 @@
     "prepack": "npm run build",
     "prepublishOnly": "npm run typecheck && npm test",
     "typecheck": "tsc --project tsconfig.json --noEmit && tsc --project tsconfig.web.json --noEmit",
-    "test": "node --import tsx --test \"src/**/*.test.ts\" \"web/src/**/*.test.ts\"",
+    "pretest": "npm run build",
+    "test": "node scripts/run-tests.mjs",
     "coverage:render": "node --import tsx scripts/render-coverage.ts",
-    "emit-causal-fixture": "tsx src/runtime/emit-causal-fixture.ts"
+    "verify:package-closure": "node tools/verify-package-closure.mjs",
+    "emit-causal-fixture": "tsx src/runtime/emit-causal-fixture.ts",
+    "hooks:install": "node .githooks/install.mjs",
+    "prepare": "node .githooks/install.mjs"
   },
   "engines": {
-    "node": ">=22.0.0"
+    "node": ">=22.19.0"
   },
   "dependencies": {
-    "@noopolis/stele": "^0.0.1",
+    "@modelcontextprotocol/sdk": "1.29.0",
+    "@noopolis/stele": "0.0.2",
+    "@types/node": "24.12.4",
+    "esbuild": "0.28.1",
+    "typescript": "5.9.3",
     "yaml": "^2.8.2",
     "zod": "^4.1.12"
   },
   "devDependencies": {
     "@glyphcss/core": "^0.1.0",
     "@glyphcss/react": "^0.1.0",
-    "@types/node": "^24.12.4",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.4",
@@ -59,7 +126,6 @@
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "tsx": "^4.21.0",
-    "typescript": "^5.9.3",
     "vite": "^6.0.0"
   }
 }

@@ -2,21 +2,32 @@ import type { MarkerCoverageResult } from "../ledger/markers.js";
 import type { ProbeEvaluationResult } from "../report/probes.js";
 import type { Simfile } from "../schema/model.js";
 import type { RuntimeTrace, RuntimeTraceEvent } from "./types.js";
+import {
+  buildViewerAgents,
+  buildViewerCorridors,
+  buildViewerPresence,
+  buildViewerRooms,
+  buildViewerSpatialSamples
+} from "./viewer-spatial.js";
 
 export interface ViewerTraceRoom {
   id: string;
+  kind: "room" | "square";
   label: string;
   members: string[];
+  place_id?: string;
   scene: [number, number, number];
   scale?: [number, number];
   scope: string;
 }
 
 export interface ViewerTraceCorridor {
+  direction?: "bidirectional" | "one_way";
   from_room: string;
   id: string;
   path: Array<{ x: number; y: number }>;
   to_room: string;
+  travel_ticks?: number;
   width?: number;
 }
 
@@ -39,15 +50,94 @@ export interface ViewerTraceFact {
   sim_time: number;
   target: string;
   tick: number;
-  type: "clock.sync" | "world.message" | "world.dm" | "wake.recommended" | "rule.fired" | "marker.seen" | "probe" | "other";
+  type: "clock.sync" | "presence.arrived" | "presence.left" | "world.message" | "world.dm" | "rule.fired" | "marker.seen" | "probe" | "other";
+}
+
+export interface ViewerPresenceArrived {
+  actor: string;
+  room: string;
+  tick: number;
+  type: "presence.arrived";
+}
+
+export interface ViewerPresenceDeparted {
+  actor: string;
+  from_room: string;
+  path_id: string;
+  tick: number;
+  to_room: string;
+  type: "presence.departed";
+}
+
+export interface ViewerPresenceInTransit {
+  actor: string;
+  arrived_at: number;
+  from_room: string;
+  path_id: string;
+  started_at: number;
+  tick: number;
+  to_room: string;
+  type: "presence.in_transit";
+}
+
+export type ViewerPresence = ViewerPresenceArrived | ViewerPresenceDeparted | ViewerPresenceInTransit;
+
+export interface ViewerSpatialTransit {
+  agent: string;
+  from_room: string;
+  path_id: string;
+  ticks_remaining: number;
+  to_room: string;
+}
+
+export interface ViewerSpatialSample {
+  /** Object ids that cut directly to this authoritative sample. */
+  discontinuities?: string[];
+  occupancy: Record<string, string[]>;
+  /** Optional exact positions for place-bearing world objects at this tick. */
+  objects?: ViewerSpatialObjectSample[];
+  tick: number;
+  transit: ViewerSpatialTransit[];
+}
+
+export interface ViewerSpatialObjectSample {
+  id: string;
+  position: [number, number];
+  /** World units per authoritative simulation tick. */
+  velocity?: [number, number];
+}
+
+export interface ViewerInspectionField {
+  label: string;
+  value: string;
+}
+
+/**
+ * A bounded, already-redacted inspector projection. Producers decide which
+ * public facts exist; the viewer never reaches behind this projection.
+ */
+export interface ViewerTraceInspection {
+  fields: ViewerInspectionField[];
+  node_id: string;
+}
+
+/**
+ * Optional public inspector snapshots for replay cursors. Producers emit only
+ * redacted changes, so the viewer never reaches behind this projection.
+ */
+export interface ViewerTraceInspectionSample {
+  inspections: ViewerTraceInspection[];
+  tick: number;
 }
 
 export interface ViewerTraceSignal {
   detail: string;
+  geometry?: "cube" | "sphere";
   id: string;
   kind: "variable" | "marker" | "probe";
   label: string;
   scene: [number, number, number];
+  scale?: number | [number, number, number];
   scope: string;
   value: string;
 }
@@ -56,22 +146,22 @@ export interface ViewerContractTrace {
   agents: ViewerTraceAgent[];
   corridors: ViewerTraceCorridor[];
   ledger_facts: ViewerTraceFact[];
-  presence: [];
+  /** Public ingestion lifecycle; omitted by older and non-live producers. */
+  playback_status?: "live" | "completed" | "failed";
+  /** Optional bounded, already-redacted terminal diagnostic from the producer. */
+  terminal_detail?: string;
+  inspections?: ViewerTraceInspection[];
+  inspection_samples?: ViewerTraceInspectionSample[];
+  presence: ViewerPresence[];
   rooms: ViewerTraceRoom[];
   run_id: string;
   run_name: string;
   signals: ViewerTraceSignal[];
+  spatial_samples: ViewerSpatialSample[];
+  /** Authoritative simulated milliseconds represented by one tick. */
+  tick_duration_ms?: number;
   version: "viewer.trace.v1";
 }
-
-const roomScopePattern = /^room:([^:]+):([^:]+)$/u;
-const agentScopePattern = /^agent:([^:]+)$/u;
-
-const roomIdFromScope = (scope: string): string | undefined => scope.match(roomScopePattern)?.[2];
-const agentIdFromScope = (scope: string): string | undefined => scope.match(agentScopePattern)?.[1];
-
-const roomScopesFromEvent = (event: RuntimeTraceEvent): string[] =>
-  [event.scope, event.target].filter((scope): scope is string => roomScopePattern.test(scope));
 
 const contentDetail = (event: RuntimeTraceEvent): string => {
   const payload = typeof event.payload === "object" && event.payload !== null
@@ -93,80 +183,13 @@ const tickForEvent = (trace: RuntimeTrace, event: RuntimeTraceEvent): number => 
   return matching?.tick ?? 0;
 };
 
-const sceneForIndex = (index: number, count: number): [number, number, number] => {
-  const cols = Math.max(1, Math.ceil(Math.sqrt(count)));
-  const row = Math.floor(index / cols);
-  const col = index % cols;
-  const x = (col - (cols - 1) / 2) * 2.4;
-  const y = (row - Math.max(0, Math.ceil(count / cols) - 1) / 2) * 1.85;
-  return [Number(x.toFixed(2)), Number(y.toFixed(2)), 0];
-};
-
-const buildRooms = (simfile: Simfile, trace: RuntimeTrace): ViewerTraceRoom[] => {
-  const scopes = new Set<string>();
-  for (const variable of Object.values(simfile.variables)) {
-    if (roomScopePattern.test(variable.scope)) scopes.add(variable.scope);
-  }
-  for (const marker of Object.values(simfile.markers)) {
-    for (const scope of marker.scopes) if (roomScopePattern.test(scope)) scopes.add(scope);
-  }
-  for (const event of trace.events) {
-    for (const scope of roomScopesFromEvent(event)) scopes.add(scope);
-  }
-
-  return [...scopes].sort().map((scope, index, all) => {
-    const id = roomIdFromScope(scope) ?? `room-${index}`;
-    return {
-      id,
-      label: id,
-      members: [],
-      scene: sceneForIndex(index, all.length),
-      scale: [1.4, 0.9],
-      scope
-    };
-  });
-};
-
-const buildCorridors = (rooms: readonly ViewerTraceRoom[]): ViewerTraceCorridor[] =>
-  rooms.slice(1).map((room, index) => {
-    const from = rooms[index]!;
-    const [ax, ay] = from.scene;
-    const [bx, by] = room.scene;
-    return {
-      from_room: from.id,
-      id: `${from.id}--${room.id}`,
-      path: [
-        { x: ax, y: ay },
-        { x: bx, y: ay },
-        { x: bx, y: by }
-      ],
-      to_room: room.id,
-      width: 0.08
-    };
-  });
-
-const buildAgents = (trace: RuntimeTrace): ViewerTraceAgent[] => {
-  const agents = new Set<string>();
-  for (const event of trace.events) {
-    const target = agentIdFromScope(event.target);
-    if (target) agents.add(target);
-    if (event.provenance === "agentic" && event.actor !== "@world") agents.add(event.actor);
-  }
-  return [...agents].sort().map((id) => ({
-    detail: "Heuristic placement: trace has this agent but no presence stream yet.",
-    id,
-    label: id,
-    label_hint: "heuristic",
-    scope: `agent:${id}`
-  }));
-};
-
 const factType = (kind: string): ViewerTraceFact["type"] => {
   if (
     kind === "clock.sync"
+    || kind === "presence.arrived"
+    || kind === "presence.left"
     || kind === "world.message"
     || kind === "world.dm"
-    || kind === "wake.recommended"
     || kind === "rule.fired"
     || kind === "marker.seen"
   ) {
@@ -238,16 +261,18 @@ export const buildViewerTrace = (
   markers: readonly MarkerCoverageResult[],
   probes: readonly ProbeEvaluationResult[]
 ): ViewerContractTrace => {
-  const rooms = buildRooms(simfile, trace);
+  const rooms = buildViewerRooms(simfile, trace);
+  const corridors = buildViewerCorridors(simfile, rooms);
   return {
-    agents: buildAgents(trace),
-    corridors: buildCorridors(rooms),
+    agents: buildViewerAgents(simfile, trace),
+    corridors,
     ledger_facts: buildFacts(trace),
-    presence: [],
+    presence: buildViewerPresence(simfile, trace),
     rooms,
     run_id: trace.runId,
     run_name: simfile.name,
     signals: buildSignals(simfile, trace, markers, probes, rooms),
+    spatial_samples: buildViewerSpatialSamples(simfile, trace),
     version: "viewer.trace.v1"
   };
 };

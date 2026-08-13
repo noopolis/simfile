@@ -13,6 +13,45 @@ a bespoke page.
 
 ## Structure
 
+- `runFollowLocator.ts` — read-only detection of an in-progress dynamics run;
+  a sealed `manifest.json` wins over leftover staging, and ambiguous staging
+  fails closed.
+- `runLiveBundle.ts` — selects the one open run-follow staging directory while
+  leaving sealed replay assembly to `runReplayBundle.ts`.
+- `runLiveFollow.ts` — follows the staging `raw/frames.jsonl` with `fs.watch`
+  plus a bounded 200ms fallback, serves the live world projection and frame SSE,
+  and treats the final staging rename as a sealed end-of-stream. It only reads;
+  backpressured clients receive dropped-frame counts rather than an unbounded
+  queue. `/api/run-meta` exposes timing evidence while explicitly withholding
+  run identity, verdict, provenance, and engine provenance until seal.
+- `runSealFollower.ts` — server-owned manifest polling and reconciliation for
+  a live run. It promotes extension identity from `live` to `recorded` only
+  after the final manifest is independently discovered and reconciled; this
+  lifecycle does not depend on a browser or SSE subscriber. Its bounded
+  terminal wait lets an owning observer acknowledge `recorded|failed` before
+  closing the one live-to-sealed URL.
+- `runViewerExtensionData.ts` — loads only manifest-declared, hash-verified
+  JSON payloads for viewer extensions. Payloads remain opaque to Simfile; all
+  scenario vocabulary and interpretation belongs to the declaring fixture. A
+  live staging declaration is likewise hash-bound and opaque.
+- `runViewerProjection.ts` — loads an optional sealed `viewer.trace.v1` base
+  only from `manifest.world.viewer_projection`. The path must be listed once
+  in `manifest.artifacts`, remain inside the run directory, match its recorded
+  hash, and correlate to the manifest run id before `runReplayBundle.ts`
+  overlays any recorded frame track.
+- `runViewerExtensions.ts` — resolves the recorded extension set and the
+  caller-supplied live startup set. Executable module and asset paths come only
+  from the caller-selected trusted project declaration and descriptor;
+  recorded provenance/declarations are never loading authority. A recorded
+  declaration corroborates the trusted token, id, module digest, and asset-tree
+  digest exactly. A live extension is identified as `unsealed/local` until
+  seal, then promoted to `recorded` only after reconciliation; any mismatch or
+  post-start content mutation fails the extension route closed with HTTP 409.
+- `runReplayBundle.ts` — assembles run-replay timeline, world trace, and meta
+  data away from the HTTP server so loading and serving stay separate.
+- `/api/run-lifecycle` serves one post-seal bundle containing the timeline,
+  world, and run metadata together, so a live client cannot display recorded
+  identity beside stale pending run id, verdict, or provenance.
 - `index.ts` parses `simfile view` CLI arguments and launches the server.
 - `server.ts` hosts static files from `../web` and provides read-only JSON/SSE
   endpoints for the world viewer; at startup it calls `loadRunReplay` to
@@ -32,7 +71,15 @@ a bespoke page.
 - `engineProvenance.ts` — the honesty-critical disclosure logic: whether a
   run's dialogue came from a deterministic scripted screenplay or a real
   engine (the confusion this closes: a canned demo mistaken for live
-  agents). `classifyEngineName` maps one engine string to `"scripted"`
+  agents). When `manifest.world.decision_source` exists, its
+  `provenance`/`model_decisions`/`live_acceptance` fields outrank engine-name
+  hints when they positively classify the record. `scripted` requires an
+  explicit `false` for `model_decisions` or `live_acceptance`, or a string
+  `provenance` other than `live`; `true` for both model decisions and live
+  acceptance yields `real-engine`. Missing or malformed fields have no
+  classification. An inconclusive present decision source falls through to
+  the unchanged engine-name path rather than suppressing it.
+  `classifyEngineName` maps one engine string to `"scripted"`
   (`fake-*`/exactly `"scripted"`), `"real-engine"` (a recognized model name
   — `grok`/`codex`/`agy`/`claude`, matched as a whole segment so
   `claude-sonnet-4.5` still matches but `agyeman` does not), or `"unknown"`
@@ -40,13 +87,35 @@ a bespoke page.
   `computeEngineProvenance` folds a list of `{agent?, engine}` entries into
   one `EngineProvenance` (`mode`/`engines`/`label`): all-agree -> that
   classification; disagree -> `"mixed"` (itself a disclosure, listing each
-  agent's own engine in the label). `runViewModel.ts` feeds it either
-  `spawnfile/up-receipt.json`'s per-agent `engines[]` (`readUpReceiptEngines`
-  in `runRawArtifacts.ts`, when a composed run-dir has one) or the
-  manifest's single `engine` field collapsed to one entry.
+  agent's own engine in the label). `runViewModel.ts` first narrows the
+  already-loaded `manifest.world.decision_source` and passes it as the
+  authoritative override; it never reads another artifact for this fact.
+  Engine names are the fallback path: either `spawnfile/up-receipt.json`'s
+  per-agent `engines[]` (`readUpReceiptEngines` in `runRawArtifacts.ts`, when
+  a composed run-dir has one) or the manifest's single `engine` field
+  collapsed to one entry. The `decision_source.kind` value is an ingress seam,
+  not evidence that a model decided, so `kind` alone must never be the
+  classification switch or a reason to badge `scripted`/`real-engine`.
 - `runDetect.ts` — `isObserveRunDir`: the shape check that selects
   run-replay mode (never touched when `--state` is passed — that always
-  means the world live mode).
+  means the world live mode). Keys ONLY on `manifest.json` @
+  `simfile.run-manifest.v1`. It used to also demand a moltnet transcript,
+  which sent every transcript-free `simfile run` record down the world/3D
+  replay path and straight into "Replay artifact check failed" (B192). Do
+  not reintroduce a transport-shaped precondition.
+- `runFrames.ts` — `readRunFrames`/`runFrameAgents`/`runFrameRoom`/
+  `applyRunFrameTrack`: reads the run record's motion track
+  (`raw/frames.jsonl`, written once by `src/run/dynamics-run-frames.ts`) and
+  folds it into the existing `viewer.trace.v1` fields the React client already
+  animates — `spatial_samples[].objects[]`, plus the `agents[]` entries
+  without which nothing renders at all, a floor sized from the recorded
+  bounds, and `tick_duration_ms`. No new viewer contract and no second copy of
+  any event stream. An open staging reader stops at a torn final line, while a
+  sealed reader requires one manifest entry, in-run realpath, matching hash,
+  and complete parse before rendering.
+  Its optional `timing` rows preserve measured wall elapsed beside simulated
+  seconds advanced, and `simSecondsPerTick` preserves the declared rate; these
+  are evidence inputs, not a keep-up verdict.
 - `runRawArtifacts.ts` — shared, I/O-only reads of the raw run-directory
   artifacts `runViewModel.ts` and `runTimeline.ts` need: `readTranscript`
   (normalizes both `raw/moltnet/transcript.json` shapes — the golden
@@ -80,7 +149,7 @@ a bespoke page.
   a dedicated `clock:global` ref, `marker.seen` → `viewClass: "marker"`
   attributed to the room + the real agent joined by `source_event_id`,
   `world.message`/`world.dm` → `viewClass: "message"` with `text` from the
-  event's own `content`, `wake.recommended` → `viewClass: "wake"`, shared
+  event's own `content`; wake view records are Daimon control-wake records
   with daimon's `control.wake.accepted`). `buildMoltnetRecord` also sets
   `worldEventId` on a message that echoes a world action (the
   `simfile_event_id` breadcrumb in the transcript message's `parts[].data`)
@@ -155,7 +224,14 @@ a bespoke page.
   `runObserve` (`../observe/`) for the reconciled report and causal streams,
   `runRawArtifacts.ts` for the transcript, mneme event logs, and any
   up-receipt engines, and assembles the `RunViewModel` — including
-  `engineProvenance` via `engineProvenance.ts`'s `computeEngineProvenance`.
+  `engineProvenance` via `engineProvenance.ts`'s `computeEngineProvenance`,
+  with the manifest's narrowed `decision_source` taking precedence over engine
+  names. A present but inconclusive decision source deliberately falls through
+  to that path; `kind` alone is deliberately not trusted. Its optional `pace`
+  is passed through from `world_evidence.pace` when the record states it — no
+  zero-valued timing or `kept_up` verdict is fabricated when absent. The
+  viewer's `runFrames.timing` rows are likewise exposed as optional timing
+  evidence alongside that pace field.
 
 `runPage.ts` / `runPageStyles.ts` / `runPageScript.ts` (the bespoke
 run-reader HTML page) and the `/api/run-view-model.json` endpoint they fed
@@ -176,5 +252,8 @@ to keep the standalone page in the tree.
   record id (`docs/VIEW_DESIGN.md` rule 3) — no derived/invented text or causes,
   only real event ids, message ids, and memory ids already present in the
   raw data.
+- Generic viewer plumbing may pass opaque extension data, extension identity,
+  and the existing replay cursor. It must not parse a fixture's domain model,
+  invent a cursor-to-domain-time join, or infer actions from displayed text.
 - Named exports only.
 - Files stay concise so they stay easy to iterate on; split before 400 lines.

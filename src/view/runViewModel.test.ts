@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import { cp, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
 import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
@@ -116,6 +118,11 @@ describe("buildRunViewModel — office-sim golden fixture", () => {
     assert.equal(model.variableSamples, undefined);
   });
 
+  it("omits pace when the record has no world evidence", async () => {
+    const model = await buildRunViewModel(GOLDEN_FIXTURE_DIR);
+    assert.equal(model.pace, undefined);
+  });
+
   it("discloses the fake-grok-office-sim manifest engine as scripted, never real (honesty gap fix)", async () => {
     const model = await buildRunViewModel(GOLDEN_FIXTURE_DIR);
     assert.equal(model.engine, "fake-grok-office-sim");
@@ -123,6 +130,41 @@ describe("buildRunViewModel — office-sim golden fixture", () => {
     assert.match(model.engineProvenance.label, /SCRIPTED/);
     assert.match(model.engineProvenance.label, /authored/i);
     assert.match(model.engineProvenance.label, /not emergent/i);
+  });
+
+  it("reads scripted decision_source through buildRunViewModel at the integration seam", async () => {
+    const tempRoot = await mkdtemp(path.join(os.tmpdir(), "simfile-run-view-model-"));
+    const runDir = path.join(tempRoot, "office-sim-golden");
+    try {
+      await cp(GOLDEN_FIXTURE_DIR, runDir, { recursive: true });
+      const manifestPath = path.join(runDir, "manifest.json");
+      const manifest = JSON.parse(await readFile(manifestPath, "utf8")) as {
+        engine?: string;
+        world?: Record<string, unknown>;
+        artifacts?: Array<{ path: string }>;
+      };
+      assert.ok(manifest.artifacts?.every((artifact) => artifact.path !== "manifest.json"));
+      manifest.engine = "simfile.dynamics.local";
+      manifest.world = {
+        ...manifest.world,
+        decision_source: {
+          kind: "agent",
+          live_acceptance: false,
+          model_decisions: false,
+          provenance: "scripted",
+        },
+      };
+      await writeFile(manifestPath, JSON.stringify(manifest, null, 2));
+      const model = await buildRunViewModel(runDir);
+      assert.equal(model.engineProvenance.mode, "scripted");
+    } finally {
+      await rm(tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("preserves the untouched fixture's existing engine provenance mode", async () => {
+    const model = await buildRunViewModel(GOLDEN_FIXTURE_DIR);
+    assert.equal(model.engineProvenance.mode, "scripted");
   });
 });
 

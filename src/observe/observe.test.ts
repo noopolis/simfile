@@ -153,7 +153,7 @@ describe("runObserve — ledger-writes synthetic fixture (Slice B Piece 4b)", ()
 
 /**
  * Memetics increment (b)'s own golden fixture: a REAL captured
- * `runWorldDrivenOfficeSim` run (real `spawnfile up`/Docker, scripted
+ * fixture-owned composed run (real `spawnfile up`/Docker, scripted
  * engine, no LLM auth) against `fixtures/sims/office-secret-v0/`. Eleanor's
  * seeded `MEMORY.md` line ("Rosa Delgado is the referral client...") makes
  * it into her own room utterance, which Sam echoes back — the transcript's

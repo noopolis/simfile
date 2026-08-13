@@ -262,6 +262,7 @@ describe("timelineStore", () => {
 
   it("toggles playback and enforces a speed floor", () => {
     assert.equal(timelineStore.getSnapshot().playing, false);
+    assert.equal(timelineStore.getSnapshot().speed, 1);
     play();
     assert.equal(timelineStore.getSnapshot().playing, true);
     pause();

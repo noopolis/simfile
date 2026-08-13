@@ -7,11 +7,34 @@ import {
   setCursor,
   setSpeed,
   stepBy,
+  timelineStore,
   togglePlay,
   useTimelineStore,
   type TimelineEvent,
 } from "../store/timeline.js";
 import { currentClockReadout, derivePhaseBands, spreadDotEvents } from "./clockModel.js";
+import {
+  cursorAtElapsed,
+  derivePlaybackCadence,
+  playbackCadenceReadout,
+  playbackTickAtCursor,
+  playbackTickAtElapsed,
+} from "./playbackCadence.js";
+
+export interface ScrubBarProps {
+  readonly firstTick?: number;
+  readonly lastTick?: number;
+  readonly onPresentationTickChange?: (tick: number | undefined) => void;
+  readonly presentationTickAtCursor?: (cursor: number) => number | undefined;
+  readonly seedSpreadEventIds?: ReadonlySet<string>;
+  readonly tickDurationMs?: number;
+}
+
+interface PlaybackAnchor {
+  readonly cursor: number;
+  readonly presentationTick?: number;
+  readonly timestampMs: number;
+}
 
 const prefersReducedMotion = (): boolean =>
   typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true;
@@ -24,7 +47,7 @@ const formatClock = (recordedAt: string): string => {
 
 const readoutFor = (event: TimelineEvent | undefined, cursor: number, max: number): string => {
   if (!event) return `step ${cursor}/${max}`;
-  return `step ${cursor}/${max} · ${formatClock(event.recordedAt)} · ${event.authority}:${event.streamId}:${event.viewClass}`;
+  return `step ${cursor}/${max} · ${formatClock(event.recordedAt)}`;
 };
 
 /** A stable-ish color per phase name, so adjacent bands read as distinct without hardcoding any specific phase's name (`morning`/`workday`/... are fixture-owned, not chrome-owned). */
@@ -45,21 +68,38 @@ const phaseBandTone = (phase: string, index: number): number => {
  * Increment 3: when the run has a world `clock.sync` stream, a row of
  * phase bands renders under the track (`derivePhaseBands`) and the readout
  * gains a `tick N · phase` prefix (`currentClockReadout`) — both derive
- * from real `clock.sync` payloads, so a run with no world stream (e.g.
- * `office-sim-golden`) simply renders neither. `seedSpreadEventIds`, when
+ * from real `clock.sync` payloads, so a run with no world stream simply
+ * renders neither. `seedSpreadEventIds`, when
  * passed, marks the real `seed_spread` events on the track as distinct
  * "spread dots" (`spreadDotEvents`) — omitted (no dots) for a run with no
  * seed declaration.
  */
-export function ScrubBar({ seedSpreadEventIds }: { seedSpreadEventIds?: ReadonlySet<string> }) {
+export function ScrubBar({
+  firstTick,
+  lastTick,
+  onPresentationTickChange,
+  presentationTickAtCursor,
+  seedSpreadEventIds,
+  tickDurationMs,
+}: ScrubBarProps) {
   const { timeline, cursor, playing, speed } = useTimelineStore();
   const reducedMotion = useMemo(prefersReducedMotion, []);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  // Read the latest cursor inside the interval without re-creating it every tick.
-  const cursorRef = useRef(cursor);
-  cursorRef.current = cursor;
+  const animationFrameRef = useRef<number | null>(null);
+  const anchorRef = useRef<PlaybackAnchor | null>(null);
+  const lastWrittenCursorRef = useRef<number | null>(null);
 
   const max = maxCursor(timeline);
+  const cadence = useMemo(
+    () => derivePlaybackCadence({
+      eventCount: timeline?.events.length ?? 0,
+      events: timeline?.events,
+      firstTick,
+      lastTick,
+      tickDurationMs,
+      speed,
+    }),
+    [timeline, firstTick, lastTick, tickDurationMs, speed],
+  );
   const currentEvent = timeline?.events[cursor];
   const phaseBands = useMemo(() => (timeline ? derivePhaseBands(timeline.events) : []), [timeline]);
   const clockReadout = useMemo(() => (timeline ? currentClockReadout(timeline.events, cursor) : undefined), [timeline, cursor]);
@@ -69,26 +109,77 @@ export function ScrubBar({ seedSpreadEventIds }: { seedSpreadEventIds?: Readonly
   );
 
   useEffect(() => {
-    if (timerRef.current !== null) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
+    if (animationFrameRef.current !== null) cancelAnimationFrame(animationFrameRef.current);
+    animationFrameRef.current = null;
+    anchorRef.current = null;
+    lastWrittenCursorRef.current = null;
     if (!playing || reducedMotion || !timeline) return;
 
-    timerRef.current = setInterval(() => {
-      const nextCursor = cursorRef.current + 1;
-      if (nextCursor > max) {
+    const advance = (timestampMs: number): void => {
+      animationFrameRef.current = null;
+      const storeCursor = timelineStore.getSnapshot().cursor;
+      let anchor = anchorRef.current;
+
+      if (anchor === null || (lastWrittenCursorRef.current !== null && storeCursor !== lastWrittenCursorRef.current)) {
+        anchor = {
+          cursor: storeCursor,
+          presentationTick: presentationTickAtCursor?.(storeCursor),
+          timestampMs,
+        };
+        anchorRef.current = anchor;
+      }
+
+      const nextCursor = cursorAtElapsed(anchor.cursor, timestampMs - anchor.timestampMs, cadence, max);
+      onPresentationTickChange?.(
+        playbackTickAtElapsed(
+          anchor.cursor,
+          timestampMs - anchor.timestampMs,
+          cadence,
+          anchor.presentationTick,
+          lastTick,
+        ),
+      );
+      if (nextCursor !== lastWrittenCursorRef.current) {
+        setCursor(nextCursor);
+        lastWrittenCursorRef.current = nextCursor;
+      }
+
+      if (nextCursor >= max) {
+        anchorRef.current = null;
+        lastWrittenCursorRef.current = null;
         togglePlay();
         return;
       }
-      setCursor(nextCursor);
-    }, Math.max(50, 1000 / speed));
+
+      animationFrameRef.current = requestAnimationFrame(advance);
+    };
+
+    animationFrameRef.current = requestAnimationFrame(advance);
 
     return () => {
-      if (timerRef.current !== null) clearInterval(timerRef.current);
+      if (animationFrameRef.current !== null) cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+      anchorRef.current = null;
+      lastWrittenCursorRef.current = null;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [playing, speed, reducedMotion, timeline, max]);
+  }, [
+    playing,
+    reducedMotion,
+    timeline,
+    max,
+    cadence,
+    lastTick,
+    onPresentationTickChange,
+    presentationTickAtCursor,
+  ]);
+
+  useEffect(() => {
+    if (!playing) {
+      onPresentationTickChange?.(
+        presentationTickAtCursor?.(cursor) ?? playbackTickAtCursor(cadence, cursor),
+      );
+    }
+  }, [playing, cursor, cadence, onPresentationTickChange, presentationTickAtCursor]);
 
   if (!timeline) {
     return (
@@ -99,6 +190,7 @@ export function ScrubBar({ seedSpreadEventIds }: { seedSpreadEventIds?: Readonly
   }
 
   const densityTicks = timeline.events.filter((_, index) => index % Math.max(1, Math.floor(max / 120) || 1) === 0);
+  const cadenceReadout = playbackCadenceReadout(cadence);
 
   return (
     <footer className="scrub-bar">
@@ -179,6 +271,7 @@ export function ScrubBar({ seedSpreadEventIds }: { seedSpreadEventIds?: Readonly
       <div className="scrub-readout">
         {clockReadout ? <span className="scrub-tick">tick {clockReadout.tick} · {clockReadout.phase} · </span> : null}
         {readoutFor(currentEvent, cursor, max)}
+        {" · "}<span className="scrub-cadence">{cadenceReadout}</span>
       </div>
     </footer>
   );

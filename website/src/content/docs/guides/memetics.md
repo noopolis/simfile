@@ -11,7 +11,7 @@ The supported real-engine result is yes. In five independent Grok runs, the fact
 
 ## The seed
 
-The seeded fixture is `fixtures/sims/office-secret-v0-grok/`. Eleanor's `MEMORY.md` contains exactly:
+The seeded fixture is `fixtures/sims/office-secret-v0/`. Eleanor's `MEMORY.md` contains exactly:
 
 ```text
 Rosa Delgado is the referral client behind the office pilot rollout.
@@ -21,7 +21,7 @@ The Simfile declares a one-shot kickoff and a propagation marker:
 
 ```yaml
 clock:
-  seed: office-secret-v0-grok-seed
+  seed: office-secret-v0-seed
   tick: 1m
   phases:
     workday: "00:00"
@@ -48,7 +48,7 @@ markers:
 
 The kickoff names neither Rosa nor any replacement token. It gives Eleanor a reason to retrieve the relevant private fact and speak with Sam. That separation is the experiment: the world supplies a situation, not the answer.
 
-The composed driver also rejects a world rule whose message content contains a declared seed token. This prevents the instrument from becoming the first speaker of the thing it claims to measure.
+The fixture's world-seed lint rejects a world rule whose message content contains a declared seed token. This prevents the instrument from becoming the first speaker of the thing it claims to measure.
 
 ## Experimental arms
 
@@ -68,25 +68,28 @@ The replacement arm is positive evidence that the harness is responsive to the m
 
 ## Compose and seal a run
 
-There is no packaged `simfile experiment`, `simfile compose`, or public CLI wrapper for this orchestration. In the repository, `runWorldDrivenOfficeSim` from `src/sims/index.ts` is the actual dev/ops path. It:
+There is no packaged `simfile experiment`, `simfile compose`, or generic
+source driver for this orchestration. Reproduction belongs in a fixture-owned
+production runner that:
 
-1. runs `spawnfile up` and waits for the declared Moltnet room and bridges;
+1. delegates organization lifecycle to Spawnfile;
 2. reads the seed agent's memory document and records a `seed_declaration`;
-3. advances the Simfile world one tick at a time;
-4. delivers the kickoff through Moltnet and ingests new room messages once per tick;
-5. exports Spawnfile artifacts before teardown;
-6. writes transcripts and world artifacts; and
-7. writes `manifest.json` last, sealing the run.
+3. advances Simfile world mechanics at a fixed cadence;
+4. accepts independently originated actions without waiting for agent replies;
+5. exports authority artifacts before teardown; and
+6. writes `manifest.json` last, sealing the run.
 
-For the seeded arm, invoke that source driver with:
+The captured seeded arm uses these fixture inputs:
 
 ```text
-orgPath: fixtures/sims/office-secret-v0-grok/org
-worldPath: fixtures/sims/office-secret-v0-grok/world/Simfile
+orgPath: fixtures/sims/office-secret-v0/org
+worldPath: fixtures/sims/office-secret-v0/world/Simfile
 tokenSet: ["Rosa Delgado"]
 ```
 
-Use a fresh deployment and output directory for every independent repetition. The function requires environment-specific paths such as the built Spawnfile CLI, so the repository intentionally does not pretend this is a portable one-line command.
+Use a fresh deployment and output directory for every independent repetition.
+The historical captured artifacts remain valid observer examples, but the
+retired generic orchestration path is not a runnable reproduction command.
 
 ## Observe each sealed run
 

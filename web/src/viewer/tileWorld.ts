@@ -9,6 +9,7 @@ export type TileTone =
   | "corridor"
   | "room-anchor"
   | "agent"
+  | "transit"
   | "variable"
   | "marker"
   | "probe";
@@ -78,6 +79,15 @@ const toneForNode = (kind: ViewerNode["kind"]): TileTone => {
   if (kind === "marker") return "marker";
   if (kind === "probe") return "probe";
   return "room-anchor";
+};
+
+const agentGlyph = (node: ViewerNode): string => {
+  if (!node.in_transit) return "@";
+  const heading = node.transit_heading ?? 0;
+  if (Math.abs(Math.cos(heading)) >= Math.abs(Math.sin(heading))) {
+    return Math.cos(heading) >= 0 ? ">" : "<";
+  }
+  return Math.sin(heading) >= 0 ? "^" : "v";
 };
 
 const terrainGlyph = (col: number, row: number, terrainMix: number): string => {
@@ -218,10 +228,10 @@ export const buildTileWorld = ({
     const [col, row] = pointToTile(node.scene[0], node.scene[1]);
     const cell: TileCell = {
       col,
-      glyph: node.kind === "agent" ? "@" : node.kind === "team" ? "◈" : signalGlyph(node.kind),
+      glyph: node.kind === "agent" ? agentGlyph(node) : node.kind === "team" ? "◈" : signalGlyph(node.kind),
       nodeId: node.id,
       row,
-      tone: toneForNode(node.kind),
+      tone: node.kind === "agent" && node.in_transit ? "transit" : toneForNode(node.kind),
     };
     anchors.push({ col, nodeId: node.id, row });
     if (node.kind === "agent" || node.kind === "team") {

@@ -6,10 +6,10 @@ import type { ConditionEventMatch } from "./condition.js";
 import { clampAndRound, type RangeSpec } from "./numeric.js";
 import { runRuleActions } from "./rule-actions.js";
 import { variableTargetFromActions, type CompiledTraceRuntime, type GeneratorRuntime, type RuleRuntime } from "./trace-compile.js";
-import type { QueuedWorldAct, RuntimeTraceEvent, RuntimeVariableSample, WorldActResult } from "./types.js";
+import type { QueuedWorldAct, RuntimeTraceEvent, RuntimeVariableSample, TransitSample, TransitState, WorldActResult } from "./types.js";
 import { applyWorldActsAtTick } from "./world-act.js";
 
-export type SimfileEventKind = "clock.sync" | "rule.fired" | "world.message" | "world.dm" | "world.act" | "wake.recommended" | "marker.seen";
+export type SimfileEventKind = "clock.sync" | "presence.arrived" | "presence.left" | "rule.fired" | "world.message" | "world.dm" | "world.act" | "marker.seen";
 
 export const WORLD_ACTOR = "@world";
 
@@ -113,7 +113,10 @@ const runRule = (
   nextSeq: number,
   emitTickEvent: (event: RuntimeTraceEvent) => void,
   nextVariables: Record<string, number>,
-  clockSyncEventId: string
+  clockSyncEventId: string,
+  presence: Record<string, string>,
+  transit: Map<string, TransitState>,
+  travelTicksByRoute: ReadonlyMap<string, number>
 ): number => {
   const matches = rule.when.evaluator.evaluate(rule.when.node, {
     tick,
@@ -158,6 +161,11 @@ const runRule = (
     nextVariables,
     [fired.event_id],
     rule.variableIds,
+    {
+      presence,
+      transit,
+      travelTicksByRoute
+    },
     emitTickEvent
   );
 };
@@ -168,6 +176,12 @@ export interface StepSimfileTickContext {
   precision: number;
   clock: ClockRuntime;
   runtime: CompiledTraceRuntime;
+  /** Mutated by spatial mechanics: the current place id for each placed agent.
+   * Defaults to the compiled initial presence for Phase 1 callers. */
+  presence?: Record<string, string>;
+  /** Mutated by spatial mechanics. A transiting agent is absent from
+   * `presence` and remains frozen until its explicit arrival tick. */
+  transit?: Map<string, TransitState>;
   /** Mutated in place: the run's variable state, before this tick on entry
    * and after this tick on return. */
   state: Record<string, number>;
@@ -183,6 +197,31 @@ export interface StepSimfileTickResult {
   nextSeq: number;
 }
 
+const occupancyFor = (
+  placeIds: readonly string[],
+  presence: Readonly<Record<string, string>>
+): Record<string, string[]> => {
+  const occupancy: Record<string, string[]> = Object.fromEntries(
+    placeIds.map((placeId) => [placeId, []])
+  );
+  for (const [agentId, placeId] of Object.entries(presence).sort(([left], [right]) => left < right ? -1 : left > right ? 1 : 0)) {
+    (occupancy[placeId] ??= []).push(agentId);
+  }
+  return occupancy;
+};
+
+const transitFor = (
+  tick: number,
+  transit: ReadonlyMap<string, TransitState>
+): TransitSample[] => [...transit.values()]
+  .sort((left, right) => left.agent < right.agent ? -1 : left.agent > right.agent ? 1 : 0)
+  .map((state) => ({
+    agent: state.agent,
+    from: state.from,
+    to: state.to,
+    ticksRemaining: state.arrivalTick - tick
+  }));
+
 /**
  * Advances the world by exactly one tick: resolve the clock, apply any
  * queued world.acts, run generators, recompute derived variables, evaluate
@@ -194,6 +233,8 @@ export interface StepSimfileTickResult {
  */
 export const stepSimfileTick = (tick: number, ctx: StepSimfileTickContext): StepSimfileTickResult => {
   const { simTime, phase } = resolveClockState(ctx.clock, tick);
+  const presence = ctx.presence ?? ctx.runtime.initialPresence;
+  const transit = ctx.transit ?? ctx.runtime.transit;
   const tickEvents: RuntimeTraceEvent[] = [];
   const candidates: ConditionEventMatch[] = [];
   const emitTickEvent = (event: RuntimeTraceEvent): void => {
@@ -209,6 +250,30 @@ export const stepSimfileTick = (tick: number, ctx: StepSimfileTickContext): Step
   });
   emitTickEvent(clockSync);
   seq += 1;
+
+  for (const state of [...transit.values()]
+    .filter((candidate) => candidate.arrivalTick === tick)
+    .sort((left, right) => left.agent < right.agent ? -1 : left.agent > right.agent ? 1 : 0)) {
+    transit.delete(state.agent);
+    presence[state.agent] = state.to;
+    emitTickEvent(createTraceEvent(ctx.runId, seq, "presence.arrived", simTime, state.agent, state.to, state.to, {
+      agent: state.agent,
+      place: state.to,
+      tick
+    }, [clockSync.event_id]));
+    seq += 1;
+  }
+
+  if (tick === 0) {
+    for (const [agent, place] of Object.entries(presence).sort(([left], [right]) => left < right ? -1 : left > right ? 1 : 0)) {
+      emitTickEvent(createTraceEvent(ctx.runId, seq, "presence.arrived", simTime, agent, place, place, {
+        agent,
+        place,
+        tick
+      }, [clockSync.event_id]));
+      seq += 1;
+    }
+  }
 
   const tickState: Record<string, number> = { ...ctx.state };
   seq = applyWorldActsAtTick(tick, simTime, ctx.worldActsForTick, tickState, {
@@ -245,7 +310,24 @@ export const stepSimfileTick = (tick: number, ctx: StepSimfileTickContext): Step
 
   const nextVariables = { ...tickState };
   for (const rule of ctx.runtime.rules) {
-    seq = runRule(rule, tick, simTime, phase, tickState, candidates, ctx.precision, ctx.runtime.ranges, ctx.runId, seq, emitTickEvent, nextVariables, clockSync.event_id);
+    seq = runRule(
+      rule,
+      tick,
+      simTime,
+      phase,
+      tickState,
+      candidates,
+      ctx.precision,
+      ctx.runtime.ranges,
+      ctx.runId,
+      seq,
+      emitTickEvent,
+      nextVariables,
+      clockSync.event_id,
+      presence,
+      transit,
+      ctx.runtime.travelTicksByRoute
+    );
   }
 
   for (const [id, value] of Object.entries(nextVariables)) {
@@ -259,6 +341,8 @@ export const stepSimfileTick = (tick: number, ctx: StepSimfileTickContext): Step
   return {
     events: tickEvents,
     sample: {
+      occupancy: occupancyFor(ctx.runtime.placeIds, presence),
+      transit: transitFor(tick, transit),
       phase,
       sim_time: simTime,
       tick,

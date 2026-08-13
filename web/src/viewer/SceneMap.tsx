@@ -1,22 +1,36 @@
 import {
   GlyphMapControls,
   GlyphOrbitControls,
-  GlyphPerspectiveCamera,
   GlyphScene,
 } from "@glyphcss/react";
 import { memo, useEffect, useMemo, useRef, useState } from "react";
-import type { CSSProperties, ReactNode } from "react";
+import type { CSSProperties } from "react";
 
-import type { RoomGeometry, RoomPath, ViewerNode, ViewerPresenceEvent } from "./types.js";
+import type { RoomGeometry, RoomPath, ViewerNode, ViewerPresenceEvent, ViewerSpatialSample } from "./types.js";
 import { CameraFocus, cameraFocusForNode } from "./CameraFocus.js";
-import { AgentAvatar, CorridorMeshes, RoomMeshes, SignalMesh } from "./SceneGeometry.js";
+import {
+  DynamicGlyphScene,
+  readDynamicRendererConfig,
+  scaledRenderGrid,
+} from "./DynamicGlyphScene.js";
+import { DynamicSceneOverlay } from "./DynamicSceneOverlay.js";
+import type { DynamicSceneEntity } from "./DynamicSceneOverlay.js";
 import { createAgentPlacements } from "./sceneMotion.js";
-import type { AgentPlacement } from "./sceneMotion.js";
-import { AgentSceneLabels, StaticSceneLabels } from "./SceneLabels.js";
+import {
+  createGlyphLayerRegistry,
+  SeededPerspectiveCamera,
+  StaticGlyphLayerCapture,
+} from "./SceneCamera.js";
+import { AgentSceneLayer, StaticSceneLayer } from "./SceneLayers.js";
 import type { RenderSettings } from "./renderSettings.js";
 import type { ViewerSkin } from "./worldModel.js";
 import { createRoomLayout } from "./roomLayout.js";
-import { useAvatarModel } from "./avatarModel.js";
+import { applySpatialSamplesToNodes, applySpatialSamplesToPlacements } from "./spatialSceneModel.js";
+import {
+  WorldMapRendererHost,
+} from "./WorldMapRendererHost.js";
+import { selectWorldMapRenderer } from "./worldMapRendererCatalog.js";
+import { buildWorldMapRendererFrame } from "./worldMapRendererFrame.js";
 
 type CameraMode = "orbit" | "pan";
 
@@ -43,7 +57,9 @@ interface SceneMapProps {
   rooms: RoomGeometry[];
   selectedNode: ViewerNode;
   selectedSkin: ViewerSkin;
+  spatialSamples?: ViewerSpatialSample[];
   tick: number;
+  tickDurationMs: number;
 }
 
 export const SceneMap = memo(function SceneMap({
@@ -56,25 +72,76 @@ export const SceneMap = memo(function SceneMap({
   rooms,
   selectedNode,
   selectedSkin,
+  spatialSamples = [],
   tick,
+  tickDurationMs,
 }: SceneMapProps) {
-  const signalNodes = useMemo(() => nodes.filter((node) => node.kind !== "room" && node.kind !== "agent"), [nodes]);
+  const sampledNodes = useMemo(
+    () => applySpatialSamplesToNodes(nodes, spatialSamples, tick, tickDurationMs),
+    [nodes, spatialSamples, tick, tickDurationMs],
+  );
+  const dynamicIds = useMemo(
+    () => new Set(spatialSamples.flatMap((sample) =>
+      sample.objects?.map((object) => object.id) ?? [])),
+    [spatialSamples],
+  );
+  const signalNodes = useMemo(
+    () => nodes.filter((node) =>
+      node.kind !== "room" && node.kind !== "agent" && !dynamicIds.has(node.id)),
+    [dynamicIds, nodes],
+  );
   const roomLayout = useMemo(() => createRoomLayout(rooms, roomPaths, renderSettings.roomScale), [renderSettings.roomScale, roomPaths, rooms]);
-  const agentPlacements = useMemo(
-    () => createAgentPlacements({
-      nodes,
+  const agentPlacements = useMemo(() => applySpatialSamplesToPlacements(
+    createAgentPlacements({
+      nodes: sampledNodes,
       paths: roomLayout.paths,
       presenceByAgent,
       roomScale: renderSettings.roomScale,
       rooms: roomLayout.rooms,
       tick,
     }),
-    [nodes, presenceByAgent, renderSettings.roomScale, roomLayout.paths, roomLayout.rooms, tick],
+    spatialSamples,
+    tick,
+    tickDurationMs,
+  ), [presenceByAgent, renderSettings.roomScale, roomLayout.paths, roomLayout.rooms, sampledNodes, spatialSamples, tick, tickDurationMs]);
+  const staticAgentPlacements = useMemo(
+    () => agentPlacements.filter((placement) => !dynamicIds.has(placement.node.id)),
+    [agentPlacements, dynamicIds],
   );
+  const dynamicAgentPlacements = useMemo(
+    () => agentPlacements.filter((placement) => dynamicIds.has(placement.node.id)),
+    [agentPlacements, dynamicIds],
+  );
+  const dynamicSignalNodes = useMemo(
+    () => sampledNodes.filter((node) =>
+      node.kind !== "room" && node.kind !== "agent" && dynamicIds.has(node.id)),
+    [dynamicIds, sampledNodes],
+  );
+  const dynamicEntities = useMemo<DynamicSceneEntity[]>(() => [
+    ...dynamicAgentPlacements
+      .map((placement) => ({
+        at: placement.position,
+        id: placement.node.id,
+        kind: "agent" as const,
+        label: placement.node.label,
+        selected: selectedNode.id === placement.node.id,
+      })),
+    ...dynamicSignalNodes
+      .map((node) => ({
+        at: node.scene,
+        id: node.id,
+        kind: "signal" as const,
+        label: node.label,
+        selected: selectedNode.id === node.id,
+      })),
+  ], [dynamicAgentPlacements, dynamicSignalNodes, selectedNode.id]);
   const mapStageRef = useRef<HTMLDivElement | null>(null);
   const [baseMode, setBaseMode] = useState<CameraMode>("orbit");
   const [commandPan, setCommandPan] = useState(false);
+  const [rendererFitRevision, setRendererFitRevision] = useState(0);
   const [stageSize, setStageSize] = useState<StageSize>({ height: 0, width: 0 });
+  const dynamicConfig = useMemo(readDynamicRendererConfig, []);
+  const glyphLayerRegistry = useRef(createGlyphLayerRegistry()).current;
   const mode = commandPan ? "pan" : baseMode;
   const renderGrid = useMemo(
     () => computeRenderGrid(stageSize, renderSettings.density),
@@ -85,7 +152,43 @@ export const SceneMap = memo(function SceneMap({
     [renderSettings, roomLayout.rooms, selectedNode, selectedSkin],
   );
   const glyphStyle = useMemo(() => createGlyphStyle(renderSettings.density), [renderSettings.density]);
+  const dynamicGrid = useMemo(
+    () => scaledRenderGrid(renderGrid, dynamicConfig.scale),
+    [dynamicConfig.scale, renderGrid],
+  );
+  const dynamicGlyphStyle = useMemo(
+    () => createGlyphStyle(renderSettings.density / dynamicConfig.scale),
+    [dynamicConfig.scale, renderSettings.density],
+  );
   const interactiveDownscale = Math.max(1, Math.min(4, Math.round(renderSettings.density)));
+  const rendererFrame = useMemo(() => buildWorldMapRendererFrame({
+    nodes,
+    onSelect,
+    selectedNodeId: selectedNode.id,
+    spatialSamples,
+    tick,
+    tickDurationMs,
+  }), [
+    nodes,
+    onSelect,
+    selectedNode.id,
+    spatialSamples,
+    tick,
+    tickDurationMs,
+  ]);
+  const worldMapRenderer = useMemo(
+    () => selectWorldMapRenderer(rendererFrame),
+    [rendererFrame],
+  );
+
+  useEffect(() => {
+    const target = globalThis as typeof globalThis & {
+      __SIMFILE_PLAYBACK_DIAGNOSTICS__?: Record<string, number | boolean>;
+    };
+    const shared = target.__SIMFILE_PLAYBACK_DIAGNOSTICS__ ??= {};
+    shared.dynamicRendererGlyph = dynamicConfig.renderer === "glyph";
+    shared.dynamicScale = dynamicConfig.scale;
+  }, [dynamicConfig]);
 
   useEffect(() => {
     const element = mapStageRef.current;
@@ -137,9 +240,35 @@ export const SceneMap = memo(function SceneMap({
     };
   }, []);
 
+  if (worldMapRenderer) {
+    return (
+      <div className="map-stage fixture-renderer-stage" ref={mapStageRef}>
+        <WorldMapRendererHost
+          fitRevision={rendererFitRevision}
+          frame={rendererFrame}
+          renderer={worldMapRenderer}
+        />
+        <div className="map-controls-bar" aria-label="World renderer">
+          <button
+            onClick={() => setRendererFitRevision((revision) => revision + 1)}
+            type="button"
+          >
+            reset / fit
+          </button>
+          <span>{worldMapRenderer.id}</span>
+          <span>broadcast isometric · authoritative public replay</span>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="map-stage" ref={mapStageRef}>
-      <SeededPerspectiveCamera selectedNode={selectedNode} selectedSkin={selectedSkin}>
+      <SeededPerspectiveCamera
+        className="glyph-camera static-glyph-camera"
+        selectedNode={selectedNode}
+        selectedSkin={selectedSkin}
+      >
         <GlyphScene
           mode="solid"
           cols={renderGrid.cols}
@@ -148,6 +277,7 @@ export const SceneMap = memo(function SceneMap({
           interactiveDownscale={interactiveDownscale}
           style={glyphStyle}
         >
+          <StaticGlyphLayerCapture registry={glyphLayerRegistry} />
           <CameraFocus focus={cameraFocus} />
           {mode === "pan" ? <GlyphMapControls drag wheel /> : <GlyphOrbitControls clampPitch drag wheel />}
           <StaticSceneLayer
@@ -160,14 +290,39 @@ export const SceneMap = memo(function SceneMap({
             signalNodes={signalNodes}
           />
           <AgentSceneLayer
-            agentPlacements={agentPlacements}
+            agentPlacements={staticAgentPlacements}
             onSelect={onSelect}
             renderSettings={renderSettings}
             selectedNodeId={selectedNode.id}
             selectedSkin={selectedSkin}
           />
+          {dynamicConfig.renderer === "glyph" ? (
+            <AgentSceneLayer
+              agentPlacements={dynamicAgentPlacements}
+              onSelect={onSelect}
+              renderSettings={renderSettings}
+              selectedNodeId={selectedNode.id}
+              selectedSkin={selectedSkin}
+              showModels={false}
+            />
+          ) : (
+            <DynamicSceneOverlay entities={dynamicEntities} onSelect={onSelect} />
+          )}
         </GlyphScene>
       </SeededPerspectiveCamera>
+      {dynamicConfig.renderer === "glyph" ? (
+        <DynamicGlyphScene
+          agentPlacements={dynamicAgentPlacements}
+          config={dynamicConfig}
+          grid={dynamicGrid}
+          registry={glyphLayerRegistry}
+          renderSettings={renderSettings}
+          selectedNode={selectedNode}
+          selectedSkin={selectedSkin}
+          signalNodes={dynamicSignalNodes}
+          style={dynamicGlyphStyle}
+        />
+      ) : null}
       <div className="map-controls-bar" aria-label="Camera and display mode">
         <button
           aria-pressed={mode === "orbit"}
@@ -193,7 +348,12 @@ export const SceneMap = memo(function SceneMap({
         >
           labels
         </button>
-        <span>{renderGrid.cols}x{renderGrid.rows} cells</span>
+        <span>
+          {renderGrid.cols}x{renderGrid.rows} cells · dynamic{" "}
+          {dynamicConfig.renderer === "glyph"
+            ? `GlyphCSS ${dynamicConfig.scale}x`
+            : "DOM fallback"}
+        </span>
         <span>{commandPan ? "⌘ pan override" : "hold ⌘ for pan"}</span>
       </div>
     </div>
@@ -208,126 +368,11 @@ function areSceneMapPropsEqual(previous: SceneMapProps, next: SceneMapProps): bo
     && previous.renderSettings === next.renderSettings
     && previous.roomPaths === next.roomPaths
     && previous.rooms === next.rooms
+    && previous.spatialSamples === next.spatialSamples
     && previous.selectedNode.id === next.selectedNode.id
     && previous.selectedSkin.id === next.selectedSkin.id
-    && previous.tick === next.tick;
-}
-
-const StaticSceneLayer = memo(function StaticSceneLayer({
-  onSelect,
-  paths,
-  renderSettings,
-  rooms,
-  selectedNodeId,
-  selectedSkin,
-  signalNodes,
-}: {
-  onSelect: (id: string) => void;
-  paths: RoomPath[];
-  renderSettings: RenderSettings;
-  rooms: RoomGeometry[];
-  selectedNodeId: string;
-  selectedSkin: ViewerSkin;
-  signalNodes: ViewerNode[];
-}) {
-  return (
-    <>
-      {paths.map((path) => (
-        <CorridorMeshes
-          key={`${selectedSkin.id}:${path.id}`}
-          path={path}
-          renderSettings={renderSettings}
-          skin={selectedSkin}
-        />
-      ))}
-      {rooms.map((room) => (
-        <RoomMeshes
-          key={`${selectedSkin.id}:${room.id}`}
-          paths={paths}
-          renderSettings={renderSettings}
-          room={room}
-          selected={selectedNodeId === room.node.id}
-          skin={selectedSkin}
-        />
-      ))}
-      {signalNodes.map((node) => <SignalMesh key={`${selectedSkin.id}:${node.id}`} node={node} skin={selectedSkin} />)}
-      {renderSettings.showLabels ? (
-        <StaticSceneLabels
-          onSelect={onSelect}
-          renderSettings={renderSettings}
-          rooms={rooms}
-          selectedNodeId={selectedNodeId}
-          signalNodes={signalNodes}
-        />
-      ) : null}
-    </>
-  );
-});
-
-const AgentSceneLayer = memo(function AgentSceneLayer({
-  agentPlacements,
-  onSelect,
-  renderSettings,
-  selectedNodeId,
-  selectedSkin,
-}: {
-  agentPlacements: AgentPlacement[];
-  onSelect: (id: string) => void;
-  renderSettings: RenderSettings;
-  selectedNodeId: string;
-  selectedSkin: ViewerSkin;
-}) {
-  const avatarPolygons = useAvatarModel();
-
-  return (
-    <>
-      {agentPlacements.map((placement) => (
-        <AgentAvatar
-          key={`${selectedSkin.id}:${placement.node.id}`}
-          placement={placement}
-          polygons={avatarPolygons}
-          renderSettings={renderSettings}
-          selected={selectedNodeId === placement.node.id}
-          skin={selectedSkin}
-        />
-      ))}
-      {renderSettings.showLabels
-        ? (
-          <AgentSceneLabels
-            agentPlacements={agentPlacements}
-            onSelect={onSelect}
-            renderSettings={renderSettings}
-            selectedNodeId={selectedNodeId}
-          />
-        )
-        : null}
-    </>
-  );
-});
-
-function SeededPerspectiveCamera({ children, selectedNode, selectedSkin }: {
-  children: ReactNode;
-  selectedNode: ViewerNode;
-  selectedSkin: ViewerSkin;
-}) {
-  const [seeded, setSeeded] = useState(false);
-
-  useEffect(() => {
-    setSeeded(true);
-  }, []);
-
-  return (
-    <GlyphPerspectiveCamera
-      center={seeded ? undefined : selectedNode.camera}
-      className="glyph-camera"
-      distance={seeded ? undefined : selectedSkin.camera.distance}
-      rotX={seeded ? undefined : selectedSkin.camera.rotX}
-      rotY={seeded ? undefined : selectedSkin.camera.rotY}
-      zoom={seeded ? undefined : selectedSkin.camera.zoom}
-    >
-      {children}
-    </GlyphPerspectiveCamera>
-  );
+    && previous.tick === next.tick
+    && previous.tickDurationMs === next.tickDurationMs;
 }
 
 function computeRenderGrid(stageSize: StageSize, density: number): RenderGrid {

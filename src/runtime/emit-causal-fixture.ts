@@ -24,8 +24,9 @@ rules:
       - action: moltnet:message
         to: room:office-floor:case-warroom
         content: "causal fixture message"
-      - action: wake:recommend
+      - action: moltnet:message
         to: room:office-floor:case-warroom
+        content: "Observation notice."
 `;
 
 export const emitCausalFixtureJsonl = (): string[] => {

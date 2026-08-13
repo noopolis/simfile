@@ -1,0 +1,48 @@
+{
+  "run_id": "run-office-psyche-golden",
+  "samples": [
+    {
+      "tick": 0,
+      "sim_time": 0,
+      "variables": {},
+      "occupancy": { "home": ["mara"], "office": ["eleanor", "sam"] },
+      "transit": []
+    },
+    {
+      "tick": 1,
+      "sim_time": 60,
+      "variables": {},
+      "occupancy": { "home": ["mara"], "office": ["eleanor", "sam"] },
+      "transit": []
+    },
+    {
+      "tick": 2,
+      "sim_time": 120,
+      "variables": {},
+      "occupancy": { "home": ["mara"], "office": ["eleanor", "sam"] },
+      "transit": []
+    },
+    {
+      "tick": 3,
+      "sim_time": 180,
+      "variables": {},
+      "occupancy": { "home": ["mara"], "office": ["sam"] },
+      "transit": [{ "agent": "eleanor", "from": "office", "to": "home", "ticksRemaining": 2 }]
+    },
+    {
+      "tick": 4,
+      "sim_time": 240,
+      "variables": {},
+      "occupancy": { "home": ["mara"], "office": ["sam"] },
+      "transit": [{ "agent": "eleanor", "from": "office", "to": "home", "ticksRemaining": 1 }]
+    },
+    {
+      "tick": 5,
+      "sim_time": 300,
+      "variables": {},
+      "occupancy": { "home": ["eleanor", "mara"], "office": ["sam"] },
+      "transit": []
+    }
+  ],
+  "version": "simfile.telemetry.v1"
+}

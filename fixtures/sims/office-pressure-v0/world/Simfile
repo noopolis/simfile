@@ -3,10 +3,9 @@ name: office-pressure-v0-world
 spawnfile: ../org/Spawnfile
 
 # Variable storyline increment (viewer capability 4): a world VARIABLE that
-# ramps over the run, driven live tick-by-tick by the world-driven composed
-# driver (`src/sims/worldDrivenOfficeSimDriver.ts`) — the same "memetics
-# increment (a)" mechanics office-secret-v0 exercises for markers, applied
-# here to a generator-driven variable + a threshold rule instead. `workday`
+# ramps over a finite kernel run using the same generic tick mechanics that
+# office-secret-v0 exercises for markers, applied here to a generator-driven
+# variable + a threshold rule instead. `workday`
 # starts at the day boundary so `kickoff` fires on the very first tick, same
 # as office-secret-v0.
 clock:

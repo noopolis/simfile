@@ -42,7 +42,7 @@ const traceArtifact: ProbeArtifact = {
     },
     {
       event_id: "run:11",
-      kind: "wake.recommended",
+      kind: "world.dm",
       sim_time: 60,
       scope: "room:a",
       actor: "deadline_bites",
@@ -99,7 +99,7 @@ describe("evaluateProbe", () => {
 
   it("supports any composition", () => {
     const probe: ProbeDefinition = {
-      when: { any: [{ event: "world.message" }, { event: "wake.recommended" }] },
+      when: { any: [{ event: "world.message" }, { event: "clock.sync" }] },
       expect: { at_least: 1 }
     };
     const result = evaluateProbe("event_any", events, probe);
@@ -169,7 +169,7 @@ describe("evaluateProbe", () => {
   it("supports bounded after windows between events and state samples", () => {
     const probe: ProbeDefinition = {
       when: { variable: "pressure", above: 0.9, for: "60s" },
-      after: { event: "wake.recommended", target: "room:a" },
+      after: { event: "world.dm", target: "room:a" },
       within: "2m",
       expect: { at_least: 1 }
     };

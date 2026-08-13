@@ -58,15 +58,17 @@ export interface RunMetaEngineEntry {
  * `EngineProvenanceBadge` always has something honest to render.
  */
 export interface RunMetaEngineProvenance {
-  mode: "scripted" | "real-engine" | "mixed" | "unknown";
+  mode: "scripted" | "real-engine" | "mixed" | "unknown" | "live-pending";
   engines: RunMetaEngineEntry[];
   label: string;
 }
 
 export interface RunMeta {
-  runId: string;
-  verdict: RunMetaVerdict;
-  provenance: {
+  live?: boolean;
+  notYetComputed?: string[];
+  runId?: string;
+  verdict?: RunMetaVerdict;
+  provenance?: {
     artifacts: RunMetaProvenanceArtifact[];
     entries: RunMetaProvenanceEntry[];
   };
@@ -77,6 +79,15 @@ export interface RunMeta {
   spreadSummary?: SpreadSummary;
   /** Increment 3: undefined unless the run has a non-empty `world/telemetry.json` variable sample set. */
   variableSamples?: RunMetaVariableSample[];
+  pace?: {
+    measured_wall_elapsed_seconds: number;
+    declared_sim_seconds_per_tick: number;
+    target_sim_seconds: number;
+    /** Legacy recorded evidence; the reader derives pace state from timing rows. */
+    kept_up: boolean;
+  };
+  timing?: Array<{ tick: number; wallElapsedSeconds: number; simSecondsAdvanced: number }>;
+  simSecondsPerTick?: number;
 }
 
 /**
@@ -104,6 +115,13 @@ export function EngineProvenanceBadge({ provenance }: { provenance: RunMetaEngin
 
 /** The compact verdict strip in the topbar: participants/turns/chains/memory/failures/artifacts at a glance. */
 export function VerdictStrip({ meta, onOpenProvenance }: { meta: RunMeta; onOpenProvenance: () => void }) {
+  if (meta.live || !meta.verdict) {
+    return (
+      <span className="verdict-strip verdict-strip-pending" aria-label="Run verdict not yet computed">
+        verdict: not yet computed — the run must seal before its verdict can be recorded
+      </span>
+    );
+  }
   const { verdict } = meta;
   return (
     <button
@@ -124,6 +142,7 @@ export function VerdictStrip({ meta, onOpenProvenance }: { meta: RunMeta; onOpen
 
 /** The provenance drawer: per-artifact sha256 + ok, and the reconciliation entries (participants, turn sequence, chains, contract). */
 export function ProvenancePanel({ meta, onClose }: { meta: RunMeta; onClose: () => void }) {
+  if (!meta.provenance || !meta.runId) return null;
   return (
     <aside className="provenance-panel" aria-label="Run provenance">
       <div className="provenance-header">

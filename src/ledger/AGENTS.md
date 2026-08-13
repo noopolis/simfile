@@ -11,5 +11,7 @@ This folder holds deterministic ledger primitives with no process or network I/O
 - `validation.ts` validates canonical ledger JSONL against that envelope shape and generalizes
   seq contiguity to per-(run_id, stream_id) groups (1-based, gapless within a stream).
 - `markers.ts` scans ledger events for marker aliases and computes simple marker outcomes.
+- `principal.ts` owns the envelope principal grammar. That grammar is a cross-repository contract
+  and MUST NOT be widened locally; a simfile controller belongs in the `system:` trust class.
 
 Helpers are pure and intentionally small for isolated unit testing.

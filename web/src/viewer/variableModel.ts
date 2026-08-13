@@ -1,4 +1,5 @@
-import type { RunTimeline } from "../store/timeline.js";
+import { playbackTickAtCursor, type PlaybackCadence } from "../chrome/playbackCadence.js";
+import type { RunTimeline, TimelineEvent } from "../store/timeline.js";
 
 /** One `world/telemetry.json` sample row — mirrors `src/view/runViewModelTypes.ts`'s `RunTelemetrySample`. The source of truth for this shape; `RunMetaPanels.tsx`'s `RunMeta` imports it from here rather than the reverse, so this module has no dependency back onto the component file. */
 export interface RunMetaVariableSample {
@@ -12,7 +13,7 @@ export interface RunMetaVariableSample {
  * Increment 4's variable gauge/storyline join: pure functions over
  * `/api/run-meta`'s `variableSamples` (`world/telemetry.json`'s per-tick
  * samples, `src/view/runViewModelTypes.ts`'s `RunTelemetrySample`) and the
- * loaded `RunTimeline`'s `clock.sync` events. Kept separate from
+ * loaded `RunTimeline`'s explicitly recorded tick fields. Kept separate from
  * `../store/timeline.ts` for the same reason `spreadModel.ts` is: these
  * types belong to the run-meta contract, not the timeline contract. No UI
  * here — `RunMetaPanels.tsx`'s `VariableGaugeRail` and
@@ -20,25 +21,72 @@ export interface RunMetaVariableSample {
  * rather than re-deriving the tick/sample joins inline.
  */
 
+const asPayloadRecord = (value: unknown): Record<string, unknown> | undefined =>
+  typeof value === "object" && value !== null && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : undefined;
+
+const recordedNumber = (value: unknown): number | undefined =>
+  typeof value === "number" ? value : undefined;
+
+/** The tick a single event's payload explicitly records, with no derivation. */
+export const recordedTickOf = (event: TimelineEvent): number | undefined => {
+  const payload = asPayloadRecord(event.payload);
+  if (!payload) return undefined;
+
+  if (event.type === "clock.sync") return recordedNumber(payload.tick);
+  if (event.type === "spatial.sample") return recordedNumber(payload.tick);
+  if (event.type === "dynamics.step") return recordedNumber(payload.from_tick);
+  if (event.type === "dynamics.action.applied" || event.type === "dynamics.action.rejected_by_mechanics") {
+    return recordedNumber(payload.apply_tick);
+  }
+  if (event.type === "dynamics.action.queued" || event.type === "dynamics.action.rejected_at_ingress") {
+    const receipt = asPayloadRecord(payload.receipt);
+    const attempt = asPayloadRecord(payload.attempt);
+    return recordedNumber(receipt?.apply_tick) ?? recordedNumber(attempt?.at_tick);
+  }
+  return undefined;
+};
+
 /**
- * The world clock's own tick "as of" a scrub cursor: the largest
- * `clock.sync` event's own `payload.tick` at or before `cursor` — never a
- * derived/invented tick. `undefined` for a run with no world stream at all
- * (graceful absence: `office-sim-golden`/`office-secret-v0-golden` render no
- * gauge regardless, since they also have no non-empty `variableSamples`).
+ * Fallback for records with no corroborated clock: the latest tick explicitly
+ * recorded at or before the cursor. This is never a rival cursor mapping and
+ * must never be called from a component; components use `tickAtCursor`.
  */
-export const tickAtCursor = (timeline: RunTimeline, cursor: number): number | undefined => {
-  let bestT = -1;
+export const recordedTickAtCursor = (
+  timeline: RunTimeline,
+  cursor: number,
+): number | undefined => {
+  let bestT = Number.NEGATIVE_INFINITY;
   let bestTick: number | undefined;
   for (const event of timeline.events) {
-    if (event.type !== "clock.sync" || event.t > cursor || event.t <= bestT) continue;
-    const tick = (event.payload as { tick?: unknown } | undefined)?.tick;
-    if (typeof tick === "number") {
+    if (event.t > cursor || event.t <= bestT) continue;
+    const tick = recordedTickOf(event);
+    if (tick !== undefined) {
       bestT = event.t;
       bestTick = tick;
     }
   }
   return bestTick;
+};
+
+/**
+ * The cursor mapping lives in `../chrome/playbackCadence.ts`; delegation has
+ * landed here as the one consumer-side accessor. Never add a second mapping
+ * body here. The recorded scan is only a fallback when the owner cannot serve
+ * a record because it has no corroborated clock.
+ */
+export const tickAtCursor = (
+  timeline: RunTimeline,
+  cursor: number,
+  cadence?: PlaybackCadence,
+): number | undefined => {
+  const playbackTick = cadence === undefined
+    ? undefined
+    : playbackTickAtCursor(cadence, cursor);
+  return playbackTick !== undefined
+    ? playbackTick
+    : recordedTickAtCursor(timeline, cursor);
 };
 
 /**

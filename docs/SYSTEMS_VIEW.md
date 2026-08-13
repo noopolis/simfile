@@ -169,8 +169,9 @@ rules:
       variable: filing_pressure
       above: 0.85
     do:
-      - action: wake:recommend         # ...nudge the warroom awake
+      - action: moltnet:message        # explicit world-authored notice
         to: room:office-floor:case-warroom
+        content: "Filing pressure crossed the deadline threshold."
   full_moon_rises:            # same anatomy, composed condition
     when:
       all:
@@ -244,7 +245,7 @@ contained / reached. Leak scanner and meme tracker are the same machine.
 probes:
   deadline_observed:          # the same when: block, asked as a question
     when:
-      event: wake.recommended
+      event: world.message
       target: room:office-floor:case-warroom
     expect:
       at_least: 1
@@ -349,14 +350,10 @@ rule
   deadline_bites trips the threshold
 →
 ledger
-  wake.recommended — coalesced, one per room per reason
-→
-moltnet
-  the nudge is world speech — a directed room message;
-  the bridge wakes the warroom with team context
+  world.message — one explicit world-authored room notice
 →
 agents
-  Eleanor's team scrambles — their own words, their own plan.
+  independently scheduled agents may observe it and decide what to do.
   Nothing scripted their thoughts.
 ```
 
@@ -460,7 +457,7 @@ Threshold in, closed effect set out; fires once per crossing, not per tick.
 |---|---|---|
 | `when` | required | shared condition block, borrowed syntax: three atoms — `{variable, above, below, for}` (HA `numeric_state` verbatim; `above+below` = band; `for:` = hold continuously, false resets), `phase:`, and `event:` (true on the tick a matching ledger event occurs — rules and one-shot story rules are event-reactive; later `at_place:`); composition is JSON Schema's `all`/`any`/`not`. Takes exactly one node — an atom map or one `all`/`any`/`not` map; bare lists are validation errors. Fires on the false→true transition of the whole composite. Logic is structure, math is `eq` |
 | `fire` | optional | `per_crossing` (default — standing law) or `once` (story: spent after first firing). The only difference between policy and narrative |
-| `do` | canonical | list of namespaced `action:` records from the closed registry: `moltnet:message`, `moltnet:dm` (validation error if DMs off), `wake:recommend` (coalesced per target + rule id), `variable:set`, `variable:delta`. Extended only by spec bump (`entity:spawn` at v3) |
+| `do` | canonical | list of namespaced `action:` records from the closed registry: `moltnet:message`, `moltnet:dm` (validation error if DMs off), `variable:set`, `variable:delta`. Extended only by spec bump (`entity:spawn` at v3) |
 | one form only | no sugar | former compact keys (`say_in`, `once_at`, `when_above`, ...) are validation errors that point at the canonical form — one language, learned once; only lexical shorthands (`range`, durations) survive, expanded in the lexer |
 | content placeholders | optional | `{variable}` substitutes the current value at fixed precision — pure id lookup, no expressions; world speech can report state without interpreting it |
 | anatomy | one construct | rules are the only reactive construct — beats dissolved into `fire: once`; every firing has an id, a `rule.fired` record, and probe visibility; sequencing is explicit via `event: rule.fired + actor:` |
@@ -473,7 +470,7 @@ Acts, not motion — variable history is telemetry, never events.
 |---|---|---|
 | `store.kind` | optional | `jsonl` (default — canonical interchange), `sqlite` (the honest default for real runs), `postgres` (spectators, warehouses) |
 | `store.path` / `url_env` | optional | path for `jsonl`/`sqlite`; `url_env` for postgres — never a credential in the file |
-| event kinds | kernel-defined | `world.message`, `world.dm`, `wake.recommended`, `rule.fired` (rule id as actor), `marker.seen`, `clock.sync`, `presence.*` (space), `entity.*`/`proposal.*` (v3). Naming: actions are imperatives (`ns:verb`), events are records (`ns.verbed`). Variable motion is never an event |
+| event kinds | kernel-defined | `world.message`, `world.dm`, `rule.fired` (rule id as actor), `marker.seen`, `clock.sync`, `presence.*` (space), `entity.*`/`proposal.*` (v3). Naming: actions are imperatives (`ns:verb`), events are records (`ns.verbed`). Variable motion is never an event |
 | envelope | fixed | `event_id (run_id:seq)`, `kind`, `sim_time`, `provenance mechanical|agentic|external`, `actor`, `target`, `scope`, `payload` — per-run constants (`run_id`, `seed`, `schema_version`) live in the manifest; `observed_at` is non-identity, stripped from canonical export |
 
 ### `telemetry` · `markers`
@@ -525,7 +522,7 @@ Simfile source pointer ───────────────▶ Spawnfil
 clock ───────── clock.sync ───────────▶ Run record · report
 variables ───── telemetry snapshots ─▶ Storage backends
 generators ──── world.message ───────▶ Moltnet
-rules ───────── wakes / speech ──────▶ Daimon bridge / Moltnet
+rules ───────── speech / metadata ───▶ Moltnet / granted observations
 ledger + store ─ canonical export ──▶ Run record · report
 markers ─────── content scan ───────▶ Moltnet + Mneme export
 probes ───────── report / CI gate ───▶ Run record · report
@@ -540,7 +537,7 @@ Moltnet
   rooms · DMs · world traffic
 
 Daimon
-  runtime · wake delivery
+  runtime · organization-owned schedules and wake policy
 
 Mneme
   scoped memory
@@ -729,11 +726,13 @@ ledger:
 
 ### Four Channels, One Influence Ladder
 
-The kernel tops out at nudge: observation (raw state, pulled), stimulus
-(perceived world events), nudge (routing, no content mandate), command — which
-is never kernel. Commanding voices exist only as an authored agent or through
-the ledgered operator tier. Within stimulus, the authoring norm is: describe,
-do not direct.
+The kernel tops out at stimulus: observation is pulled, while authored speech
+is a perceived world event. It never selects a runtime or schedules cognition;
+member schedules and wake policy belong to the organization. Observation
+recommendations remain optional pull-only metadata, and command is never
+kernel. Commanding voices exist only as an authored agent or through the
+ledgered operator tier. Within stimulus, the authoring norm is: describe, do
+not direct.
 
 | Channel | Form | Meaning | Recording |
 |---|---|---|---|

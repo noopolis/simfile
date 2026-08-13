@@ -119,7 +119,7 @@ const initialState = (): TimelineStoreState => ({
   timeline: null,
   cursor: 0,
   playing: false,
-  speed: 2,
+  speed: 1,
   selection: null,
   openPortals: [],
   highlightedEventIds: [],
@@ -254,9 +254,8 @@ export const membraneForRef = (timeline: RunTimeline, elementRef: ElementRef): R
 /**
  * The membrane `elementRef` represents on a parent floor, if any — "an agent
  * that resolves to one" (`VIEW_DESIGN.md`'s descend affordance: clicking
- * `agent:luna-representative`'s own flat portal still shows a "descend into
- * luna" button, distinct from clicking the `team:luna` map node itself,
- * which opens the membrane view directly).
+ * `agent:luna-representative`'s own body opens its flat portal, which shows
+ * the "descend into luna" button that opens the membrane view).
  */
 export const membraneForRepresentative = (timeline: RunTimeline, elementRef: ElementRef): RunTimelineMembrane | undefined =>
   timeline.membranes?.find((membrane) => membrane.representative === elementRef);

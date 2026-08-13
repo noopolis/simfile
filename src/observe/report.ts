@@ -1,5 +1,33 @@
 import { z } from "zod";
 
+import { observeWorldGrantsSchema } from "./worldGrants.js";
+
+const socialPlaneMessageSchema = z.object({
+  message_id: z.string().min(1), rendered_attribution: z.string(), authenticated_principal: z.string().nullable(),
+  attribution: z.enum(["attested", "violated", "unattested"]), content_sha256_matches: z.boolean()
+}).strict();
+const socialPlaneSchema = z.object({
+  messages: z.object({ count: z.number().int().min(0), entries: z.array(socialPlaneMessageSchema) }).strict(),
+  world_state: z.object({ passed: z.boolean(), violations: z.array(z.object({ message_id: z.string().min(1), keys: z.array(z.string()) }).strict()) }).strict(),
+  actions: z.object({ passed: z.boolean(), basis: z.string().min(1), violations: z.array(z.object({ message_id: z.string().min(1), action_event_id: z.string().min(1), relation: z.literal("causal-ancestor") }).strict()) }).strict(),
+  attribution: z.object({ attested: z.number().int().min(0), violated: z.number().int().min(0), unattested: z.number().int().min(0) }).strict(),
+  verdict: z.object({ passed: z.boolean(), status: z.enum(["passed", "failed", "incomplete"]), reasons: z.array(z.string()) }).strict()
+}).strict();
+
+export type SocialPlane = z.infer<typeof socialPlaneSchema>;
+
+const worldActionEvidenceSchema = z.object({
+  action: z.string(), origin: z.string().nullable(), principal: z.string().nullable(), has_decision_id: z.boolean()
+}).strict();
+const worldEvidenceSchema = z.object({
+  actions: z.object({ count: z.number().int().min(0), entries: z.array(worldActionEvidenceSchema) }).strict(),
+  perception: z.object({ count: z.number().int().min(0), principals: z.array(z.string()) }).strict(),
+  refusals: z.object({ count: z.number().int().min(0), reasons: z.array(z.string()) }).strict(),
+  possession: z.object({ changes_recorded: z.number().int().min(0), covered: z.boolean(), first_change_tick: z.number().optional(), last_change_tick: z.number().optional() }).strict(),
+  pace: z.object({ measured_wall_elapsed_seconds: z.number().nonnegative(), declared_sim_seconds_per_tick: z.number().nonnegative(), target_sim_seconds: z.number().nonnegative(), kept_up: z.boolean() }).strict(),
+  verdict: z.object({ passed: z.boolean(), status: z.enum(["passed", "failed", "incomplete"]), reasons: z.array(z.string()) }).strict()
+}).strict();
+
 /**
  * `simfile.observe.v1` — the report `simfile observe <run-dir>` emits
  * (Decision 21 / contracts.md's `simfile.observe.v1` row, the one contract
@@ -8,6 +36,10 @@ import { z } from "zod";
  * and omitted for the office-sim golden fixture (no seeded secret, no
  * compiled wake schedule); memetics increment (b) populates `seed_spread`/
  * `spread_summary` for a seed-declared run without a v2 bump.
+ * `world_grants` is also a DEFINED-BUT-OPTIONAL compatible v1 amendment: it
+ * surfaces the manifest's recorded grant marker without invalidating saved v1
+ * reports. Omission means "no marker recorded", not "no grants declared", so
+ * this amendment does not bump the literal to v2.
  */
 export const OBSERVE_REPORT_VERSION = "simfile.observe.v1" as const;
 
@@ -143,7 +175,10 @@ export const observeReportSchema = z
     failures: z.array(failureEntrySchema),
     seed_spread: z.array(seedSpreadSchema).optional(),
     spread_summary: spreadSummarySchema.optional(),
-    wake_diff: z.array(wakeDiffEntrySchema).optional()
+    wake_diff: z.array(wakeDiffEntrySchema).optional(),
+    world_grants: observeWorldGrantsSchema.optional(),
+    world_evidence: worldEvidenceSchema.optional()
+    ,social_plane: socialPlaneSchema.optional()
   })
   .strict();
 

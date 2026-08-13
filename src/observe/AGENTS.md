@@ -13,9 +13,15 @@ Spawnfile internals; the only cross-repo dependency is the narrow shared package
 - `report.ts` — the `simfile.observe.v1` zod schema/type + `parseObserveReport`.
 - `artifacts.ts` — `verifyManifestArtifacts`: sha256-checks every manifest-declared
   artifact against the file on disk. A mismatch is reported, never silently repaired.
-- `causalStreams.ts` — `collectCausalStreams`: walks `<runDir>/raw/**/causal.jsonl`,
-  tags each stream by its authority directory (`raw/<authority>/...`), and parses it
-  with `@noopolis/stele`'s `parseCausalJsonl`.
+- `rawFiles.ts` — the shared raw-artifact locator. It preserves the historical
+  top-level `raw/**` tree and admits exact nested raw artifacts only when the
+  sealed manifest names them (for example a composed `organization/raw/**`
+  export), exposing an honest run-relative path plus its `raw/`-relative
+  authority path.
+- `causalStreams.ts` — `collectCausalStreams`: reads every raw locator result
+  ending in `causal.jsonl`, tags it by the authority directly below its own
+  `raw/` namespace, and parses it with `@noopolis/stele`'s
+  `parseCausalJsonl`.
 - `memoryBanks.ts` — `collectMemoryBankCounts`: ledger-first (Slice B Piece 4b).
   Derives each bank's memory-write count from `memory.written` causal events
   (mneme's write-side envelope, reconciled alongside `memory.recalled`) when at
@@ -34,7 +40,11 @@ Spawnfile internals; the only cross-repo dependency is the narrow shared package
   `failures` (`turn.failed`/`wake.failed` events, plus any `seedSpread.ts`
   exclusion). `buildObserveReport` takes an optional `seedSpread` input
   (memetics increment (b)) and folds it into `seed_spread`/`spread_summary`
-  when present — omitted entirely for a manifest without `seed_declaration`.
+  when present — omitted entirely for a manifest without `seed_declaration`;
+  it also folds a recorded manifest world-grant marker into `world_grants`.
+- `worldGrants.ts` — validates and folds the manifest's optional
+  `world.world_grants` marker into observer evidence while preserving absence
+  as distinct from `none-declared`.
 - `seedSpreadArtifacts.ts` — I/O-only reads `seedSpread.ts`'s re-derivation
   needs beyond `causalStreams.ts`/`memoryBanks.ts`: `readSpreadTranscriptMessages`
   (every `transcript.json` under `raw/moltnet/**`, flattened to `{id, fromId,
@@ -57,13 +67,17 @@ Spawnfile internals; the only cross-repo dependency is the narrow shared package
   agent's own appearances. `diffSeedSpreadAgainstLiveMarkerSeen` is a
   diagnostic-only self-check against the live world loop's own `marker.seen`
   events (`spreadSelfCheck` on `ObserveResult`, never fed into the report
-  itself — `worldTickLoop.ts`'s own doc comment: polling order ≠ causal order).
+  itself — live polling order is not causal order).
 - `spreadMatcher.ts` — pure policy parser and matcher for seed spread. `exact`
   reuses `../ledger/markers.ts`'s word-boundary matching; `edit-distance` uses
   local Levenshtein scoring; model-backed policies fail loudly as unsupported.
 - `observe.ts` — `runObserve(runDir)` orchestrates the above and returns the
   report plus artifact-integrity/parse-error/spread-self-check diagnostics;
   `writeObserveReport` writes `<runDir>/observe/report.json`.
+- `summaryLines.ts` — pure rendering of the plain-text observe summary,
+  including the three world-grant output forms.
+- `observeCommand.ts` — the CLI adapter for `simfile observe`; owns its
+  argument parsing, warnings, output selection, and exit code.
 - `index.ts` — barrel.
 
 ## Rules

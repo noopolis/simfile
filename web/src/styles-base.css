@@ -17,6 +17,9 @@
   --dashed: rgba(255, 255, 255, 0.05);
   --accent: var(--green);
   --accent-hi: var(--green-hi);
+  --role-declared: #e8b64c;
+  --role-derived: #5ec8d8;
+  --role-refused: #e2604a;
   font-family: "JetBrains Mono", "SF Mono", "Menlo", "Cascadia Code", "Consolas", ui-monospace, monospace;
   background: var(--bg);
   color: var(--ink);

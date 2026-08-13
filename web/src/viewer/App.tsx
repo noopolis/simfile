@@ -1,8 +1,11 @@
 import { startTransition, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
-import type { ReactNode } from "react";
 import type { SkinResponse, ViewerDerivedWorld, ViewerEvent, ViewerNode, ViewerState, ViewerWorldErrorResponse, ViewerWorldResponse } from "./types.js";
-import { AsciiMap } from "./AsciiMap.js";
+import { EventRow, NodeButton, Panel } from "./AppRows.js";
+import { SceneMap } from "./SceneMap.js";
+import { NodeDetails } from "./NodeDetails.js";
 import { RenderSettingsPanel } from "./RenderSettingsPanel.js";
+import { SpatialPlaybackControls } from "./SpatialPlaybackControls.js";
+import { WorldHud } from "./WorldHud.js";
 import { replayModeErrorHeadline, replayMissingArtifactMessage, isReplayWorldError } from "./traceFixture.js";
 import { defaultRenderSettings } from "./renderSettings.js";
 import { buildViewerWorld, viewerSkins } from "./worldModel.js";
@@ -61,8 +64,6 @@ const nodeGroups: Array<{ label: string; kinds: ViewerNode["kind"][] }> = [
   { label: "AGENTS", kinds: ["agent"] },
   { label: "SIGNALS", kinds: ["variable", "marker", "probe"] },
 ];
-const sceneTickThrottleMs = 220;
-
 export const SimfileViewerApp = () => {
   const [state, setState] = useState<ViewerState | null>(null);
   const [skins, setSkins] = useState<SkinResponse | null>(null);
@@ -70,65 +71,68 @@ export const SimfileViewerApp = () => {
   const [worldLoadError, setWorldLoadError] = useState<ViewerWorldErrorResponse | Error | string | null>(null);
   const [events, setEvents] = useState<ViewerEvent[]>([]);
   const [tick, setTick] = useState(0);
+  const [runId, setRunId] = useState("");
   const [runName, setRunName] = useState("loading");
+  const [playbackStatus, setPlaybackStatus] =
+    useState<"live" | "completed" | "failed">("live");
   const [selectionId, setSelectionId] = useState("");
   const [skinId, setSkinId] = useState(viewerSkins[0]!.id);
   const [renderSettings, setRenderSettings] = useState(defaultRenderSettings);
   const sceneRenderSettings = useDeferredValue(renderSettings);
-  const pendingTickRef = useRef<number | null>(null);
-  const tickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const lastSceneTickRef = useRef(0);
+  const hasSpatialSamplesRef = useRef(false);
 
   useEffect(() => {
+    let disposed = false;
+    let stream: EventSource | null = null;
     void fetchJson<ViewerState>("/api/state").then(setState);
     void fetchJson<SkinResponse>("/api/skins").then(setSkins);
-    void fetchJson<ViewerWorldResponse>("/api/world")
+    const refreshWorld = () => fetchJson<ViewerWorldResponse>("/api/world")
       .then((response) => {
+        if (disposed) return null;
         const nextWorld = buildViewerWorld(response.trace);
+        hasSpatialSamplesRef.current = nextWorld.spatialSamples.length > 0;
         setWorld(nextWorld);
+        setRunId(response.run_id);
         setRunName(response.run_name || response.trace.run_name || response.run_id);
+        setPlaybackStatus(response.trace.playback_status ?? "live");
         setWorldLoadError(null);
-        setSelectionId((current) => current || nextWorld.nodes[1]?.id || nextWorld.nodes[0]?.id || "");
+        setSelectionId((current) =>
+          current || nextWorld.nodes.find((node) => node.kind === "room")?.id || nextWorld.nodes[0]?.id || "");
+        return response.trace.playback_status ?? "live";
       })
       .catch((error: unknown) => {
-        setWorldLoadError(normalizeWorldError(error));
+        if (!disposed) setWorldLoadError(normalizeWorldError(error));
+        return null;
       });
 
-    const flushTick = () => {
-      tickTimerRef.current = null;
-      const nextTick = pendingTickRef.current;
-      pendingTickRef.current = null;
-      if (typeof nextTick === "number") {
-        lastSceneTickRef.current = performance.now();
-        setTick(nextTick);
-      }
+    const connectStream = () => {
+      if (disposed || stream !== null) return;
+      stream = new EventSource("/api/events");
+      stream.onmessage = (message) => {
+        const event = JSON.parse(message.data) as ViewerEvent;
+        if (event.type === "sim.tick" && typeof event.tick === "number") {
+          if (!hasSpatialSamplesRef.current) setTick(event.tick);
+          void refreshWorld().then((status) => {
+            if (status !== null && status !== "live") {
+              stream?.close();
+              stream = null;
+            }
+          });
+        }
+        startTransition(() => {
+          setEvents((current) => [event, ...current].slice(0, 16));
+        });
+      };
     };
 
-    const scheduleSceneTick = (nextTick: number) => {
-      pendingTickRef.current = nextTick;
-      if (tickTimerRef.current !== null) {
-        return;
-      }
-      const elapsed = performance.now() - lastSceneTickRef.current;
-      const wait = Math.max(0, sceneTickThrottleMs - elapsed);
-      tickTimerRef.current = setTimeout(flushTick, wait);
-    };
+    void refreshWorld().then((status) => {
+      if (status === "live") connectStream();
+    });
 
-    const stream = new EventSource("/api/events");
-    stream.onmessage = (message) => {
-      const event = JSON.parse(message.data) as ViewerEvent;
-      if (event.type === "sim.tick" && typeof event.tick === "number") {
-        scheduleSceneTick(event.tick);
-      }
-      startTransition(() => {
-        setEvents((current) => [event, ...current].slice(0, 16));
-      });
-    };
     return () => {
-      stream.close();
-      if (tickTimerRef.current !== null) {
-        clearTimeout(tickTimerRef.current);
-      }
+      disposed = true;
+      stream?.close();
+      stream = null;
     };
   }, []);
 
@@ -155,8 +159,16 @@ export const SimfileViewerApp = () => {
   const skinOptions = skins?.options.length
     ? viewerSkins.filter((skin) => skins.options.some((option) => option.id === skin.id))
     : viewerSkins;
-  const statusSubtitle = `${state?.mode ?? "loading"} · tick ${tick}`;
-  const streamLabel = state?.mode === "live" ? "heartbeat stream connected." : "replay clock connected.";
+  const livePlayback = state?.mode === "live" && playbackStatus === "live";
+  const presentationMode = state?.mode === "live" && playbackStatus !== "live"
+    ? `replay ${playbackStatus}`
+    : state?.mode ?? "loading";
+  const statusSubtitle = `${presentationMode} · tick ${
+    Number.isInteger(tick) ? tick : tick.toFixed(1)
+  }`;
+  const streamLabel = livePlayback
+    ? "heartbeat stream connected."
+    : "replay clock connected.";
 
   if (worldLoadError !== null) {
     const replayError = isReplayWorldError(worldLoadError) ? worldLoadError : null;
@@ -263,16 +275,39 @@ export const SimfileViewerApp = () => {
 
         <section className="main-column">
           <Panel title="WORLD MAP" count={`${world.nodes.length} objects · ${world.roomPaths.length} paths`}>
-            <AsciiMap
+            <SceneMap
               nodes={world.nodes}
               onSelect={setSelectionId}
+              onToggleLabels={() => setRenderSettings((current) => ({ ...current, showLabels: !current.showLabels }))}
               renderSettings={sceneRenderSettings}
               roomPaths={world.roomPaths}
               rooms={world.roomGeometries}
               selectedNode={selectedNode}
               selectedSkin={selectedSkin}
+              presenceByAgent={world.presenceByAgent}
+              spatialSamples={world.spatialSamples}
+              tick={tick}
+              tickDurationMs={world.tickDurationMs}
             />
           </Panel>
+
+          <WorldHud
+            inspectionsByNode={world.inspectionsByNode}
+            inspectionSamples={world.inspectionSamples}
+            nodes={world.nodes}
+            onSelect={setSelectionId}
+            selectedNodeId={selectedNode.id}
+            spatialSamples={world.spatialSamples}
+            tick={tick}
+          />
+
+          <SpatialPlaybackControls
+            live={livePlayback}
+            onTick={setTick}
+            runId={runId}
+            samples={world.spatialSamples}
+            tickDurationMs={world.tickDurationMs}
+          />
 
           <div className="focus-rail" aria-label="Focus targets">
             {world.nodes.map((node) => (
@@ -290,15 +325,17 @@ export const SimfileViewerApp = () => {
         </section>
 
         <aside className="inspector">
-          <Panel title="DETAIL" count={selectedNode.kind.toUpperCase()}>
-            <div className="detail-head">
-              <p>{selectedNode.label}</p>
-              <span>{selectedNode.value}</span>
-            </div>
-            <DetailRow label="scope" value={selectedNode.scope} />
-            <DetailRow label="status" value={selectedNode.subtitle} />
-            <DetailRow label="scene" value={selectedNode.scene.map((value) => value.toFixed(2)).join(", ")} />
-            <p className="detail-copy">{selectedNode.detail}</p>
+          <Panel
+            title={selectedNode.kind === "agent" ? "AGENT INSPECTOR" : "DETAIL"}
+            count={selectedNode.kind.toUpperCase()}
+          >
+            <NodeDetails
+              inspection={world.inspectionsByNode[selectedNode.id]}
+              inspectionSamples={world.inspectionSamples}
+              node={selectedNode}
+              spatialSamples={world.spatialSamples}
+              tick={tick}
+            />
           </Panel>
 
           <Panel title="EVENTS" count={`${world.ledgerRows.length + events.length} rows`}>
@@ -333,66 +370,3 @@ export const SimfileViewerApp = () => {
     </main>
   );
 };
-
-function Panel({ children, count, title }: {
-  children: ReactNode;
-  count?: ReactNode;
-  title: string;
-}) {
-  return (
-    <section className="panel">
-      <div className="panel-header">
-        <span>[ {title} ]</span>
-        {count !== undefined ? <span>{count}</span> : null}
-      </div>
-      <div className="panel-body">{children}</div>
-    </section>
-  );
-}
-
-function NodeButton({ active, node, onSelect }: {
-  active: boolean;
-  node: ViewerNode;
-  onSelect: (id: string) => void;
-}) {
-  return (
-    <button className={active ? "active" : ""} onClick={() => onSelect(node.id)} type="button">
-      <span className="row-main">
-        <span className="marker">{active ? ">" : node.kind === "agent" ? "●" : "·"}</span>
-        <span className="row-text">
-          <span>{node.label}</span>
-          <small>{node.subtitle}</small>
-        </span>
-      </span>
-      <span className="row-trail">{node.value}</span>
-    </button>
-  );
-}
-
-function DetailRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="detail-row">
-      <span>{label} :</span>
-      <span>{value}</span>
-    </div>
-  );
-}
-
-function EventRow({ actor, detail, target, time, type }: {
-  actor: string;
-  detail: string;
-  target: string;
-  time: string;
-  type: string;
-}) {
-  return (
-    <div className="event-row">
-      <span>[{time}]</span>
-      <span>[{type}]</span>
-      <strong>{actor}</strong>
-      <span>→</span>
-      <span>{target}</span>
-      <em>{detail}</em>
-    </div>
-  );
-}

@@ -10,3 +10,6 @@ runs/*
 here.txt
 .env
 .DS_Store
+fixtures/**/runs/
+fixtures/sims/tiny-football/.local/
+web/public/cssoccer/

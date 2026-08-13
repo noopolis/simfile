@@ -1,8 +1,11 @@
 import { spawn } from "node:child_process";
 
 import { createViewerServer } from "./server.js";
+import { loadRunViewerExtensionPlan } from "./runViewerExtensions.js";
 
 export interface ViewCommandOptions {
+  extensionDescriptors: string[];
+  ignoreRecordedViewerExtensions: boolean;
   port: number;
   sourcePath: string;
   statePath?: string;
@@ -17,6 +20,8 @@ export interface ParsedViewCommand {
 
 export const parseViewArguments = (argv: readonly string[]): ParsedViewCommand => {
   const parsed: ViewCommandOptions = {
+    extensionDescriptors: [],
+    ignoreRecordedViewerExtensions: false,
     port: 4400,
     sourcePath: ".",
     openBrowser: true,
@@ -54,6 +59,28 @@ export const parseViewArguments = (argv: readonly string[]): ParsedViewCommand =
 
     if (arg === "--no-open") {
       parsed.openBrowser = false;
+      continue;
+    }
+
+    if (arg === "--ignore-recorded-viewer-extensions") {
+      parsed.ignoreRecordedViewerExtensions = true;
+      continue;
+    }
+
+    if (arg === "--viewer-extension") {
+      const value = argv[index + 1];
+      if (!value) {
+        return { error: "Missing value for --viewer-extension" };
+      }
+      parsed.extensionDescriptors.push(value);
+      index += 1;
+      continue;
+    }
+
+    if (arg.startsWith("--viewer-extension=")) {
+      parsed.extensionDescriptors.push(
+        arg.slice("--viewer-extension=".length),
+      );
       continue;
     }
 
@@ -104,12 +131,36 @@ export const runViewCommand = async (argv: readonly string[]): Promise<number> =
     return 1;
   }
 
-  const handle = await createViewerServer({
-    port: parsed.options.port,
-    sourcePath: parsed.options.sourcePath,
-    statePath: parsed.options.statePath,
-    mode: parsed.options.statePath ? "live" : "replay",
-  });
+  let handle;
+  try {
+    if (parsed.options.ignoreRecordedViewerExtensions) {
+      process.stderr.write(
+        "WARNING: RECORDED VIEWER EXTENSIONS ARE BEING IGNORED; "
+        + "the generic viewer was explicitly requested.\n",
+      );
+    }
+    const extensionPlan = await loadRunViewerExtensionPlan({
+      explicitDescriptors: parsed.options.extensionDescriptors,
+      ignoreRecorded: parsed.options.ignoreRecordedViewerExtensions,
+      runDir: parsed.options.sourcePath,
+      trustedRoot: process.cwd(),
+    });
+    handle = await createViewerServer({
+      extensions: extensionPlan.mounts,
+      extensionIdentities: extensionPlan.identities,
+      reconcileViewerExtensionsAtSeal: extensionPlan.reconcileAtSeal,
+      port: parsed.options.port,
+      sourcePath: parsed.options.sourcePath,
+      statePath: parsed.options.statePath,
+      mode: parsed.options.statePath ? "live" : "replay",
+      ...(parsed.options.ignoreRecordedViewerExtensions
+        ? { recordedViewerExtensions: "ignored" as const }
+        : {}),
+    });
+  } catch (error) {
+    process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);
+    return 1;
+  }
 
   const modeLabel = parsed.options.statePath ? "live" : "replay";
   process.stdout.write(
@@ -137,7 +188,8 @@ const viewUsage = (): string => [
   "Usage:",
   "  simfile view --state <path>",
   "  simfile view <run-record-dir>",
-  "  simfile view --port 4400 --no-open --state .sim/",
+  "  simfile view <run-record-dir> [--ignore-recorded-viewer-extensions]",
+  "  simfile view --port 4400 --no-open --state .sim/ [--viewer-extension <descriptor>]",
   "  simfile view --help",
   "",
 ].join("\n");

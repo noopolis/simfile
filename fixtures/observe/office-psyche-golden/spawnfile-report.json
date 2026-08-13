@@ -1,0 +1,46 @@
+{
+  "compile_fingerprint": "sf1:officepsychegolden",
+  "container": {
+    "moltnet": {
+      "server_plans": [
+        {
+          "id": "office-psyche-office-floor",
+          "network_id": "office-floor",
+          "rooms": [
+            { "id": "commons", "members": ["eleanor", "sam", "mara"] }
+          ]
+        },
+        {
+          "id": "eleanor-mind-eleanor_inner",
+          "network_id": "eleanor_inner",
+          "rooms": [
+            { "id": "eleanor-council", "members": ["eleanor", "eleanor-animus", "eleanor-shadow"] }
+          ]
+        }
+      ]
+    }
+  },
+  "nodes": [
+    { "id": "team:eleanor-mind", "kind": "team" },
+    {
+      "id": "agent:eleanor",
+      "kind": "agent",
+      "active_environments": {
+        "moltnet": {
+          "office-floor": {
+            "rooms": {
+              "commons": { "member_slot": "eleanor-mind", "team_id": "office-psyche--eleanor-mind" }
+            }
+          },
+          "eleanor_inner": {
+            "rooms": {
+              "eleanor-council": { "member_slot": "eleanor", "team_id": "eleanor-mind" }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "project_name": "office-psyche",
+  "spawnfile_version": "0.1"
+}

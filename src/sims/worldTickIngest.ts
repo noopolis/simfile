@@ -1,5 +1,5 @@
 import type { LedgerEvent } from "../ledger/markers.js";
-import type { MoltnetRoomMessage } from "./moltnetRoomClient.js";
+import type { MoltnetRoomMessage } from "../moltnet/types.js";
 
 /**
  * Lowers one Moltnet room message to the `LedgerEvent` shape `scanMarkers`

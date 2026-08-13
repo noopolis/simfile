@@ -54,15 +54,16 @@ variables:
 rules:
   alert:
     when:
-      event: wake.recommended
+      event: world.message
       target: room:lab:archive
       scope: room:lab:archive
     do:
       - action: moltnet:dm
         to: agent:ghost
         content: "Ghost"
-      - action: wake:recommend
+      - action: moltnet:message
         to: room:lab:lobby
+        content: "Observation notice."
 markers:
   war:
     mode: containment
@@ -72,7 +73,7 @@ markers:
 probes:
   alert_probe:
     when:
-      event: wake.recommended
+      event: world.message
       actor: agent:missing-agent
     expect:
       at_least: 1
@@ -101,7 +102,7 @@ probes:
     assert.ok(messages.includes('rule "alert" event target references unknown room room:lab:archive'));
     assert.ok(messages.includes('rule "alert" event scope references unknown room room:lab:archive'));
     assert.ok(messages.includes('rule "alert" action moltnet:dm target references unknown agent agent:ghost'));
-    assert.ok(messages.includes('rule "alert" action wake:recommend target references unknown room room:lab:lobby'));
+    assert.ok(messages.includes('rule "alert" action moltnet:message target references unknown room room:lab:lobby'));
     assert.ok(messages.includes('marker "war" scope references unknown team team:missing-team'));
     assert.ok(messages.includes('probe "alert_probe" event actor references unknown agent agent:missing-agent'));
     assert.ok(diagnostics.every((entry) => entry.level === "error"));

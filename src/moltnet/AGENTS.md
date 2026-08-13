@@ -3,7 +3,7 @@
 This folder contains Simfile-to-Moltnet bridge helpers for posting mechanical world
 events to Moltnet participants.
 
-- `world-participant.ts` maps `world.message`, `world.dm`, and `wake.recommended`
+- `world-participant.ts` maps `world.message` and `world.dm`
   events into Moltnet `/v1/messages` requests.
 - `transcript-export.ts` reads room and DM transcripts back from Moltnet and marks
   them as the accepted `moltnet-exported` social record.

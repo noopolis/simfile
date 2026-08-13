@@ -26,6 +26,17 @@ export interface ResolvedClockState {
 
 const DAY_SECONDS = 86_400;
 
+const parsePositiveDuration = (value: unknown, field: "tick" | "sim_per_tick"): number => {
+  if (typeof value !== "string") {
+    throw new Error(`clock ${field} must be a duration string`);
+  }
+  const seconds = parseDurationSeconds(value);
+  if (!Number.isFinite(seconds) || seconds <= 0) {
+    throw new Error(`clock ${field} must be positive and finite: ${value}`);
+  }
+  return seconds;
+};
+
 const parsePhaseTime = (value: string): number => {
   const normalized = value.trim();
   const [hoursRaw, minutesRaw] = normalized.split(":", 2);
@@ -43,15 +54,10 @@ const parsePhaseTime = (value: string): number => {
 };
 
 export const parseClockSpec = (clock: ClockSpec): ClockRuntime => {
-  const tickSeconds = parseDurationSeconds(clock.tick);
-  if (tickSeconds <= 0) {
-    throw new Error(`clock tick must be positive: ${clock.tick}`);
-  }
-
-  const simPerTickSeconds = clock.sim_per_tick ? parseDurationSeconds(clock.sim_per_tick) : tickSeconds;
-  if (simPerTickSeconds <= 0) {
-    throw new Error(`clock sim_per_tick must be positive: ${clock.sim_per_tick}`);
-  }
+  const tickSeconds = parsePositiveDuration(clock.tick, "tick");
+  const simPerTickSeconds = clock.sim_per_tick === undefined
+    ? tickSeconds
+    : parsePositiveDuration(clock.sim_per_tick, "sim_per_tick");
 
   const phases = Object.entries(clock.phases ?? {})
     .map(([id, rawStart]) => ({ id, startSeconds: parsePhaseTime(rawStart) }))

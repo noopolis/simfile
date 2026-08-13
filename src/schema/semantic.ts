@@ -102,6 +102,7 @@ const validateExpressionDependencies = (
 
 export const validateSimfileSemantics = (simfile: Simfile): string[] => {
   const warnings: string[] = [];
+  const placeIds = new Set(Object.keys(simfile.places));
   const variableIds = new Set(Object.keys(simfile.variables));
   const phaseIds = new Set(Object.keys(simfile.clock.phases));
   const fedVariableIds = new Set(
@@ -109,6 +110,21 @@ export const validateSimfileSemantics = (simfile: Simfile): string[] => {
       .filter(([, variable]) => variable.fed_by !== undefined)
       .map(([variableId]) => variableId)
   );
+
+  for (const [agentId, placeId] of Object.entries(simfile.presence)) {
+    if (!placeIds.has(placeId)) {
+      warnings.push(`presence "${agentId}" references unknown place ${placeId}`);
+    }
+  }
+
+  for (const [routeId, route] of Object.entries(simfile.routes)) {
+    if (!placeIds.has(route.from)) {
+      warnings.push(`route "${routeId}" from references unknown place ${route.from}`);
+    }
+    if (!placeIds.has(route.to)) {
+      warnings.push(`route "${routeId}" to references unknown place ${route.to}`);
+    }
+  }
 
   for (const [variableId, variable] of Object.entries(simfile.variables)) {
     if (variable.derive) {
@@ -139,6 +155,24 @@ export const validateSimfileSemantics = (simfile: Simfile): string[] => {
   for (const [ruleId, rule] of Object.entries(simfile.rules)) {
     validateWhenNode(rule.when, `rule ${ruleId} when`, variableIds, phaseIds);
     for (const action of rule.do) {
+      if (action.action === "move") {
+        const from = simfile.presence[action.agent];
+        if (from === undefined) {
+          warnings.push(`rule "${ruleId}" action move references unknown agent ${action.agent}`);
+        }
+        if (!placeIds.has(action.to)) {
+          warnings.push(`rule "${ruleId}" action move references unknown place ${action.to}`);
+        }
+        if (from !== undefined && placeIds.has(from) && placeIds.has(action.to)) {
+          const connected = Object.values(simfile.routes).some((route) =>
+            (route.from === from && route.to === action.to)
+            || (route.direction === "bidirectional" && route.from === action.to && route.to === from)
+          );
+          if (!connected) {
+            warnings.push(`rule "${ruleId}" action move has no route from ${from} to ${action.to}`);
+          }
+        }
+      }
       if ((action.action === "variable:set" || action.action === "variable:delta")
         && !variableIds.has(action.variable)) {
         throw new Error(`rule ${ruleId} action ${action.action} references unknown variable ${action.variable}`);

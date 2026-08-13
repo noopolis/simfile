@@ -12,12 +12,15 @@ import { collectMemoryBankCounts } from "./memoryBanks.js";
 import type { SimfileRunManifest } from "./manifest.js";
 import { parseRunManifest } from "./manifest.js";
 import type { SimfileObserveReport } from "./report.js";
+import { rawBank } from "./rawFiles.js";
 import { computeSeedSpread, diffSeedSpreadAgainstLiveMarkerSeen, type SeedSpreadSelfCheck } from "./seedSpread.js";
 import {
   readSpreadTranscriptMessages,
   readTickByIngestedMessageId,
   readSpreadMnemeEventsByBank
 } from "./seedSpreadArtifacts.js";
+import { readWorldEvidence } from "./worldEvidence.js";
+import { computeSocialPlane, readSocialTranscript } from "./socialPlane.js";
 
 export interface ObserveResult {
   artifactIntegrity: ArtifactIntegrityCheck[];
@@ -34,12 +37,6 @@ export interface ObserveResult {
 const loadRunManifest = async (runDir: string): Promise<SimfileRunManifest> => {
   const raw = JSON.parse(await readFile(path.join(runDir, "manifest.json"), "utf8")) as unknown;
   return parseRunManifest(raw);
-};
-
-const bankFromRelativePath = (relativePath: string): string | undefined => {
-  // raw/mneme/<bank>/causal.jsonl
-  const segments = relativePath.split(path.sep);
-  return segments[0] === "raw" && segments[1] === "mneme" ? segments[2] : undefined;
 };
 
 /**
@@ -64,7 +61,7 @@ export const runObserve = async (runDir: string): Promise<ObserveResult> => {
 
   const eventsByBank = new Map<string, CausalEvent[]>();
   for (const stream of streams) {
-    const bank = bankFromRelativePath(stream.relativePath);
+    const bank = rawBank(stream.relativePath);
     if (!bank) continue;
     eventsByBank.set(bank, [...(eventsByBank.get(bank) ?? []), ...stream.events]);
   }
@@ -98,9 +95,18 @@ export const runObserve = async (runDir: string): Promise<ObserveResult> => {
     );
   }
 
-  const report = buildObserveReport({ allEvents, manifest, memoryBanks, reconciled, seedSpread });
+  const worldEvidenceResult = await readWorldEvidence(runDir, allEvents);
+  const socialPlane = computeSocialPlane(await readSocialTranscript(runDir), allEvents);
+  const report = buildObserveReport({ allEvents, manifest, memoryBanks, reconciled, seedSpread, worldEvidence: worldEvidenceResult.evidence, socialPlane });
 
-  return { artifactIntegrity, causalParseErrors, manifest, report, streams, spreadSelfCheck };
+  return {
+    artifactIntegrity,
+    causalParseErrors: [...causalParseErrors, ...worldEvidenceResult.parseErrors],
+    manifest,
+    report,
+    streams,
+    spreadSelfCheck
+  };
 };
 
 /** Writes `observe/report.json` under the run directory; returns its path. */

@@ -1,5 +1,6 @@
 export * from "./clock.js";
 export * from "./condition.js";
+export * from "./dynamics-guard.js";
 export * from "./expression.js";
 export * from "./run-record.js";
 export * from "./step-tick.js";

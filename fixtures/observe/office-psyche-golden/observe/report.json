@@ -1,0 +1,39 @@
+{
+  "version": "simfile.observe.v1",
+  "run_id": "run-office-psyche-golden",
+  "contract_versions": {
+    "causal-event.v1": "noopolis.causal-event.v1",
+    "simfile.observe.v1": "simfile.observe.v1",
+    "simfile.run-manifest.v1": "simfile.run-manifest.v1"
+  },
+  "participants": [
+    "eleanor",
+    "eleanor-animus",
+    "eleanor-shadow",
+    "mara",
+    "sam"
+  ],
+  "agent_turns": {
+    "count": 8,
+    "sequence": [
+      "eleanor",
+      "eleanor-animus",
+      "sam",
+      "eleanor-shadow",
+      "eleanor",
+      "eleanor",
+      "mara",
+      "eleanor"
+    ]
+  },
+  "chains": { "complete": 46, "incomplete": [] },
+  "memory": [
+    {
+      "bank": "northwind-recall",
+      "events": 8,
+      "recalls": 2,
+      "memory_write_source": "events-fallback"
+    }
+  ],
+  "failures": []
+}

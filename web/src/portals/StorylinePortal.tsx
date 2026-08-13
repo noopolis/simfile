@@ -83,8 +83,8 @@ const PORTAL_STACK_WIDTH = 336;
  * when `elementRef` names a membrane (`../store/timeline.ts`'s
  * `membraneForRef` — a real `RunTimeline.membranes` entry, e.g. `team:luna`),
  * this renders `MembraneView` instead of the flat strip — the mini interior
- * map + interior chat + minds rail, all reading the same store cursor. This
- * is a DATA-PRESENCE branch, not a per-run special case: a leaf agent/room
+ * map renders the run's world tick while interior chat + minds read the store
+ * cursor. This is a DATA-PRESENCE branch, not a per-run special case: a leaf agent/room
  * (no membrane, e.g. every office-sim element) falls through to the exact
  * flat rendering that existed before membranes did, via the shared
  * `StorylineRows` component. An agent that happens to BE some membrane's own
@@ -113,7 +113,7 @@ export function StorylinePortal({
   stackIndex?: number;
   /** Increment 4: `/api/run-meta`'s `variableSamples`, passed down only so a `variable:<id>` portal can render its trajectory panel — `undefined`/absent for every other element kind's portal. */
   variableSamples?: readonly RunMetaVariableSample[];
-  /** The world clock's own tick "as of" the scrub cursor (`variableModel.ts`'s `tickAtCursor`, computed once by `RunReplayShell`). */
+  /** The run's one world tick "as of" the scrub cursor (`variableModel.ts`'s `tickAtCursor`, computed once by `RunReplayShell`), consumed by both a `variable:<id>` trajectory panel and the membrane interior map. */
   variableTick?: number;
 }) {
   const { timeline, cursor, highlightedEventIds, openPortals } = useTimelineStore();
@@ -129,7 +129,7 @@ export function StorylinePortal({
   return (
     <aside
       aria-label={`${labelFor(elementRef)} storyline`}
-      className="storyline-portal"
+      className={`storyline-portal${membrane ? " storyline-portal--membrane" : ""}`}
       style={{ right: 16 + stackIndex * PORTAL_STACK_WIDTH }}
     >
       <div className="storyline-header">
@@ -139,7 +139,7 @@ export function StorylinePortal({
       </div>
       <div className="storyline-breadcrumb">{breadcrumb}</div>
       {membrane ? (
-        <MembraneView membrane={membrane} timeline={timeline} />
+        <MembraneView membrane={membrane} tick={variableTick} timeline={timeline} />
       ) : (
         <>
           {representedMembrane ? (

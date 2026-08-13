@@ -1,5 +1,6 @@
 import { parseRange } from "../kernel/range.js";
 import type { Simfile, SimfileGenerator, SimfileRule, SimfileRuleAction, SimfileVariable } from "../schema/model.js";
+import type { TransitState } from "./types.js";
 import { conditionVariableIds, ConditionEvaluator, type ConditionNode } from "./condition.js";
 import { compileExpression, type CompiledExpression } from "./expression.js";
 
@@ -43,7 +44,13 @@ export interface RuleRuntime {
 }
 
 export interface CompiledTraceRuntime {
+  initialPresence: Record<string, string>;
+  /** Fallback mutable transit state for callers of the live per-tick seam. */
+  transit: Map<string, TransitState>;
+  /** Directional from/to key to deterministic travel time. */
+  travelTicksByRoute: Map<string, number>;
   initialState: Record<string, number>;
+  placeIds: string[];
   ranges: Map<string, RangeSpec>;
   derivedOrder: string[];
   derivedExpressions: Map<string, DerivedSpec>;
@@ -54,6 +61,8 @@ export interface CompiledTraceRuntime {
   /** Declared scope per variable id (world.act envelope scope). */
   variableScopes: Map<string, string>;
 }
+
+export const routeKey = (from: string, to: string): string => `${from}\u0000${to}`;
 
 export const parseVariableSpecs = (
   simfile: Simfile,
@@ -220,8 +229,25 @@ export const compileRuntime = (simfile: Simfile): CompiledTraceRuntime => {
   }
 
   const { order, specs: derivedExpressions } = parseDerivedSpecs(variables);
+  const travelTicksByRoute = new Map<string, number>();
+  for (const [, route] of Object.entries(simfile.routes).sort(([left], [right]) => compareIds(left, right))) {
+    const forward = routeKey(route.from, route.to);
+    if (!travelTicksByRoute.has(forward)) {
+      travelTicksByRoute.set(forward, route.travel_ticks);
+    }
+    if (route.direction === "bidirectional") {
+      const reverse = routeKey(route.to, route.from);
+      if (!travelTicksByRoute.has(reverse)) {
+        travelTicksByRoute.set(reverse, route.travel_ticks);
+      }
+    }
+  }
   return {
+    initialPresence: { ...simfile.presence },
+    transit: new Map(),
+    travelTicksByRoute,
     initialState,
+    placeIds: Object.keys(simfile.places).sort(compareIds),
     ranges,
     derivedOrder: order,
     derivedExpressions,

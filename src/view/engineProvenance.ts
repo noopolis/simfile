@@ -38,6 +38,37 @@ export interface EngineProvenance {
   label: string;
 }
 
+export interface DecisionSource {
+  kind?: string;
+  provenance?: string;
+  model_decisions?: boolean;
+  live_acceptance?: boolean;
+}
+
+/** Narrows the untyped manifest.world.decision_source value. */
+export const decisionSourceFromUnknown = (value: unknown): DecisionSource | undefined => {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) return undefined;
+
+  const record = value as Record<string, unknown>;
+  const source: DecisionSource = {};
+  if (typeof record.kind === "string") source.kind = record.kind;
+  if (typeof record.provenance === "string") source.provenance = record.provenance;
+  if (typeof record.model_decisions === "boolean") source.model_decisions = record.model_decisions;
+  if (typeof record.live_acceptance === "boolean") source.live_acceptance = record.live_acceptance;
+  return source;
+};
+
+export const decisionSourceClassification = (
+  source: DecisionSource | undefined
+): EngineClassification | undefined => {
+  if (source === undefined) return undefined;
+  if (source.model_decisions === false) return "scripted";
+  if (source.live_acceptance === false) return "scripted";
+  if (source.provenance === "scripted") return "scripted";
+  if (source.model_decisions === true && source.live_acceptance === true) return "real-engine";
+  return undefined;
+};
+
 const SCRIPTED_PATTERN = /^fake-/iu;
 const REAL_ENGINE_NAMES = ["grok", "codex", "agy", "claude"] as const;
 
@@ -62,7 +93,9 @@ const UNKNOWN_LABEL = "❓ ENGINE UNKNOWN — provenance not disclosed, do not a
 
 const realEngineLabel = (engines: readonly EngineEntry[]): string => {
   const names = [...new Set(engines.map((entry) => entry.engine))];
-  return `🧠 REAL ENGINE · ${names.join(", ")}`;
+  return names.length > 0
+    ? `🧠 REAL ENGINE · ${names.join(", ")}`
+    : "🧠 REAL ENGINE — engine name not disclosed";
 };
 
 const mixedLabel = (engines: readonly EngineEntry[]): string => {
@@ -80,7 +113,7 @@ const mixedLabel = (engines: readonly EngineEntry[]): string => {
  * engine field disclosed anywhere) is `"unknown"` — never defaulted to
  * real or scripted.
  */
-export const computeEngineProvenance = (engines: readonly EngineEntry[]): EngineProvenance => {
+const classifyEngineEntries = (engines: readonly EngineEntry[]): EngineProvenance => {
   if (engines.length === 0) {
     return { mode: "unknown", engines: [], label: UNKNOWN_LABEL };
   }
@@ -95,4 +128,23 @@ export const computeEngineProvenance = (engines: readonly EngineEntry[]): Engine
   }
 
   return { mode: "mixed", engines: [...engines], label: mixedLabel(engines) };
+};
+
+/**
+ * Applies the record's authoritative decision source before consulting engine
+ * names. The engine-only path remains unchanged when the field is absent.
+ */
+export const computeEngineProvenance = (
+  engines: readonly EngineEntry[],
+  decisionSource?: DecisionSource
+): EngineProvenance => {
+  const decisionClassification = decisionSourceClassification(decisionSource);
+  if (decisionClassification === "scripted") {
+    return { mode: "scripted", engines: [...engines], label: SCRIPTED_LABEL };
+  }
+  if (decisionClassification === "real-engine") {
+    return { mode: "real-engine", engines: [...engines], label: realEngineLabel(engines) };
+  }
+
+  return classifyEngineEntries(engines);
 };

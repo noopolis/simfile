@@ -269,7 +269,7 @@ const validateRuleAction = (
   index: ScopeIndex,
   diagnostics: BindingDiagnostic[]
 ): void => {
-  if ("to" in action) {
+  if ("to" in action && action.action !== "move") {
     addDiagnosticsForScope(action.to, `rule "${ruleId}" action ${action.action} target`, index, diagnostics);
   }
 };

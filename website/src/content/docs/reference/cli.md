@@ -82,7 +82,10 @@ moltnet-delivery.json     optional
 
 The optional Moltnet files are explicitly marked `harness-derived`; they are not evidence captured from a live Moltnet service. Failed marker or probe evaluations are recorded in `report.json` but do not make the command itself fail.
 
-`simfile run` does not start the file referenced by top-level `spawnfile:`. Passing `--spawnfile-report` validates bindings only. Agent-backed composition currently uses source drivers under `src/sims/`; see [Spawnfile integration](/guides/spawnfile-integration/).
+`simfile run` does not start the file referenced by top-level `spawnfile:`.
+Passing `--spawnfile-report` validates bindings only. Agent-backed composition
+belongs to fixture-owned production runners; see
+[Spawnfile integration](/guides/spawnfile-integration/).
 
 ### Queued world acts
 

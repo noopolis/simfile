@@ -103,7 +103,7 @@ export function cameraFocusForNode(
   }
 
   const longestSide = Math.max(room.size[0], room.size[1]) * renderSettings.roomScale;
-  const focusMultiplier = clamp(5.8 / Math.max(1, longestSide), 1.35, 2.25);
+  const focusMultiplier = clamp(5.8 / Math.max(1, longestSide), 0.25, 2.25);
   return {
     center: [0.5, 0.5],
     target: [room.center[0], room.center[1], Math.max(0.08, room.wallHeight * renderSettings.wallHeightScale * 0.45)],

@@ -36,8 +36,9 @@ rules:
       - action: moltnet:message
         to: room:office-floor:case-warroom
         content: "fixture message"
-      - action: wake:recommend
+      - action: moltnet:message
         to: room:office-floor:case-warroom
+        content: "Observation notice."
 `, { path: "Simfile.yaml" }).simfile;
 
     const trace = runSimfileTrace(simfile, { runId: "fixture-run", seed: "fixture-seed", ticks: 1 });

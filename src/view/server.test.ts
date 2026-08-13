@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
-import { mkdtemp, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, it } from "node:test";
@@ -8,6 +9,117 @@ import { fileURLToPath } from "node:url";
 import { createViewerServer } from "./server.js";
 
 describe("createViewerServer", () => {
+  it("accepts only bounded numeric playback telemetry from the local viewer", async () => {
+    const statePath = await mkdtemp(path.join(tmpdir(), "simfile-view-diagnostics-"));
+    await writeFile(path.join(statePath, "viewer-trace.json"), JSON.stringify({
+      agents: [],
+      corridors: [],
+      ledger_facts: [],
+      playback_status: "completed",
+      presence: [],
+      rooms: [],
+      run_id: "run-diagnostics",
+      run_name: "diagnostics",
+      signals: [],
+      spatial_samples: [],
+      version: "viewer.trace.v1",
+    }));
+    const handle = await createViewerServer({
+      mode: "live",
+      port: 0,
+      sourcePath: ".",
+      statePath,
+    });
+    try {
+      const posted = await fetch(`${handle.url}/api/playback-diagnostics`, {
+        body: JSON.stringify({
+          callbackFps: 59.8,
+          ignored: "private text",
+          observedSpeed: 1.001,
+          positionFps: 58.9,
+        }),
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
+      });
+      assert.equal(posted.status, 204);
+      const response = await fetch(`${handle.url}/api/playback-diagnostics`);
+      const body = await response.json() as {
+        diagnostics: Record<string, unknown>;
+        received_at: string | null;
+      };
+      assert.deepEqual(body.diagnostics, {
+        callbackFps: 59.8,
+        observedSpeed: 1.001,
+        positionFps: 58.9,
+      });
+      assert.ok(body.received_at);
+    } finally {
+      await handle.close();
+    }
+  });
+
+  it("streams exact live trace ticks and reconnects without mutating observer state", async () => {
+    const statePath = await mkdtemp(path.join(tmpdir(), "simfile-live-view-state-"));
+    const tracePath = path.join(statePath, "viewer-trace.json");
+    const trace = (tick: number) => JSON.stringify({
+      agents: [],
+      corridors: [],
+      ledger_facts: [],
+      presence: [],
+      rooms: [],
+      run_id: "run-live",
+      run_name: "live-world",
+      signals: [],
+      spatial_samples: [{ occupancy: {}, tick, transit: [] }],
+      version: "viewer.trace.v1",
+    });
+    await writeFile(tracePath, trace(0));
+    let expectedAfterUpdate = "";
+    const handle = await createViewerServer({
+      mode: "live",
+      port: 0,
+      sourcePath: ".",
+      statePath,
+    });
+    const controller = new AbortController();
+    try {
+      const response = await fetch(`${handle.url}/api/events`, { signal: controller.signal });
+      assert.equal(response.status, 200);
+      assert.ok(response.body);
+      const reader = response.body!.getReader();
+      await writeFile(tracePath, trace(7));
+      expectedAfterUpdate = createHash("sha256").update(await readFile(tracePath)).digest("hex");
+      const decoder = new TextDecoder();
+      let received = "";
+      const deadline = Date.now() + 3_000;
+      while (!received.includes('"tick":7') && Date.now() < deadline) {
+        const next = await Promise.race([
+          reader.read(),
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error("live viewer event timeout")), 1_000)),
+        ]);
+        if (next.done) break;
+        received += decoder.decode(next.value, { stream: true });
+      }
+      assert.match(received, /"type":"sim\.tick","tick":7/u);
+      await reader.cancel();
+    } finally {
+      controller.abort();
+      await handle.close();
+    }
+    const afterFirstConnection = createHash("sha256").update(await readFile(tracePath)).digest("hex");
+    const reconnected = await createViewerServer({
+      mode: "live",
+      port: 0,
+      sourcePath: ".",
+      statePath,
+    });
+    await reconnected.close();
+    const afterReconnect = createHash("sha256").update(await readFile(tracePath)).digest("hex");
+    assert.equal(afterFirstConnection, expectedAfterUpdate);
+    assert.equal(afterFirstConnection, afterReconnect);
+  });
+
   it("serves live state and skin metadata", async () => {
     const statePath = await mkdtemp(path.join(tmpdir(), "simfile-view-state-"));
     const handle = await createViewerServer({
@@ -173,8 +285,12 @@ describe("createViewerServer", () => {
 
       const worldResponse = await fetch(`${handle.url}/api/world`);
       assert.equal(worldResponse.status, 200, "run-replay mode must adapt a world trace, not 404");
-      const world = await worldResponse.json() as { trace: { rooms: { id: string }[] } };
-      assert.equal(world.trace.rooms[0]?.id, "office-room");
+      const worldText = await worldResponse.text();
+      const world = JSON.parse(worldText) as { now: string; trace: { rooms: { id: string }[] } };
+      assert.equal(world.now, "2026-07-11T15:20:43.183Z");
+      assert.ok(world.trace.rooms[0]?.id.endsWith(":office-room"), world.trace.rooms[0]?.id);
+      assert.equal(await (await fetch(`${handle.url}/api/world`)).text(), worldText,
+        "sealed replay world responses must remain byte-identical");
 
       const eventsResponse = await fetch(`${handle.url}/api/events`);
       assert.equal(eventsResponse.status, 404, "run-replay mode must not open the live SSE stream");
@@ -289,7 +405,7 @@ describe("createViewerServer", () => {
       assert.equal(worldResponse.status, 200);
       const world = await worldResponse.json() as { trace: { rooms: { id: string; members: string[] }[] } };
       assert.equal(world.trace.rooms.length, 1);
-      assert.equal(world.trace.rooms[0]?.id, "commons");
+      assert.ok(world.trace.rooms[0]?.id.endsWith(":commons"), world.trace.rooms[0]?.id);
       assert.deepEqual(world.trace.rooms[0]?.members.slice().sort(), ["luna-representative", "selene-representative"]);
 
       const timelineResponse = await fetch(`${handle.url}/api/timeline`);
@@ -299,10 +415,68 @@ describe("createViewerServer", () => {
       };
       const luna = timeline.membranes.find((membrane) => membrane.ref === "team:luna");
       assert.ok(luna?.interiorWorld, "expected team:luna to carry an interiorWorld trace over the wire");
-      assert.equal(luna!.interiorWorld!.rooms[0]?.id, "luna-council");
+      assert.ok(luna!.interiorWorld!.rooms[0]?.id.endsWith(":luna-council"), luna!.interiorWorld!.rooms[0]?.id);
       assert.deepEqual(luna!.interiorWorld!.rooms[0]?.members.slice().sort(), [
         "luna-animus", "luna-representative", "luna-shadow",
       ]);
+    } finally {
+      await handle.close();
+    }
+  });
+
+  it("serves places, commute state, and an inner council together for office-psyche-golden", async () => {
+    const runDir = path.resolve(
+      path.dirname(fileURLToPath(import.meta.url)),
+      "..",
+      "..",
+      "fixtures",
+      "observe",
+      "office-psyche-golden",
+    );
+    const handle = await createViewerServer({ mode: "replay", port: 0, sourcePath: runDir });
+
+    try {
+      const worldResponse = await fetch(`${handle.url}/api/world`);
+      assert.equal(worldResponse.status, 200);
+      const world = await worldResponse.json() as { trace: {
+        rooms: { id: string }[];
+        corridors: { id: string }[];
+        agents: { id: string }[];
+        ledger_facts: { actor: string; type: string; tick: number; target: string }[];
+        spatial_samples: { tick: number; transit: { agent: string; ticks_remaining: number }[] }[];
+      } };
+      assert.deepEqual(world.trace.rooms.map((room) => room.id), [
+        "room:office-psyche:home",
+        "room:office-psyche:office",
+      ]);
+      assert.deepEqual(world.trace.corridors.map((corridor) => corridor.id), ["office_home"]);
+      assert.deepEqual(world.trace.agents.map((agent) => agent.id), ["eleanor", "mara", "sam"]);
+      assert.deepEqual(
+        world.trace.ledger_facts
+          .filter((fact) => fact.actor === "eleanor" && fact.type.startsWith("presence."))
+          .map((fact) => ({ actor: fact.actor, type: fact.type, tick: fact.tick, target: fact.target })),
+        [
+          { actor: "eleanor", type: "presence.arrived", tick: 0, target: "office" },
+          { actor: "eleanor", type: "presence.left", tick: 3, target: "office" },
+          { actor: "eleanor", type: "presence.arrived", tick: 5, target: "home" },
+        ],
+      );
+      assert.deepEqual(world.trace.spatial_samples[3]?.transit, [{
+        agent: "eleanor",
+        from_room: "room:office-psyche:office",
+        path_id: "office_home",
+        ticks_remaining: 2,
+        to_room: "room:office-psyche:home",
+      }]);
+
+      const timelineResponse = await fetch(`${handle.url}/api/timeline`);
+      assert.equal(timelineResponse.status, 200);
+      const timeline = await timelineResponse.json() as {
+        membranes: { ref: string; representative: string; interiorWorld?: { rooms: { id: string }[] } }[];
+      };
+      assert.equal(timeline.membranes[0]?.ref, "team:eleanor-mind");
+      assert.equal(timeline.membranes[0]?.representative, "agent:eleanor");
+      assert.equal(timeline.membranes[0]?.interiorWorld?.rooms[0]?.id, "room:eleanor_inner:eleanor-council");
     } finally {
       await handle.close();
     }

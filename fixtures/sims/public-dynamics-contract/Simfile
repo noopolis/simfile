@@ -1,0 +1,19 @@
+simfile_version: "0.1"
+name: public-dynamics-contract
+
+clock:
+  seed: public-dynamics-contract-seed
+  tick: 1s
+  sim_per_tick: 20ms
+
+dynamics:
+  module: ./systems/contract.ts
+  config: {}
+
+world:
+  id: contract
+  grants:
+    tester:
+      entity: entity:counter
+      senses: [sense:counter]
+      affordances: [affordance:increment]

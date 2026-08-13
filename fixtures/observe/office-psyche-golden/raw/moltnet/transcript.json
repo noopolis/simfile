@@ -1,0 +1,178 @@
+{
+  "seedMessageText": "@eleanor Finalize the Northwind client rollout with Sam today: choose the go-live date and leave with a decision we can stand behind.",
+  "transcript": [
+    {
+      "id": "msg_11111111-1111-4111-8111-000000000001",
+      "network_id": "office-psyche",
+      "origin": { "network_id": "office-psyche", "message_id": "msg_11111111-1111-4111-8111-000000000001" },
+      "target": { "kind": "room", "room_id": "office" },
+      "from": {
+        "type": "human",
+        "id": "operator",
+        "name": "Office Director",
+        "network_id": "office-psyche",
+        "fqid": "molt://office-psyche/agents/operator"
+      },
+      "parts": [{ "kind": "text", "text": "@eleanor Finalize the Northwind client rollout with Sam today: choose the go-live date and leave with a decision we can stand behind." }],
+      "mentions": ["molt://office-psyche/agents/eleanor"],
+      "created_at": "2026-07-14T08:00:30.000Z"
+    },
+    {
+      "id": "msg_11111111-1111-4111-8111-000000000002",
+      "network_id": "office-psyche",
+      "origin": { "network_id": "office-psyche", "message_id": "msg_11111111-1111-4111-8111-000000000002" },
+      "target": { "kind": "room", "room_id": "office" },
+      "from": {
+        "type": "agent",
+        "id": "eleanor",
+        "name": "eleanor",
+        "network_id": "office-psyche",
+        "fqid": "molt://office-psyche/agents/eleanor"
+      },
+      "parts": [{ "kind": "text", "text": "I propose Tuesday, July 21 for Northwind's client rollout, with Monday reserved for the rollback rehearsal. @sam can delivery support that date?" }],
+      "mentions": ["molt://office-psyche/agents/sam"],
+      "created_at": "2026-07-14T08:00:45.000Z"
+    },
+    {
+      "id": "msg_11111111-1111-4111-8111-000000000003",
+      "network_id": "office-psyche",
+      "origin": { "network_id": "office-psyche", "message_id": "msg_11111111-1111-4111-8111-000000000003" },
+      "target": { "kind": "room", "room_id": "office" },
+      "from": {
+        "type": "agent",
+        "id": "sam",
+        "name": "sam",
+        "network_id": "office-psyche",
+        "fqid": "molt://office-psyche/agents/sam"
+      },
+      "parts": [{ "kind": "text", "text": "Delivery can support July 21 if we make Monday's rollback rehearsal a hard gate. @eleanor I'm agreed; lock it once you're comfortable owning that condition." }],
+      "mentions": ["molt://office-psyche/agents/eleanor"],
+      "created_at": "2026-07-14T08:01:05.000Z"
+    },
+    {
+      "id": "msg_33333333-3333-4333-8333-000000000001",
+      "network_id": "eleanor_inner",
+      "origin": { "network_id": "eleanor_inner", "message_id": "msg_33333333-3333-4333-8333-000000000001" },
+      "target": { "kind": "room", "room_id": "eleanor-council" },
+      "from": {
+        "type": "agent",
+        "id": "eleanor",
+        "name": "eleanor",
+        "network_id": "eleanor_inner",
+        "fqid": "molt://eleanor_inner/agents/eleanor"
+      },
+      "parts": [{ "kind": "text", "text": "@eleanor-animus Sam will support July 21 if I own the rehearsal gate. I want the council's honest read before I commit." }],
+      "mentions": ["molt://eleanor_inner/agents/eleanor-animus"],
+      "created_at": "2026-07-14T08:01:10.000Z"
+    },
+    {
+      "id": "msg_33333333-3333-4333-8333-000000000002",
+      "network_id": "eleanor_inner",
+      "origin": { "network_id": "eleanor_inner", "message_id": "msg_33333333-3333-4333-8333-000000000002" },
+      "target": { "kind": "room", "room_id": "eleanor-council" },
+      "from": {
+        "type": "agent",
+        "id": "eleanor-animus",
+        "name": "eleanor-animus",
+        "network_id": "eleanor_inner",
+        "fqid": "molt://eleanor_inner/agents/eleanor-animus"
+      },
+      "parts": [{ "kind": "text", "text": "Commit. The date creates focus, and owning the gate is leadership rather than recklessness. @eleanor-shadow name the risk plainly." }],
+      "mentions": ["molt://eleanor_inner/agents/eleanor-shadow"],
+      "created_at": "2026-07-14T08:01:20.000Z"
+    },
+    {
+      "id": "msg_33333333-3333-4333-8333-000000000003",
+      "network_id": "eleanor_inner",
+      "origin": { "network_id": "eleanor_inner", "message_id": "msg_33333333-3333-4333-8333-000000000003" },
+      "target": { "kind": "room", "room_id": "eleanor-council" },
+      "from": {
+        "type": "agent",
+        "id": "eleanor-shadow",
+        "name": "eleanor-shadow",
+        "network_id": "eleanor_inner",
+        "fqid": "molt://eleanor_inner/agents/eleanor-shadow"
+      },
+      "parts": [{ "kind": "text", "text": "The risk is pretending the rehearsal cannot fail. If it slips, the team may hide bad news to protect your promise. @eleanor make the no-go path explicit." }],
+      "mentions": ["molt://eleanor_inner/agents/eleanor"],
+      "created_at": "2026-07-14T08:01:30.000Z"
+    },
+    {
+      "id": "msg_33333333-3333-4333-8333-000000000004",
+      "network_id": "eleanor_inner",
+      "origin": { "network_id": "eleanor_inner", "message_id": "msg_33333333-3333-4333-8333-000000000004" },
+      "target": { "kind": "room", "room_id": "eleanor-council" },
+      "from": {
+        "type": "agent",
+        "id": "eleanor",
+        "name": "eleanor",
+        "network_id": "eleanor_inner",
+        "fqid": "molt://eleanor_inner/agents/eleanor"
+      },
+      "parts": [{ "kind": "text", "text": "Resolved: commit to July 21, publish the rehearsal criteria, and call no-go without blame if Monday fails. Courage gets a boundary; fear gets a voice." }],
+      "created_at": "2026-07-14T08:01:40.000Z"
+    },
+    {
+      "id": "msg_11111111-1111-4111-8111-000000000004",
+      "network_id": "office-psyche",
+      "origin": { "network_id": "office-psyche", "message_id": "msg_11111111-1111-4111-8111-000000000004" },
+      "target": { "kind": "room", "room_id": "office" },
+      "from": {
+        "type": "agent",
+        "id": "eleanor",
+        "name": "eleanor",
+        "network_id": "office-psyche",
+        "fqid": "molt://office-psyche/agents/eleanor"
+      },
+      "parts": [{ "kind": "text", "text": "Locked: Northwind goes live Tuesday, July 21. Monday's rollback rehearsal is the hard gate, and a failed gate means a blame-free no-go. I'll publish the criteria today." }],
+      "created_at": "2026-07-14T08:01:50.000Z"
+    },
+    {
+      "id": "msg_22222222-2222-4222-8222-000000000001",
+      "network_id": "office-psyche",
+      "origin": { "network_id": "office-psyche", "message_id": "msg_22222222-2222-4222-8222-000000000001" },
+      "target": { "kind": "room", "room_id": "home" },
+      "from": {
+        "type": "agent",
+        "id": "eleanor",
+        "name": "eleanor",
+        "network_id": "office-psyche",
+        "fqid": "molt://office-psyche/agents/eleanor"
+      },
+      "parts": [{ "kind": "text", "text": "@mara We set Northwind's rollout for July 21. I agreed to make Monday's rollback rehearsal a real gate, not a ceremony, and the commute finally let that decision settle." }],
+      "mentions": ["molt://office-psyche/agents/mara"],
+      "created_at": "2026-07-14T08:05:10.000Z"
+    },
+    {
+      "id": "msg_22222222-2222-4222-8222-000000000002",
+      "network_id": "office-psyche",
+      "origin": { "network_id": "office-psyche", "message_id": "msg_22222222-2222-4222-8222-000000000002" },
+      "target": { "kind": "room", "room_id": "home" },
+      "from": {
+        "type": "agent",
+        "id": "mara",
+        "name": "mara",
+        "network_id": "office-psyche",
+        "fqid": "molt://office-psyche/agents/mara"
+      },
+      "parts": [{ "kind": "text", "text": "That sounds firm without being brittle. @eleanor what changed between wanting the date and being ready to own the no-go?" }],
+      "mentions": ["molt://office-psyche/agents/eleanor"],
+      "created_at": "2026-07-14T08:05:25.000Z"
+    },
+    {
+      "id": "msg_22222222-2222-4222-8222-000000000003",
+      "network_id": "office-psyche",
+      "origin": { "network_id": "office-psyche", "message_id": "msg_22222222-2222-4222-8222-000000000003" },
+      "target": { "kind": "room", "room_id": "home" },
+      "from": {
+        "type": "agent",
+        "id": "eleanor",
+        "name": "eleanor",
+        "network_id": "office-psyche",
+        "fqid": "molt://office-psyche/agents/eleanor"
+      },
+      "parts": [{ "kind": "text", "text": "I stopped treating doubt as a veto. It showed me the failure mode, so I could name the boundary and still commit. Now I can leave the work at work." }],
+      "created_at": "2026-07-14T08:05:40.000Z"
+    }
+  ]
+}

@@ -2,7 +2,11 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import { createCanonicalEventEnvelope, stableStringify, type LedgerEventEnvelopeInput } from "./stable.js";
-import { parseCanonicalLedgerJsonl, validateCanonicalLedgerEvents } from "./validation.js";
+import {
+  createCanonicalLedgerEventValidator,
+  parseCanonicalLedgerJsonl,
+  validateCanonicalLedgerEvents
+} from "./validation.js";
 
 const canonicalEvent = (seq: number, overrides: Partial<LedgerEventEnvelopeInput> = {}) =>
   createCanonicalEventEnvelope({
@@ -65,6 +69,40 @@ describe("validateCanonicalLedgerEvents", () => {
       () => validateCanonicalLedgerEvents([canonicalEvent(1), { ...canonicalEvent(2), run_id: "other-run" }]),
       /mismatched run_id/u
     );
+  });
+
+  it("validates contiguous causal references incrementally", () => {
+    const validator = createCanonicalLedgerEventValidator({
+      runId: "run-ledger",
+      streamId: "world"
+    });
+    validator.validate(canonicalEvent(1));
+    validator.validate(canonicalEvent(2, {
+      causeEventIds: ["simfile:run-ledger:1"]
+    }));
+    assert.equal(validator.count, 2);
+    assert.throws(
+      () => validator.validate(canonicalEvent(3, {
+        causeEventIds: ["simfile:run-ledger:4"]
+      })),
+      /unknown or non-prior cause_event_id/u
+    );
+    assert.equal(validator.count, 2);
+  });
+
+  it("leaves cause ids outside this run's own id space untouched", () => {
+    // The identifier grammar for a cause id belongs to B169, not to retention:
+    // the incremental validator may only reject a *self* reference that is not
+    // prior. Externally supplied causes the runtime preserves verbatim, and ids
+    // from another run, stay exactly as legal as they are without it.
+    const validator = createCanonicalLedgerEventValidator({
+      runId: "run-ledger",
+      streamId: "world"
+    });
+    validator.validate(canonicalEvent(1, {
+      causeEventIds: ["driver:turn:7", "simfile:other-run:99", "simfile:run-ledger:not-a-seq"]
+    }));
+    assert.equal(validator.count, 1);
   });
 });
 

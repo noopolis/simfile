@@ -3,8 +3,8 @@
  * container's color" (`VIEW_DESIGN.md`'s crossing vocabulary, "representative").
  * Deterministic (seeded by the membrane's own `ref`, never random — replay
  * determinism, `VIEW_DESIGN.md`'s testing strategy), so the same run always
- * paints `team:luna` the same hue across the map, the outer chat's boundary
- * badge, and the interior portal header. Pure presentation: no schema key
+ * paints `team:luna` the same hue on the outer chat's boundary badge and
+ * related membrane chrome. Pure presentation: no schema key
  * carries this (rule 4), and it is derived from an id the world already has,
  * not invented state.
  */
