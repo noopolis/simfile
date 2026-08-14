@@ -100,9 +100,7 @@
     "test": "node scripts/run-tests.mjs",
     "coverage:render": "node --import tsx scripts/render-coverage.ts",
     "verify:package-closure": "node tools/verify-package-closure.mjs",
-    "emit-causal-fixture": "tsx src/runtime/emit-causal-fixture.ts",
-    "hooks:install": "node .githooks/install.mjs",
-    "prepare": "node .githooks/install.mjs"
+    "emit-causal-fixture": "tsx src/runtime/emit-causal-fixture.ts"
   },
   "engines": {
     "node": ">=22.19.0"
