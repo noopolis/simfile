@@ -6,7 +6,7 @@ on:
     branches: [main]
 
 jobs:
-  test:
+  check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -17,4 +17,26 @@ jobs:
       - run: npm ci
       - run: npm audit --omit=dev --audit-level=high
       - run: npm run typecheck
-      - run: npm test
+
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      # The GitHub-hosted runner has 2 cores, so `node --test`'s file-level
+      # parallelism can't spread the CPU-heavy dynamics-build suites — the full
+      # suite runs ~20 min there despite ~2 min on an 18-core dev box. Shard the
+      # files across parallel jobs so wall time is the slowest shard, not the sum.
+      - run: >-
+          node scripts/run-tests.mjs
+          --test-shard=${{ matrix.shard }}/4
+          "src/**/*.test.ts" "web/src/**/*.test.ts"
