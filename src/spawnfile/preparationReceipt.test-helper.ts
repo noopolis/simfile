@@ -9,7 +9,7 @@ const sha = (value: string): `sha256:${string}` =>
 
 export const composedPreparationRequestFixture = () =>
   parseSpawnfileComposedPreparationRequest({
-    auth_profile: "simfile-live",
+    auth_profile: "test-auth-profile",
     descriptor_digest: sha("a"),
     idempotency_key: "idem_prepare0000000000",
     organization: { artifact_digest: sha("b"), world_bindings_digest: sha("c") },
@@ -17,7 +17,7 @@ export const composedPreparationRequestFixture = () =>
     secret_bindings: [{
       name: "world_bearer", scope: "world", source_handle: `opaque_${"d".repeat(16)}`,
     }],
-    target_selector: "gpu-4090",
+    target_selector: "local-test-target",
     version: "spawnfile.composed-preparation.request.v1",
     world: { artifact_manifest_digest: sha("e"), bundle_digest: sha("f") },
   });

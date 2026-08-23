@@ -57,7 +57,7 @@
     },
     {
       "path": "spawnfile-report.json",
-      "sha256": "f7980a4eea71c24d43110c4aa7367e1643f08eb0e32b7b17ddc63e8fa5bb6e3e"
+      "sha256": "58cb2d1d485d3445194dbcf0386a6d663cb4f5688f349089a36b017b9b928166"
     }
   ],
   "engine": "scripted",

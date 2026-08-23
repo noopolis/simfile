@@ -4,7 +4,7 @@ import { describe, it } from "node:test";
 import type { RunTimeline, TimelineEvent } from "../store/timeline.js";
 import { participantChatMessages } from "./ChatPane.js";
 
-const message = (actor: string, eventId: string, t: number): TimelineEvent => ({
+const message = (actor: string, eventId: string, t: number, text = eventId): TimelineEvent => ({
   actor,
   authority: "moltnet",
   causes: [],
@@ -15,7 +15,7 @@ const message = (actor: string, eventId: string, t: number): TimelineEvent => ({
   streamId: "room",
   subjects: ["room:shared"],
   t,
-  text: eventId,
+  text,
   type: "message.accepted",
   viewClass: "message",
 });
@@ -33,5 +33,16 @@ describe("participantChatMessages", () => {
       participantChatMessages(timeline, 1).map(({ eventId }) => eventId),
       ["visible-reply"],
     );
+  });
+
+  it("excludes undeclared and blank participant-like messages", () => {
+    const timeline: RunTimeline = {
+      elements: [{ kind: "agent", label: "Alpha", ref: "agent:alpha" }],
+      events: [message("unknown", "undeclared", 0), message("alpha", "blank", 1, "  ")],
+      runId: "run",
+      version: "simfile.run-timeline.v1",
+    };
+
+    assert.deepEqual(participantChatMessages(timeline, 1), []);
   });
 });

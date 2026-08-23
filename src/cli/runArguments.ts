@@ -1,8 +1,11 @@
 import type { MoltnetArtifactKind } from "../runtime/trace.js";
 
+export type ComposedCommandMode = "live" | "lifecycle-replay-smoke";
+
 export interface ParsedRunOptions {
   readonly actsPath?: string;
   readonly clock?: string;
+  readonly composedMode?: ComposedCommandMode;
   readonly local: boolean;
   readonly moltnetArtifact?: MoltnetArtifactKind;
   readonly outDir?: string;
@@ -10,6 +13,7 @@ export interface ParsedRunOptions {
   readonly runId?: string;
   readonly seed?: string;
   readonly spawnfileReport?: string;
+  readonly targetContext?: string;
   readonly ticks?: number;
   readonly view: boolean;
 }
@@ -30,6 +34,7 @@ const valueFlags = Object.freeze({
   "--run-id": "runId",
   "--seed": "seed",
   "--spawnfile-report": "spawnfileReport",
+  "--context": "targetContext",
 } as const);
 
 const flagValue = (
@@ -92,6 +97,18 @@ export const parseRunArguments = (argv: readonly string[]): ParsedRunOptions => 
       index += artifact.consumed;
       continue;
     }
+    const mode = flagValue(arg, argv, index, "--mode");
+    if (mode !== undefined) {
+      if (options.composedMode !== undefined) {
+        throw new TypeError("Duplicate flag --mode");
+      }
+      if (mode.value !== "live" && mode.value !== "lifecycle-replay-smoke") {
+        throw new TypeError("Invalid value for --mode");
+      }
+      options.composedMode = mode.value;
+      index += mode.consumed;
+      continue;
+    }
     let matched = false;
     for (const [flag, key] of Object.entries(valueFlags) as Array<
       [keyof typeof valueFlags, (typeof valueFlags)[keyof typeof valueFlags]]
@@ -99,6 +116,9 @@ export const parseRunArguments = (argv: readonly string[]): ParsedRunOptions => 
       const parsed = flagValue(arg, argv, index, flag);
       if (parsed === undefined) continue;
       if (options[key] !== undefined) throw new TypeError(`Duplicate flag ${flag}`);
+      if (key === "targetContext" && !/^[a-z][a-z0-9_-]{0,63}$/u.test(parsed.value!)) {
+        throw new TypeError("Invalid value for --context");
+      }
       options[key] = parsed.value;
       index += parsed.consumed;
       matched = true;

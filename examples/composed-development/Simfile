@@ -1,0 +1,26 @@
+simfile_version: "0.1"
+name: composed-development-lifecycle-replay-smoke
+
+spawnfile: ./org/Spawnfile
+
+clock:
+  seed: composed-development-seed
+  tick: 1s
+  sim_per_tick: 1s
+
+dynamics:
+  module: ./world/provider.mjs
+  config:
+    initial: 0
+
+world:
+  id: development
+  grants:
+    smoke:
+      entity: entity:counter
+      senses: [sense:value]
+      affordances: []
+
+world_sidecar:
+  binding: ./binding.mjs
+  composer: ./world/composer.mjs

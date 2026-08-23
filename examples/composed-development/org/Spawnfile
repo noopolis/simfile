@@ -1,0 +1,15 @@
+spawnfile_version: "0.1"
+kind: team
+name: composed-development-smoke
+description: "One-agent zero-auth scripted organization for lifecycle/replay development checks."
+
+shared:
+  workspace:
+    docs:
+      system: TEAM.md
+
+members:
+  - id: smoke
+    ref: ./agents/smoke
+
+mode: swarm

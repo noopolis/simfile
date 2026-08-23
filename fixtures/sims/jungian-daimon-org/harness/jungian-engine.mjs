@@ -8,7 +8,7 @@
 //
 // and prints the agent's spoken reply to stdout, which the Moltnet->Pi bridge
 // auto-publishes back into the ROOM THAT WOKE THIS AGENT (publishControlResponse
-// in ecosystem/moltnet/internal/bridge/loop/control.go — a pi reply always goes
+// in Moltnet's bridge loop control code — a pi reply always goes
 // to the originating room). That single fact is the whole reason this script
 // also shells out to `moltnet send`: a self's representative is a member of TWO
 // networks (its self-team's inner council AND the shared psyche floor), and the

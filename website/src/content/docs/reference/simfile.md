@@ -24,11 +24,17 @@ clock:
 | --- | --- | --- |
 | `simfile_version` | yes | Exactly `"0.1"`. |
 | `name` | yes | A Simfile identifier. |
-| `spawnfile` | no | String source reference; not parsed or started by the CLI. |
+| `spawnfile` | no | Project-relative Spawnfile link. Validation and explicit local runs retain it without resolving or starting Spawnfile; a default linked run resolves it and delegates lifecycle through Spawnfile when the project binding and operator prerequisites exist. |
 | `clock` | yes | Run seed, tick duration, optional simulation rate and phases. |
+| `places` | no | Map of place ID to authored spatial metadata; defaults to `{}`. |
+| `routes` | no | Map of route ID to connected place IDs; defaults to `{}`. |
+| `presence` | no | Map of agent ID to its initial place; defaults to `{}`. |
 | `variables` | no | Map of variable ID to variable record; defaults to `{}`. |
 | `generators` | no | Map of generator ID to generator record; defaults to `{}`. |
 | `rules` | no | Map of rule ID to rule record; defaults to `{}`. |
+| `world` | no | World identity and participant grants for an authored sidecar. |
+| `world_sidecar` | no | Trusted project-relative binding and composer modules for linked composition. |
+| `dynamics` | no | Project-relative deterministic dynamics provider and JSON configuration. |
 | `ledger` | no | Ledger store configuration. |
 | `telemetry` | no | Snapshot sampling configuration. |
 | `markers` | no | Map of marker ID to marker record; defaults to `{}`. |
@@ -79,12 +85,12 @@ clock:
 
 | Field | Required | Meaning |
 | --- | --- | --- |
-| `seed` | yes | Non-empty deterministic run seed. `simfile run --seed` can override it. |
+| `seed` | yes | Non-empty deterministic run seed. `simfile run --local --ticks <n> --seed` can override it. |
 | `tick` | yes | Positive duration of one kernel tick. |
 | `sim_per_tick` | no | Simulated duration advanced per tick; defaults to `tick`. |
 | `phases` | no | Map of phase ID to 24-hour `HH:MM`; defaults to `{}`. |
 
-The finite `simfile run --ticks` loop does not sleep. `tick` becomes wall cadence only when a live driver chooses to wait between kernel steps. Phase selection repeats over a 24-hour simulated day.
+The finite `simfile run --local --ticks <n>` loop does not sleep. `tick` becomes wall cadence only when a live driver chooses to wait between kernel steps. Phase selection repeats over a 24-hour simulated day.
 
 ## Variables
 
@@ -133,7 +139,7 @@ mentions_of
 ticks_since_last_message
 ```
 
-These records validate today, but the finite `simfile run` batch runtime does not yet compute measured inputs. Do not treat a validated `measure` as a populated counter in that path.
+These records validate today, but the finite `simfile run --local --ticks <n>` batch runtime does not yet compute measured inputs. Do not treat a validated `measure` as a populated counter in that path.
 
 ### Derived variables
 
@@ -281,8 +287,9 @@ rules:
       variable: filing_pressure
       above: 0.85
     do:
-      - action: wake:recommend
+      - action: moltnet:message
         to: room:office-floor:case-warroom
+        content: "The filing deadline is now urgent."
 ```
 
 | Field | Required | Meaning |
@@ -304,9 +311,6 @@ Actions have exactly these shapes:
   to: agent:<id>
   content: "A private world message."
 
-- action: wake:recommend
-  to: room:<network>:<room>
-
 - action: variable:set
   variable: <variable-id>
   value: 0.5
@@ -314,9 +318,16 @@ Actions have exactly these shapes:
 - action: variable:delta
   variable: <variable-id>
   value: 0.1
+
+- action: move
+  agent: <agent-id>
+  to: <place-id>
 ```
 
-Room messages require a room scope; DMs require an agent scope. Variable actions require a declared, non-fed variable. Braced placeholders in message content must name declared variables.
+Room messages require a room scope; DMs require an agent scope. Variable
+actions require a declared, non-fed variable. `move` requires a declared agent,
+destination place, and a route from its current place. Braced placeholders in
+message content must name declared variables.
 
 ## Markers
 
@@ -387,7 +398,7 @@ ledger:
 
 `ledger.store` is required when `ledger` is present. `store.kind` is optional and defaults to `jsonl`; accepted values are `jsonl`, `sqlite`, and `postgres`. `store.path` is an optional non-empty string.
 
-The current finite `simfile run` writer always emits `<out>/ledger.jsonl`; it does not route that run record through the configured store kind or path.
+The current finite `simfile run --local --ticks <n>` writer always emits `<out>/ledger.jsonl`; it does not route that run record through the configured store kind or path.
 
 ## Telemetry
 
@@ -396,7 +407,7 @@ telemetry:
   snapshot_every: 50
 ```
 
-`snapshot_every` is an optional positive integer. When absent, `simfile run` writes every variable sample. When present, it keeps samples at ticks divisible by that value and also keeps the final sample.
+`snapshot_every` is an optional positive integer. When absent, `simfile run --local --ticks <n>` writes every variable sample. When present, it keeps samples at ticks divisible by that value and also keeps the final sample.
 
 ## Spawnfile binding
 
@@ -404,4 +415,4 @@ telemetry:
 simfile validate ./Simfile --spawnfile-report .spawn/spawnfile-report.json
 ```
 
-Without the report, scope strings are checked only for shape. With it, Simfile builds an index from Spawnfile report nodes and their active Moltnet room bindings. Binding checks cover variable scopes, marker scopes, rule and probe event filters, and rule action destinations. The current binding pass does not inspect `measure.scope`, pair members, or generator event filters. The report is an explicit validation input; the `spawnfile:` key never causes an implicit compile or deployment.
+Without the report, scope strings are checked only for shape. With it, Simfile builds an index from Spawnfile report nodes and their active Moltnet room bindings. Binding checks cover variable scopes, marker scopes, rule and probe event filters, and rule action destinations. The current binding pass does not inspect `measure.scope`, pair members, or generator event filters. The report is an explicit validation input: `simfile validate` and `simfile run --local --ticks <n>` do not resolve, compile, or start the `spawnfile:` link. Default linked `simfile run <Simfile>` is the separate path that resolves the link and delegates lifecycle through Spawnfile, subject to its required project binding and explicit operator prerequisites.

@@ -7,4 +7,6 @@ operations deterministic and fail-closed.
 - `refreshVendorStele.mjs` refreshes the integrity-pinned source tarball while
   preserving Simfile's release-safe exact dependency coordinate and bundle.
 - `verify-package-closure.mjs` packs and offline-installs Simfile, checks the
-  bundled Stele closure and runtime imports, and starts the installed CLI.
+  bundled Stele closure and runtime imports, and starts the installed CLI. Its
+  contract and isolated-install helpers live in `package-closure-contract.mjs`
+  and `package-closure-install.mjs`.

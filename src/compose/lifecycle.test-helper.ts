@@ -45,7 +45,7 @@ export const lifecycleRequest = (
   required_world_capabilities: [],
   run_id: "run-lifecycle",
   source_digest: lifecycleDigest("e"),
-  target: { auth_profile: "simfile-live", selector: "gpu-4090" },
+  target: { auth_profile: "test-auth-profile", selector: "local-test-target" },
   version: "simfile.composed-run-request.v1",
   world: {
     artifact_manifest_digest: lifecycleDigest("f"),

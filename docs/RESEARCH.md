@@ -179,7 +179,7 @@ scopes/paths; treat per-agent attribution as the weaker claim.
 
 ## 6. Space, objects, possession, belonging & access (second run)
 
-Run 2026-07-07 via the deep-research skill on the LeDeluge workstation
+Run 2026-07-07 via a hosted research session
 (ChatGPT · Extra High, headed browser); full report with citation anchors in
 `research/2026-07-07/space-objects-access.md` (+ `.chatgpt.reply.html`).
 

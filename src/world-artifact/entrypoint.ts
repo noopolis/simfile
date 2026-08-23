@@ -12,6 +12,7 @@ export { createDecisionRegistry } from "../world/decisionRegistry.js";
 export { bindWorldGrants } from "../world/grants.js";
 export { createWorldReadLedger } from "../world/ledger.js";
 export { composeWorldRuntimeInput } from "../world/runtimeComposition.js";
+export { createWorldRuntime } from "../world/runtime.js";
 export { WORLD_DECISION_CLAIM_CAPABILITY } from "../world/decisionClaim.js";
 export { readWorldRuntimeClockAuthority } from "../world/clockAuthority.js";
 export type { WorldDynamicsTickRecord } from "../world/clockAuthority.js";
@@ -24,6 +25,11 @@ export type { CausalRecorder } from "../runtime/causalRecording.js";
 export { createMoltnetMachineClient } from "../moltnet/machine/client.js";
 export type { ResolvedWorldGrant } from "../world/grants.js";
 export type { CreateWorldRuntimeInput, WorldRuntime } from "../world/runtime.js";
+export {
+  COMPOSED_WORLD_TERMINAL_ARTIFACT,
+  createComposedWorldTerminalSignal,
+  publishComposedWorldTerminalSignal,
+} from "./terminalSignal.js";
 
 export { startWorldServiceSidecar } from "./sidecarEntrypoint.js";
 export {

@@ -24,6 +24,9 @@ describe("run routing", () => {
     assert.deepEqual(route(true, []), {
       kind: "composed", linked_spawnfile_path: "/work/organization/Spawnfile",
     });
+    assert.deepEqual(route(true, ["--mode", "lifecycle-replay-smoke"]), {
+      kind: "composed", linked_spawnfile_path: "/work/organization/Spawnfile",
+    });
     assert.deepEqual(route(true, ["--local", "--ticks", "2"]), {
       kind: "local", linked_spawnfile_path: "/work/organization/Spawnfile",
     });
@@ -42,6 +45,7 @@ describe("run routing", () => {
     assert.throws(() => route(false, []), /require --ticks/u);
     assert.throws(() => route(true, ["--local"]), /require --ticks/u);
     assert.throws(() => route(false, ["--ticks", "1", "--view"]), /reject --view/u);
+    assert.throws(() => route(false, ["--ticks", "1", "--mode", "live"]),
+      /reject --mode/u);
   });
 });
-

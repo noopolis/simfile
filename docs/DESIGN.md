@@ -1,5 +1,11 @@
 # Simfile Design
 
+> **Status:** This document contains product direction as well as implemented
+> behavior. Command blocks naming `plan`, `explain`, `inspect`, `probes`,
+> `report`, `doctor`, `status`, `clock`, `ledger`, or `runs` are proposals, not
+> current CLI instructions. The implemented command/exit contract is the
+> website's `reference/cli` page and `simfile --help` from the built checkout.
+
 Simfile is to worlds what Spawnfile is to organizations: it declares, derives,
 and measures; it never interprets.
 

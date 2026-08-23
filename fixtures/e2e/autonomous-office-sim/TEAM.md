@@ -21,14 +21,14 @@ Shared runtime topology:
   social source of truth. Collect the managed Moltnet export and the
   Daimon/runtime logs from that run.
 
-- `simfile run fixtures/e2e/autonomous-office-sim/office-world/Simfile`
-  World-mechanics entrypoint. Collect `simfile-run/manifest.yaml`,
+- `simfile run fixtures/e2e/autonomous-office-sim/office-world/Simfile --local --ticks 144 --out simfile-run`
+  Finite local world-mechanics entrypoint. Collect `simfile-run/manifest.yaml`,
   `simfile-run/ledger.jsonl`, `simfile-run/report.json`, and
   `simfile-run/viewer-trace.json`.
 
 - `npm run test:e2e:autonomous-office-sim -- --cycles 1 --keep-artifacts --out <dir>`
   Deterministic fixture-harness validation entrypoint. It compiles the same
-  fixture, runs the generated Daimon app directly, runs `simfile run`, injects
+  fixture, runs the generated Daimon app directly, runs a finite local `simfile run`, injects
   harness control wakes, and writes `index.md` plus the harness-derived
   Moltnet/Mneme/report artifacts into `<dir>`. Treat its Moltnet export as a
   placeholder until a live `spawnfile up` run exports managed Moltnet state.

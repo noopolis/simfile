@@ -7,9 +7,9 @@ grading rubric for the B49 render acceptance gate: section 7 is a checklist of
 objective assertions a Playwright run can evaluate against screenshots, the DOM,
 and `viewer-trace.json`.
 
-Shared foundation (canvas, neutral ramp, fonts, accent trio) is defined in
-`/ECOSYSTEM-DESIGN.md` and is not restated here except where the viewer binds it
-to data semantics. GlyphCSS (`@glyphcss/*@^0.1.0`, the frozen published
+Shared foundation (canvas, neutral ramp, fonts, accent trio) follows the
+Noopolis design system and is not restated here except where the viewer binds
+it to data semantics. GlyphCSS (`@glyphcss/*@^0.1.0`, the frozen published
 dependency) is the map substrate; the local GlyphCSS checkout is reference-only
 and never a build input.
 

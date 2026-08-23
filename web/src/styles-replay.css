@@ -12,8 +12,8 @@
 .replay-grid {
   min-height: 0;
   display: grid;
-  grid-template-areas: "support map conversation";
-  grid-template-columns: minmax(220px, 0.75fr) minmax(520px, 2.2fr) minmax(280px, 1fr);
+  grid-template-areas: "support primary";
+  grid-template-columns: minmax(220px, 0.75fr) minmax(520px, 3.2fr);
   gap: 14px;
   padding: 14px 16px;
   overflow: hidden;
@@ -21,8 +21,12 @@
 
 .replay-secondary-stack { min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: 14px; overflow: auto; }
 .replay-left-stack { grid-area: support; }
-.replay-map { grid-area: map; }
-.replay-right-stack { grid-area: conversation; }
+.replay-primary { grid-area: primary; min-width: 0; min-height: 0; display: grid; grid-template-rows: auto minmax(0, 1fr); }
+.replay-primary-tabs { display: flex; gap: 4px; padding: 0 0 6px; }
+.replay-primary-tabs button { border: 1px solid var(--line); border-radius: 3px; background: var(--bg); color: var(--sub); cursor: pointer; font: inherit; font-size: 11px; letter-spacing: .08em; padding: 5px 9px; text-transform: uppercase; }
+.replay-primary-tabs button.is-active { border-color: var(--accent); color: var(--accent); }
+.replay-primary-content { min-width: 0; min-height: 0; }
+.replay-primary-content > .replay-pane { height: 100%; }
 .action-feed-drawer { flex: 0 0 auto; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); }
 .action-feed-drawer > summary { padding: 8px 10px; color: var(--accent); cursor: pointer; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
 .action-feed-drawer[open] { min-height: 220px; }
@@ -1164,8 +1168,7 @@ details.feed-what > .feed-headline::marker {
 @media (max-width: 1100px) {
   .replay-grid {
     grid-template-areas:
-      "map"
-      "conversation"
+      "primary"
       "support";
     grid-template-columns: minmax(0, 1fr);
     grid-auto-rows: minmax(220px, auto);

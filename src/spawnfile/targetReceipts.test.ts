@@ -6,6 +6,7 @@ import test from "node:test";
 import { digestComposedJson } from "../compose/json.js";
 import {
   parseTargetResourceReceipt,
+  isTargetPublicArtifactNotPresent,
   readTargetPublicBytes,
   readTargetPublicJson,
   verifyTargetWorldClockReceipt,
@@ -167,6 +168,29 @@ test("public-artifact byte reader returns only exactly correlated verified bytes
       artifact: { ...publicArtifactRequest.artifact, max_bytes: content.byteLength - 1 },
     },
   }), /correlation is invalid/u);
+});
+
+test("public-artifact pending classifier admits only the exact correlated receipt", () => {
+  const pending = {
+    artifact_id: "viewer_trace",
+    request_digest: digestComposedJson(
+      "spawnfile.target-public-artifact-snapshot.request.v1", publicArtifactRequest,
+    ),
+    run_id: publicArtifactRequest.run_id,
+    status: "not_present",
+    version: "spawnfile.target-public-artifact-snapshot.not-present.v1",
+  };
+  assert.equal(isTargetPublicArtifactNotPresent({
+    artifact_id: "viewer_trace", raw: pending, request: publicArtifactRequest,
+  }), true);
+  for (const forged of [
+    { ...pending, run_id: "other-run" },
+    { ...pending, request_digest: d("f") },
+    { ...pending, extra: true },
+    { ...pending, version: "spawnfile.target-public-artifact-snapshot.not-present.v2" },
+  ]) assert.equal(isTargetPublicArtifactNotPresent({
+    artifact_id: "viewer_trace", raw: forged, request: publicArtifactRequest,
+  }), false);
 });
 
 test("public JSON reader delegates verification and zeroes decoded bytes after parsing", () => {

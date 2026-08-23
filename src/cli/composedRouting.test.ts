@@ -53,5 +53,26 @@ describe("linked composed CLI dispatch", () => {
       await assert.rejects(stat(out));
     }
   });
-});
 
+  it("formats asynchronous composed-command failures through the CLI boundary", async () => {
+    const fixture = await project();
+    const chunks: string[] = [];
+    const originalWrite = process.stderr.write;
+    process.stderr.write = ((chunk: string | Uint8Array) => {
+      chunks.push(String(chunk));
+      return true;
+    }) as typeof process.stderr.write;
+    try {
+      const code = await runCli(["run", fixture.simfile], {
+        runComposed: async () => {
+          await Promise.resolve();
+          throw new Error("composed command failed asynchronously");
+        },
+      });
+      assert.equal(code, 1);
+      assert.equal(chunks.join(""), "composed command failed asynchronously\n");
+    } finally {
+      process.stderr.write = originalWrite;
+    }
+  });
+});

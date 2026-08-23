@@ -45,7 +45,7 @@ const loadRunManifest = async (runDir: string): Promise<SimfileRunManifest> => {
  * with `@noopolis/stele` (no stitching, ever — an incomplete chain is
  * flagged, not synthesized), and emits the `simfile.observe.v1` report.
  * Pure file-reading + reconciliation: no Docker, no compile, no runtime
- * auth (this package's charter, `ecosystem/simfile/AGENTS.md`).
+ * auth (this package's charter, the repository `AGENTS.md`).
  */
 export const runObserve = async (runDir: string): Promise<ObserveResult> => {
   const manifest = await loadRunManifest(runDir);

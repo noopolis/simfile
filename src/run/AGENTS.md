@@ -6,9 +6,10 @@ the linked-project lifecycle composer.
 
 ## Boundaries
 
-- Follow `docs/DESIGN.md` and, when working in the parent Spawnfile repository,
-  its `specs/ECOSYSTEM_RUNTIME_BOUNDARIES.md`; that upstream specification is
-  not included in a standalone Simfile checkout.
+- Follow `docs/DESIGN.md`. Cross-product lifecycle boundaries use documented
+  Spawnfile CLI contracts and Simfile's own public capability probe; never ask
+  Spawnfile for a Simfile-specific compatibility profile. This standalone
+  repository never assumes a parent checkout.
 - Keep the trace path byte-compatible. Dispatch above `writeRunRecord`; do not
   change `runSimfileTrace` or the trace record writer.
 - A sealed run action source is one scripted/non-live tick notification, not

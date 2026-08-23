@@ -13,6 +13,7 @@ describe("run argument matrix", () => {
     ["--clock", "2026-08-07T00:00:00Z", "clock", "2026-08-07T00:00:00Z"],
     ["--moltnet-artifact", "transcript", "moltnetArtifact", "transcript"],
     ["--spawnfile-report", "report.json", "spawnfileReport", "report.json"],
+    ["--mode", "lifecycle-replay-smoke", "composedMode", "lifecycle-replay-smoke"],
   ] as const);
 
   for (const [flag, value, key, expected] of values) {
@@ -44,6 +45,6 @@ describe("run argument matrix", () => {
     assert.throws(() => parseRunArguments([
       "Simfile", "--moltnet-artifact=messages",
     ]), /Invalid/u);
+    assert.throws(() => parseRunArguments(["Simfile", "--mode=dry-run"]), /Invalid/u);
   });
 });
-

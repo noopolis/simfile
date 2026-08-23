@@ -1,7 +1,8 @@
 # Simfile Working Guide
 
-This folder, inside the Spawnfile repository, is the reference implementation
-of the Simfile v0.1 world mechanics package.
+This standalone repository is the reference implementation of the Simfile
+v0.1 world mechanics package. Spawnfile may be installed as a separate tool or
+checked out anywhere; never infer a sibling repository or import its source.
 
 ## Repository Structure
 
@@ -28,6 +29,8 @@ of the Simfile v0.1 world mechanics package.
 - Keep CLI handlers thin; schema, planning, ledger, and runtime logic belong in modules.
 - Do not import Spawnfile internals. Consume explicit machine-readable artifacts.
 - Do not add Docker compilation, runtime auth, or deployment ownership here.
+- Source-development tool setup belongs under ignored `.simfile-dev/` state and
+  must require an explicit package coordinate or absolute checkout path.
 - `simfile run` may compose a linked Spawnfile lifecycle only through documented
   CLI operations and versioned receipts. Lifecycle composition never selects,
   wakes, invokes, polls, or waits for agent cognition.

@@ -1,5 +1,6 @@
 ---
 import GlyphCity from '../components/GlyphCity.astro';
+import LandingWorldSection from '../components/LandingWorldSection.astro';
 import SiteHeader from '../components/SiteHeader.astro';
 import '../styles/landing.css';
 ---
@@ -48,9 +49,9 @@ import '../styles/landing.css';
             <a class="btn" href="/quickstart/">Run your first experiment</a>
             <a class="btn secondary" href="/guides/memetics/">Inspect the experiment</a>
           </div>
-          <div class="term-cmd-frame install-chip" aria-label="Install Simfile">
-            <div class="term-cmd-bar"><span>install</span><span>shell</span></div>
-            <pre><code><span class="prompt">$</span> npm install simfile</code></pre>
+          <div class="term-cmd-frame install-chip" aria-label="Clone Simfile">
+            <div class="term-cmd-bar"><span>source quickstart</span><span>shell</span></div>
+            <pre><code><span class="prompt">$</span> git clone https://github.com/noopolis/simfile.git</code></pre>
           </div>
         </div>
       </section>
@@ -59,7 +60,7 @@ import '../styles/landing.css';
         <div class="inner proof-inner">
           <aside class="result-callout" aria-label="First experiment result">
             <div class="term-cmd-bar" aria-hidden="true"><span>signal / first-result</span><span>verified</span></div>
-            <p><strong>First result</strong>: a secret seeded in one agent's private memory reached a second agent, with no scripted handoff, in 5/5 runs. Swap the seed and the replacement spreads. Leave it unseeded and it never appears.</p>
+            <p><strong>First result</strong>: a secret seeded in one agent's private memory reached a second agent, with no scripted handoff, in 5/5 runs. A replacement seed spread instead. The attempted unseeded control completed zero agent turns, so it is not evidence of absence.</p>
           </aside>
 
           <figure class="evidence-plate">
@@ -76,76 +77,7 @@ import '../styles/landing.css';
         </div>
       </section>
 
-      <section class="band term-section-rule" id="world" aria-labelledby="world-title">
-        <div class="inner">
-          <div class="section-copy">
-            <p class="section-label">01 / World</p>
-            <h2 id="world-title">The whole world in one <span>Simfile</span>.</h2>
-            <p>
-              A single <code>Simfile</code> declares the clock, variables, generators, rules, markers, and falsifiable probes around your agents. The mechanics are deterministic for a seed; the agents still decide what to say, remember, and do. The world can wake an agent or post into a room; it never scripts a thought.
-            </p>
-          </div>
-
-          <div class="world-layout">
-            <div class="code-block term-cmd-frame">
-              <div class="block-label term-cmd-bar"><span>[ Simfile ]</span><span>one authored world</span></div>
-              <pre><code>simfile_version: "0.1"
-name: autonomous-office-world
-spawnfile: ./Spawnfile            # the org of real agents this world wraps
-
-clock:                            # simulated time, deterministic for the seed
-  seed: office-run-014
-  tick: 20s
-
-variables:                        # world state you can drive and measure
-  filing_pressure:
-    scope: room:office-floor:case-warroom
-    initial: 0.4
-    range: 0..1
-
-generators:                       # how variables evolve each tick
-  deadline_ramp:
-    kind: deterministic
-    variable: filing_pressure
-    delta: 0.02
-
-rules:                            # when the world acts on the agents
-  deadline_bites:
-    when:
-      variable: filing_pressure
-      above: 0.85
-    do:
-      - action: wake:recommend    # nudge a room, never a scripted line
-        to: room:office-floor:case-warroom
-
-markers:                          # tokens to trace as they spread
-  tenant_name:
-    text:
-      - Rosa Delgado
-    mode: containment
-    scopes:
-      - room:office-floor:case-warroom
-
-probes:                           # falsifiable checks over the run
-  deadline_observed:
-    when:
-      event: wake.recommended
-      target: room:office-floor:case-warroom
-    expect:
-      at_least: 1</code></pre>
-            </div>
-
-            <div class="command-block term-cmd-frame" aria-label="Simfile commands">
-              <div class="block-label term-cmd-bar"><span>Run it</span><span>shell</span></div>
-              <pre><code><span class="prompt">$</span> npm install simfile
-<span class="prompt">$</span> simfile validate ./Simfile
-<span class="prompt">$</span> simfile run ./Simfile --out runs/latest
-<span class="prompt">$</span> simfile observe runs/latest        # causal chains + spread → report.json
-<span class="prompt">$</span> simfile view runs/latest           # scrub, descend, watch spread</code></pre>
-            </div>
-          </div>
-        </div>
-      </section>
+      <LandingWorldSection />
 
       <section class="band term-section-rule" id="viewer" aria-labelledby="viewer-title">
         <div class="inner">
@@ -153,7 +85,7 @@ probes:                           # falsifiable checks over the run
             <p class="section-label">02 / Viewer</p>
             <h2 id="viewer-title">One timeline rewinds the whole society.</h2>
             <p>
-              Drag one cursor. The world map, the room conversation, every agent's memory, and the causal traces all return to the same moment. Every glyph points to a record. Ask anything which records make it true. The header always discloses whether the dialogue came from a real engine or a scripted fixture.
+              Drag one cursor. The world map, the room conversation, every agent's memory, and the causal traces all return to the same moment. A sealed run with participant speech opens on Conversation; Map remains one click away. Every glyph points to a record. Ask anything which records make it true. The header always discloses whether the dialogue came from a real engine or a scripted fixture.
             </p>
           </div>
 
@@ -200,11 +132,11 @@ probes:                           # falsifiable checks over the run
           <h2 id="cta-title">Run your own experiment.</h2>
           <div class="command-block term-cmd-frame compact" aria-label="Simfile quickstart commands">
             <div class="term-cmd-bar"><span>quickstart</span><span>shell</span></div>
-            <pre><code><span class="prompt">$</span> npm install simfile
-<span class="prompt">$</span> simfile validate ./Simfile
-<span class="prompt">$</span> simfile run ./Simfile --out runs/latest
-<span class="prompt">$</span> simfile observe runs/latest        # causal chains + spread → report.json
-<span class="prompt">$</span> simfile view runs/latest           # scrub, descend, watch spread</code></pre>
+            <pre><code><span class="prompt">$</span> git clone https://github.com/noopolis/simfile.git
+<span class="prompt">$</span> cd simfile
+<span class="prompt">$</span> npm ci
+<span class="prompt">$</span> npm run example:local
+<span class="prompt">$</span> node dist/cli/index.js view &lt;printed-run-directory&gt;</code></pre>
           </div>
           <div class="actions">
             <a class="btn" href="/quickstart/">Quickstart</a>

@@ -1,0 +1,14 @@
+spawnfile_version: "0.1"
+kind: agent
+name: smoke
+description: "Deterministic zero-auth lifecycle-smoke agent."
+
+runtime:
+  name: pi
+  options:
+    engine: scripted
+    engine_command: ../../../harness/scripted-engine.mjs
+
+workspace:
+  docs:
+    system: AGENTS.md

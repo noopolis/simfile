@@ -1,5 +1,10 @@
 # Simfile Systems View
 
+> **Status:** This is a design view, not an executable quickstart. Its staged
+> `plan`, `probes`, `report`, and long-running `--state` lifecycle commands are
+> proposals. Use the source-clone commands in `README.md` and the website CLI
+> reference for behavior that ships.
+
 simfile design v0.1 · configuration reference · companion to the systems view
 
 This is the curated markdown form of the raw systems-view capture in `here.txt`.

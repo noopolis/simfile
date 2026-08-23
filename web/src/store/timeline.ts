@@ -17,6 +17,7 @@ import type { ViewerContractTrace } from "../viewer/types.js";
  */
 
 export type ElementRef = string;
+export type ReplayPanel = "map" | "conversation";
 
 /** `clock`/`marker` (world's `clock.sync`/`marker.seen`) and `wake` shared with `control.wake.accepted` are increment 3's world-stream additions — see `src/view/runTimelineTypes.ts`'s equivalent doc comment. */
 export type TimelineViewClass =
@@ -94,6 +95,8 @@ export interface TimelineStoreState {
   speed: number;
   /** The current map/chat focus — independent of which portals are open. */
   selection: ElementRef | null;
+  /** The user/deep-link/default choice for the replay's primary surface. */
+  activePanel: ReplayPanel | null;
   /**
    * Every currently open storyline portal, in open order. Portals stack
    * (`VIEW_DESIGN.md`: "Portals stack with breadcrumbs") — opening a bank
@@ -121,6 +124,7 @@ const initialState = (): TimelineStoreState => ({
   playing: false,
   speed: 1,
   selection: null,
+  activePanel: null,
   openPortals: [],
   highlightedEventIds: [],
   loadError: null,
@@ -177,6 +181,7 @@ export const togglePlay = (): void => setState({ playing: !state.playing });
 export const setSpeed = (speed: number): void => setState({ speed: Math.max(0.25, speed) });
 
 export const setSelection = (ref: ElementRef | null): void => setState({ selection: ref });
+export const setActivePanel = (panel: ReplayPanel): void => setState({ activePanel: panel });
 
 /** Opens `ref`'s storyline portal if it is not already open. Idempotent. */
 export const openPortal = (ref: ElementRef): void => {

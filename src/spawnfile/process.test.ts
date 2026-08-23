@@ -5,7 +5,10 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
 
-import { runSpawnfileConfigProducer, runSpawnfileProcess } from "./process.js";
+import {
+  captureBootstrapLocalExecutableIdentity,
+  runSpawnfileProcess,
+} from "./process.js";
 
 const pause = (milliseconds: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, milliseconds));
@@ -55,7 +58,9 @@ fs.writeFileSync(path.join(process.env.PID_ROOT,role+".pid"),String(process.pid)
 process.on("SIGTERM",()=>{});
 if(role==="root") spawn(process.execPath,[${JSON.stringify(script)},"grandchild"],{env:process.env,stdio:"ignore"});
 if(role==="grandchild") spawn(process.execPath,[${JSON.stringify(script)},"great-grandchild"],{env:process.env,stdio:"ignore"});
-if(role==="root") process.stdout.write("token=must-not-escape");
+if(role==="root") {
+  const output=setInterval(()=>{if(fs.existsSync(path.join(process.env.PID_ROOT,"great-grandchild.pid"))){clearInterval(output);process.stdout.write("token=must-not-escape".repeat(8));}},5);
+}
 setInterval(()=>{},1000);
 `, { mode: 0o700 });
   await chmod(script, 0o700);
@@ -90,16 +95,6 @@ test("abort terminates the Spawnfile process group through hostile descendants",
   }, { args: ["root"], signal }));
 });
 
-test("abort terminates the config producer process group through hostile descendants", async () => {
-  await assertAbortKillsTree((script, signal, root) => runSpawnfileConfigProducer({
-    args: ["root"],
-    command: script,
-    env: { ...process.env, PID_ROOT: root },
-    signal,
-    terminationGraceMs: 20,
-  }));
-});
-
 test("normal exit and abort/exit races never affect an unrelated process", async () => {
   const root = await mkdtemp(path.join(tmpdir(), "simfile-process-race-"));
   const sentinel = spawn(process.execPath, ["-e", "setInterval(()=>{},1000)"], {
@@ -128,4 +123,18 @@ test("normal exit and abort/exit races never affect an unrelated process", async
     }
     await rm(root, { force: true, recursive: true });
   }
+});
+
+test("bootstrap-local identities reject a replaced Spawnfile executable", async () => {
+  const root = await mkdtemp(path.join(tmpdir(), "simfile-process-identity-"));
+  try {
+    const spawnfile = path.join(root, "spawnfile.mjs");
+    await writeFile(spawnfile, "process.exit(0);\n", { mode: 0o700 });
+    await chmod(spawnfile, 0o700);
+    const spawnfileIdentity = await captureBootstrapLocalExecutableIdentity(spawnfile);
+    await writeFile(spawnfile, "process.exit(1);\n", { mode: 0o700 });
+    await assert.rejects(runSpawnfileProcess({
+      bootstrapLocalExecutableIdentity: spawnfileIdentity, spawnfileBin: spawnfile,
+    }, { args: [] }), /changed during composed bootstrap/u);
+  } finally { await rm(root, { force: true, recursive: true }); }
 });

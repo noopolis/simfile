@@ -26,7 +26,7 @@ const request = {
   required_world_capabilities: [],
   run_id: "run-one",
   source_digest: sha("e"),
-  target: { auth_profile: "simfile-live", selector: "gpu-4090" },
+  target: { auth_profile: "test-auth-profile", selector: "local-test-target" },
   version: "simfile.composed-run-request.v1",
   world: {
     artifact_manifest_digest: sha("f"), bundle_digest: sha("1"),
@@ -83,11 +83,7 @@ const execution = {
     organization_path: "/tmp/organization.yaml",
     spawnfile_bin: "/tmp/spawnfile/dist/cli/index.js",
     spawnfile_cwd: "/tmp/spawnfile",
-    target_config_producer: {
-      args: [request.target.selector],
-      command: "/usr/local/bin/target-config-producer",
-      transport: "stdout_to_spawnfile_stdin",
-    },
+    spawnfile_executable_sha256: sha("1"),
     terminal_artifact: {
       id: "terminal_receipt",
       max_bytes: 131_072,
@@ -183,20 +179,7 @@ test("journal durably binds only nonsecret execution inputs for exact restart", 
     ...execution,
     provider: {
       ...execution.provider,
-      target_config_producer: {
-        ...execution.provider.target_config_producer,
-        args: ["foreign-target"],
-      },
-    },
-  }), /correlation/u);
-  assert.throws(() => createComposedPhaseJournal(request, at(0), {
-    ...execution,
-    provider: {
-      ...execution.provider,
-      target_config_producer: {
-        ...execution.provider.target_config_producer,
-        command: "token=must-not-persist",
-      },
+      spawnfile_bin: "token=must-not-persist",
     },
   }), /secret-shaped/u);
 });

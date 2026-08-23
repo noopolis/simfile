@@ -18,7 +18,7 @@ const compileReportSchema = z.object({
         source_revision: z.string().regex(/^[a-f0-9]{40}$/u),
         version: z.literal("spawnfile.moltnet-release-identity.v1"),
       }).strict(),
-    }).passthrough(),
+    }).passthrough().optional(),
     runtime_instances: z.array(z.object({
       engine_by_node_id: z.record(z.string().min(1), z.string().min(1)),
     }).passthrough()).min(1),
@@ -60,8 +60,9 @@ export const compileReportMoltnetReleaseExpectation = (
   asset_sha256: string;
   release_version: string;
   source_revision: string;
-}> => {
-  const release = report.container.moltnet.release;
+}> | undefined => {
+  const release = report.container.moltnet?.release;
+  if (release === undefined) return undefined;
   return Object.freeze({
     architecture: release.architecture,
     asset_sha256: release.asset_sha256,

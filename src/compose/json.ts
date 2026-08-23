@@ -4,7 +4,8 @@ import { types } from "node:util";
 const MAX_DEPTH = 32;
 const MAX_NODES = 4_096;
 const MAX_KEYS = 256;
-const MAX_STRING_BYTES = 262_144;
+// Composed bootstrap contains a schema-bounded base64 world archive (4 MiB raw).
+const MAX_STRING_BYTES = 6_291_456;
 const forbiddenKey = /^(?:authorization|bearer|credential|password|private_config|secret|target_config|token)$/iu;
 const secretValue = /(?:\bBearer\s+\S+|\b(?:password|token)\s*=|-----BEGIN [A-Z ]+PRIVATE KEY-----|\bsk-[A-Za-z0-9_-]{16,})/u;
 

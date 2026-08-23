@@ -10,7 +10,8 @@ clocks).
 - `timeline.ts` — `timelineStore` (a plain pub/sub external store, not
   React Context) holding the loaded `RunTimeline`, the integer scrub
   cursor, playback state (`playing`/`speed`), the current `selection` (an
-  `ElementRef` — the map/chat focus), the `openPortals` stack (every
+  `ElementRef` — the map/chat focus), `activePanel` (the URL/user/default
+  choice between Conversation and Map), the `openPortals` stack (every
   currently open storyline portal, any element kind), and
   `highlightedEventIds` (the recall -> turn cross-portal linked-selection
   set). Exposes action functions (`loadTimeline`, `setCursor`, `stepBy`,
@@ -34,11 +35,13 @@ clocks).
   `/api/run-meta`'s `variableSamples`, joined by `../viewer/variableModel.ts`,
   never duplicated into this store).
 - `deepLink.ts` — pure `parseDeepLink`/`serializeDeepLink`/`currentDeepLink`/
-  `applyDeepLink` over the `?at=<event_id>&sel=<elementRef>&portals=<comma-refs>`
+  `applyDeepLink` over the
+  `?at=<event_id>&sel=<elementRef>&portals=<comma-refs>&panel=<panel>`
   URL shape (anchored on `event_id`, never the dense index `t`, so a link
   survives timeline re-derivation), plus `startDeepLinkSync` — the only
   function here that touches `window.history`/`window.location`, throttled
-  so scrubbing doesn't spam `replaceState`.
+  so scrubbing doesn't spam `replaceState`. Invalid explicit panel values
+  fail closed to Map.
 
 ## Rules
 

@@ -3,9 +3,9 @@
 This folder implements `simfile observe <run-dir>` (Decision 21 / `contracts.md`'s
 Slice B compose-and-observe pipeline). It is a **pure file-reading + reconciliation**
 module: no Docker, no compile, no runtime auth — see the package charter in
-`ecosystem/simfile/AGENTS.md`. It consumes a sealed run directory and never imports
+the repository `AGENTS.md`. It consumes a sealed run directory and never imports
 Spawnfile internals; the only cross-repo dependency is the narrow shared package
-`@noopolis/stele` (`ecosystem/stele`), which contracts.md permits explicitly.
+`@noopolis/stele`, which the contracts permit explicitly.
 
 ## Files
 

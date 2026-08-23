@@ -1,6 +1,6 @@
 {
   "name": "simfile",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Declarative simulation world mechanics for agentic organizations.",
   "license": "MIT",
   "type": "module",
@@ -81,8 +81,23 @@
   },
   "files": [
     "dist",
+    "src/**/*.ts",
+    "!src/**/*.test.ts",
+    "!src/**/*.test-helper.ts",
     "web/dist",
-    "README.md"
+    "README.md",
+    "examples/jungian-dialogue",
+    "examples/composed-development",
+    "scripts/bounded-process.mjs",
+    "scripts/simfile-local-example.mjs",
+    "scripts/spawnfile-capability-probe.mjs",
+    "scripts/spawnfile-composed-smoke.mjs",
+    "scripts/spawnfile-development.mjs",
+    "scripts/spawnfile-development-context.mjs",
+    "scripts/spawnfile-development-setup.mjs",
+    "scripts/spawnfile-install-integrity.mjs",
+    "scripts/spawnfile-local-endpoint.mjs",
+    "scripts/spawnfile-source-stage.mjs"
   ],
   "repository": {
     "type": "git",
@@ -99,6 +114,13 @@
     "pretest": "npm run build",
     "test": "node scripts/run-tests.mjs",
     "coverage:render": "node --import tsx scripts/render-coverage.ts",
+    "example:composed": "npm run build && node scripts/spawnfile-composed-smoke.mjs",
+    "example:internal-smoke": "npm run build && node scripts/spawnfile-composed-smoke.mjs --internal-lifecycle-smoke",
+    "example:local": "npm run build && node scripts/simfile-local-example.mjs",
+    "dev:spawnfile:check": "node scripts/spawnfile-development.mjs check",
+    "dev:spawnfile:run": "npm run build && node scripts/spawnfile-composed-smoke.mjs",
+    "dev:spawnfile:setup": "node scripts/spawnfile-development.mjs setup",
+    "dev:spawnfile:status": "node scripts/spawnfile-development.mjs status",
     "verify:package-closure": "node tools/verify-package-closure.mjs",
     "emit-causal-fixture": "tsx src/runtime/emit-causal-fixture.ts"
   },

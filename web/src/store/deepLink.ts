@@ -1,17 +1,19 @@
 import {
+  setActivePanel,
   setCursor,
   setOpenPortals,
   setSelection,
   timelineStore,
   type ElementRef,
+  type ReplayPanel,
   type RunTimeline,
   type TimelineStoreState,
 } from "./timeline.js";
 
 /**
  * Deep links (`VIEW_DESIGN.md`: "a view is a value" + increment 2 rule 4):
- * `?at=<event_id>&sel=<elementRef>&portals=<comma-refs>` serializes cursor,
- * selection, and the open-portal stack into the URL, and restores them on
+ * `?at=<event_id>&sel=<elementRef>&portals=<comma-refs>&panel=<panel>`
+ * serializes cursor, selection, portals, and the primary replay panel, and restores them on
  * load. Anchored on `event_id` rather than the dense index `t`, because `t`
  * is only stable within one `buildRunTimeline` run — a fixture's causal
  * order can shift between re-derivations while the events themselves (and
@@ -26,10 +28,16 @@ export interface DeepLinkParams {
   at?: string;
   sel?: string;
   portals: ElementRef[];
+  panel?: ReplayPanel;
 }
 
 const parsePortals = (raw: string | null): ElementRef[] =>
   raw ? raw.split(",").map((ref) => ref.trim()).filter((ref) => ref.length > 0) : [];
+
+const parsePanel = (raw: string | null): ReplayPanel | undefined => {
+  if (raw === null) return undefined;
+  return raw === "conversation" ? "conversation" : "map";
+};
 
 /** Parses a `location.search`-shaped string (with or without the leading `?`) into deep-link params. */
 export const parseDeepLink = (search: string): DeepLinkParams => {
@@ -40,6 +48,7 @@ export const parseDeepLink = (search: string): DeepLinkParams => {
     at: at ?? undefined,
     sel: sel ?? undefined,
     portals: parsePortals(params.get("portals")),
+    panel: parsePanel(params.get("panel")),
   };
 };
 
@@ -49,15 +58,17 @@ export const serializeDeepLink = (params: DeepLinkParams): string => {
   if (params.at) usp.set("at", params.at);
   if (params.sel) usp.set("sel", params.sel);
   if (params.portals.length > 0) usp.set("portals", params.portals.join(","));
+  if (params.panel) usp.set("panel", params.panel);
   const query = usp.toString();
   return query ? `?${query}` : "";
 };
 
 /** Reads the deep-link value of the store's current cursor/selection/open-portal state. */
-export const currentDeepLink = (state: Pick<TimelineStoreState, "timeline" | "cursor" | "selection" | "openPortals">): DeepLinkParams => ({
+export const currentDeepLink = (state: Pick<TimelineStoreState, "timeline" | "cursor" | "selection" | "openPortals" | "activePanel">): DeepLinkParams => ({
   at: state.timeline?.events[state.cursor]?.eventId,
   sel: state.selection ?? undefined,
   portals: state.openPortals,
+  panel: state.activePanel ?? undefined,
 });
 
 /**
@@ -74,6 +85,7 @@ export const applyDeepLink = (timeline: RunTimeline, params: DeepLinkParams): vo
   }
   if (params.sel) setSelection(params.sel);
   if (params.portals.length > 0) setOpenPortals(params.portals);
+  if (params.panel) setActivePanel(params.panel);
 };
 
 const THROTTLE_MS = 250;

@@ -13,6 +13,7 @@ import {
   composedPhaseReached,
   type ComposedPhaseContext,
 } from "./phase.js";
+import { waitForComposedTerminal } from "./supervisionTimeout.js";
 
 export const COMPOSED_RUNNING_RECEIPT_VERSION = "simfile.composed-running.v1" as const;
 export const COMPOSED_WORLD_TERMINAL_VERSION = "simfile.composed-world-terminal.v1" as const;
@@ -68,39 +69,6 @@ export interface ComposedSupervisionPort {
   }>): Promise<unknown>;
 }
 
-const defaultOperatorTimeoutMs = 900_000;
-
-const waitForTerminal = async (input: Readonly<{
-  operation: Promise<unknown>;
-  operator_timeout_ms: number;
-  signal: AbortSignal;
-}>): Promise<unknown> => {
-  if (!Number.isSafeInteger(input.operator_timeout_ms)
-    || input.operator_timeout_ms < 1 || input.operator_timeout_ms > 86_400_000) {
-    throw new TypeError("composed operator timeout is invalid");
-  }
-  if (input.signal.aborted) throw input.signal.reason;
-  let timeout: ReturnType<typeof setTimeout> | undefined;
-  let onAbort: (() => void) | undefined;
-  try {
-    return await Promise.race([
-      input.operation,
-      new Promise<never>((_resolve, reject) => {
-        timeout = setTimeout(() => reject(new Error(
-          "composed world supervision reached the operator timeout",
-        )), input.operator_timeout_ms);
-      }),
-      new Promise<never>((_resolve, reject) => {
-        onAbort = () => reject(input.signal.reason);
-        input.signal.addEventListener("abort", onAbort, { once: true });
-      }),
-    ]);
-  } finally {
-    if (timeout !== undefined) clearTimeout(timeout);
-    if (onAbort !== undefined) input.signal.removeEventListener("abort", onAbort);
-  }
-};
-
 /** Supervises world time only; participant traffic is outside this boundary. */
 export const superviseComposedWorld = async (input: Readonly<{
   context: ComposedPhaseContext;
@@ -108,6 +76,8 @@ export const superviseComposedWorld = async (input: Readonly<{
   journal: unknown;
   operator_timeout_ms?: number;
   port: ComposedSupervisionPort;
+  /** Internal contract-test seam; production allows five seconds to quiesce. */
+  quiescence_timeout_ms?: number;
   signal?: AbortSignal;
 }>): Promise<ComposedPhaseJournal> => {
   let journal = parseComposedPhaseJournal(input.journal);
@@ -138,11 +108,14 @@ export const superviseComposedWorld = async (input: Readonly<{
   );
   if (!composedPhaseReached(journal, "terminal")) {
     const signal = input.signal ?? new AbortController().signal;
-    const terminal = parseComposedWorldTerminalReceipt(await waitForTerminal({
-      operation: input.port.waitForWorldTerminal({
-        expected_terminal_tick: input.expected_terminal_tick, running, signal,
+    const terminal = parseComposedWorldTerminalReceipt(await waitForComposedTerminal({
+      operation: (operationSignal) => input.port.waitForWorldTerminal({
+        expected_terminal_tick: input.expected_terminal_tick,
+        running,
+        signal: operationSignal,
       }),
-      operator_timeout_ms: input.operator_timeout_ms ?? defaultOperatorTimeoutMs,
+      operator_timeout_ms: input.operator_timeout_ms ?? 900_000,
+      quiescence_timeout_ms: input.quiescence_timeout_ms ?? 5_000,
       signal,
     }));
     if (terminal.run_id !== journal.request.run_id

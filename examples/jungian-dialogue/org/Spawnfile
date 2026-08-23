@@ -1,0 +1,44 @@
+spawnfile_version: "0.1"
+kind: team
+name: jungian-dialogue
+description: "An analyst and a daimon interpret one world-observed dream in a finite, credential-free Moltnet dialogue."
+
+shared:
+  workspace:
+    docs:
+      system: TEAM.md
+
+members:
+  - id: analyst
+    ref: ./agents/analyst
+  - id: daimon
+    ref: ./agents/daimon
+
+mode: swarm
+
+networks:
+  - id: dream_lab
+    name: Dream Lab
+    provider: moltnet
+    server:
+      mode: managed
+      listen:
+        bind: 0.0.0.0
+        port: 19951
+      store:
+        kind: memory
+      auth:
+        mode: none
+      human_ingress: true
+      direct_messages: false
+    rooms:
+      - id: consulting-room
+        name: Consulting Room
+        members: [analyst, daimon]
+        visibility: public
+        write_policy: registered_agents
+
+policy:
+  mode: warn
+  on_degrade: warn
+

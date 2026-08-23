@@ -21,11 +21,13 @@ simfile view --state .sim/
 
 | Mode | How it is selected | What it shows |
 |---|---|---|
-| Run-replay | `simfile view <dir>` where `<dir>` contains a `simfile.run-manifest.v1` `manifest.json` and at least one Moltnet transcript | The full scrub timeline, world map, room chat, minds, storylines, measurements, and provenance |
+| Run-replay | `simfile view <dir>` where `<dir>` contains a `simfile.run-manifest.v1` `manifest.json` | The full scrub timeline, with optional chat/memory surfaces only when their artifacts exist |
 | Trace replay | `simfile view <dir>` for another run-record shape | The world console over a sealed `manifest.yaml` plus `viewer-trace.json` |
 | Live | `simfile view --state <dir>` | The world console over `<dir>/viewer-trace.json` with its current heartbeat/tick display |
 
-Run-replay is selected from the directory shape, not by a flag. A transcript may be `raw/moltnet/transcript.json` or `raw/moltnet/<network-id>/transcript.json`.
+Run-replay is selected from the manifest shape, not by a flag. A transcript is
+optional; when present it may be `raw/moltnet/transcript.json` or
+`raw/moltnet/<network-id>/transcript.json`.
 
 The current live surface is deliberately modest: it loads `viewer-trace.json` and runs a local heartbeat that loops through the trace's tick range. It does not yet tail a changing ledger or connect to Moltnet's live event stream. Use run-replay when you need the research instrument described below.
 
@@ -37,7 +39,7 @@ Its inputs are:
 
 - `manifest.json`, including the declared artifacts and optional `seed_declaration`;
 - every `raw/**/causal.jsonl` stream;
-- the Moltnet transcript or transcripts;
+- optional Moltnet transcript or transcripts;
 - optional `raw/mneme/<bank>/events.jsonl` memory logs;
 - optional `spawnfile-report.json` for nested team membranes;
 - optional `world/telemetry.json` for variable samples;
@@ -52,7 +54,15 @@ The scrubber uses one dense event cursor across the entire run. Records are firs
 
 The global controls provide start, end, single-step, play or pause, and `0.5x`, `1x`, `2x`, `4x`, or `8x` playback. Playback is disabled when the browser requests reduced motion. When the run contains real `clock.sync` records, the scrubber also shows world ticks and phase bands. Seed-spread events appear as cyan dots only when their report event IDs join to actual timeline records.
 
-## The three panes
+## Primary views and minds
+
+Conversation and Map are selectable primary views. On the first load of a
+sealed run, Conversation is selected only when the complete timeline contains
+a nonblank message from a declared participant—the exact projection the chat
+will show. World/control messages, undeclared actors, and blank records do not
+trigger it. Map is the deterministic fallback. An explicit deep link or an
+existing user choice wins and is not reset when the cursor moves or a live run
+seals.
 
 ### World map
 
@@ -112,19 +122,19 @@ The verdict strip summarizes turns, complete and incomplete chains, memory event
 
 ## Deep links
 
-Run-replay serializes the current event, selection, and portal stack into the query string:
+Run-replay serializes the current event, selection, portal stack, and primary panel into the query string:
 
 ```text
-?at=<event-id>&sel=<element-ref>&portals=<comma-separated-element-refs>
+?at=<event-id>&sel=<element-ref>&portals=<comma-separated-element-refs>&panel=<map-or-conversation>
 ```
 
 For example:
 
 ```text
-?at=event-2&sel=agent%3Aeleanor&portals=room%3Anet%3Aroom%2Cbank%3Aoffice-recall
+?at=event-2&sel=agent%3Aeleanor&portals=room%3Anet%3Aroom%2Cbank%3Aoffice-recall&panel=conversation
 ```
 
-`at` is a stable event ID, not the dense cursor index. When a run is re-derived, the link resolves that ID to its current causal position. Stale event IDs are ignored instead of crashing the viewer. The URL updates with `history.replaceState`, so scrubbing does not fill browser history.
+`at` is a stable event ID, not the dense cursor index. When a run is re-derived, the link resolves that ID to its current causal position. Stale event IDs are ignored instead of crashing the viewer; an invalid explicit panel fails closed to Map. The URL updates with `history.replaceState`, so scrubbing does not fill browser history.
 
 The current link does not encode camera pose, lenses, operator tier, or run ID. A URL hash is preserved but has no viewer meaning.
 

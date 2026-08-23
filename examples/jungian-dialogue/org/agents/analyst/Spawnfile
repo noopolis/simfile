@@ -1,0 +1,27 @@
+spawnfile_version: "0.1"
+kind: agent
+name: analyst
+description: "The dreamer, balancing ambition with care for the part left behind."
+
+runtime:
+  name: pi
+  options:
+    engine: scripted
+    engine_command: ../../../harness/jungian-engine.mjs
+
+schedule:
+  kind: every
+  every: 1s
+  prompt: "JUNGIAN-DREAM-OPEN: observe sense:dream through your authenticated world binding, then ask @daimon about the image in the consulting room."
+
+surfaces:
+  moltnet:
+    - network: dream_lab
+      rooms:
+        consulting-room:
+          wake: mentions
+
+workspace:
+  docs:
+    system: AGENTS.md
+
