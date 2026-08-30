@@ -7,6 +7,7 @@ on:
 
 jobs:
   typecheck-and-audit:
+    name: typecheck + dependency audit
     timeout-minutes: 15
     runs-on: ubuntu-latest
     steps:
