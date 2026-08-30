@@ -25,6 +25,7 @@ import {
   resetTimelineStoreForTests,
   setCursor,
   setHighlightedEventIds,
+  setActivePanel,
   setOpenPortals,
   setSelection,
   setSpeed,
@@ -278,6 +279,13 @@ describe("timelineStore", () => {
     assert.equal(timelineStore.getSnapshot().selection, "agent:eleanor");
     setSelection(null);
     assert.equal(timelineStore.getSnapshot().selection, null);
+  });
+
+  it("tracks the selected replay panel independently of timeline loads", () => {
+    assert.equal(timelineStore.getSnapshot().activePanel, null);
+    setActivePanel("conversation");
+    loadTimeline(fixtureTimeline());
+    assert.equal(timelineStore.getSnapshot().activePanel, "conversation");
   });
 
   it("maxCursor is 0 for a null timeline and events.length-1 otherwise", () => {

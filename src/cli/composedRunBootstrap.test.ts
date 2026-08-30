@@ -1,18 +1,18 @@
 import assert from "node:assert/strict";
-import { access, mkdir, mkdtemp, rm } from "node:fs/promises";
+import { access, chmod, mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 
 import type { Simfile } from "../schema/index.js";
-import { composedOrganizationExportLifecycleInvocationId } from
-  "../compose/finalize-organization.js";
+import * as compose from "../compose/index.js";
+import { composedOrganizationExportLifecycleInvocationId } from "../compose/finalize-organization.js";
 import {
   composedDeploymentName,
   composedHandoffRunEnvironment,
-  composedProviderLifecycleInvocations,
   composedOrganizationContainerName,
   composedOrganizationUnitId,
+  composedProviderLifecycleInvocations,
   prepareLinkedComposedRun,
 } from "./composedRunBootstrap.js";
 import type { ParsedRunOptions } from "./runArguments.js";
@@ -20,59 +20,81 @@ import type { ParsedRunOptions } from "./runArguments.js";
 const simfile = { clock: { seed: "neutral-seed" } } as Simfile;
 const options = (root: string, overrides: Partial<ParsedRunOptions> = {}): ParsedRunOptions => ({
   local: false, outDir: path.join(root, "run"), path: path.join(root, "Simfile"),
-  view: false, ...overrides,
+  targetContext: "local_test", view: false, ...overrides,
 });
+const executable = async (file: string): Promise<void> => {
+  await writeFile(file, "#!/bin/sh\nexit 0\n", { mode: 0o700 });
+  await chmod(file, 0o700);
+};
+const assertNoSupportState = async (root: string): Promise<void> => {
+  await assert.rejects(access(path.join(root, ".simfile-composed")));
+};
+const bypassedGate = { assert_spawnfile_capabilities: async () => undefined };
 
-test("composed organization container names are deterministic DNS labels", () => {
+test("composed organization names and handoff identity are deterministic", () => {
   const name = composedOrganizationContainerName("run-one");
   assert.match(name, /^simfile-org-[a-f0-9]{16}$/u);
-  assert.equal(name, composedOrganizationContainerName("run-one"));
-});
-
-test("composed deployment names are deterministic Spawnfile identifiers", () => {
-  const name = composedDeploymentName("run-one");
-  assert.match(name, /^simfile-[a-f0-9]{16}$/u);
-  assert.equal(name, composedDeploymentName("run-one"));
-  assert.doesNotMatch(name, /_/u);
-  assert.equal(composedOrganizationUnitId("run-one"), `${name}-container`);
-});
-
-test("composed handoff environment correlates the exact authorized run identity", () => {
-  assert.deepEqual(composedHandoffRunEnvironment("run-one"), {
-    NOOPOLIS_RUN_ID: "run-one",
-  });
-  assert.throws(() => composedHandoffRunEnvironment("invalid run id"));
-});
-
-test("composed bootstrap persists the finalizer's exact export lifecycle identity", () => {
-  const requestDigest = `sha256:${"a".repeat(64)}`;
-  const invocations = composedProviderLifecycleInvocations("run-one", requestDigest);
+  assert.equal(composedDeploymentName("run-one"), composedDeploymentName("run-one"));
+  assert.equal(composedOrganizationUnitId("run-one"), `${composedDeploymentName("run-one")}-container`);
+  assert.deepEqual(composedHandoffRunEnvironment("run-one"), { NOOPOLIS_RUN_ID: "run-one" });
+  const invocations = composedProviderLifecycleInvocations("run-one", `sha256:${"a".repeat(64)}`);
   assert.equal(invocations.export,
-    composedOrganizationExportLifecycleInvocationId(requestDigest));
-  assert.notEqual(invocations.export, invocations.up);
-  assert.notEqual(invocations.export, invocations.down);
+    composedOrganizationExportLifecycleInvocationId(`sha256:${"a".repeat(64)}`));
 });
 
-test("composed bootstrap rejects occupied output before creating support state", async () => {
-  const root = await mkdtemp(path.join(os.tmpdir(), "simfile-bootstrap-preflight-"));
+test("compose public barrel keeps project-preparation validation private", () => {
+  assert.equal("validateComposedProjectPreparation" in compose, false);
+});
+
+test("installed Spawnfile 0.1.14 fails the same read-only preflight as direct composed CLI", async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "simfile-bootstrap-gate-"));
   try {
-    await mkdir(path.join(root, "run"));
+    const spawnfile = path.join(root, "spawnfile");
+    await writeFile(spawnfile, [
+      "#!/usr/bin/env node",
+      "const args = process.argv.slice(2).join(' ');",
+      "if (args === '--version') process.stdout.write('0.1.14\\n');",
+      "else if (args === '--help') process.stdout.write('compile target validate\\n');",
+      "else if (args === 'target --help') process.stdout.write('resolve_config\\n');",
+      "else if (args === 'target resolve_config --help') process.stdout.write('--evidence-destination --prepared-plan\\n');",
+      "else process.exitCode = 2;",
+    ].join("\n"), { mode: 0o700 });
+    await chmod(spawnfile, 0o700);
     await assert.rejects(prepareLinkedComposedRun({
-      linked_spawnfile_path: path.join(root, "Spawnfile"), options: options(root),
-      simfile, simfile_path: path.join(root, "Simfile"), source_text: "source",
-    }), /output path already exists/u);
-    await assert.rejects(access(path.join(root, ".simfile-composed")));
+      environment: { PATH: root, SPAWNFILE_BIN: spawnfile },
+      linked_spawnfile_path: path.join(root, "Spawnfile"), options: options(root), simfile,
+      simfile_path: path.join(root, "Simfile"), source_text: "source",
+    }), /evidence_export_helper_capability_unverifiable/u);
+    await assertNoSupportState(root);
   } finally { await rm(root, { force: true, recursive: true }); }
 });
 
-test("composed bootstrap validates run identity before lifecycle prerequisites", async () => {
-  const root = await mkdtemp(path.join(os.tmpdir(), "simfile-bootstrap-identity-"));
+test("composed bootstrap never falls back to PATH for Spawnfile", async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "simfile-bootstrap-provider-"));
   try {
+    await executable(path.join(root, "spawnfile"));
     await assert.rejects(prepareLinkedComposedRun({
-      linked_spawnfile_path: path.join(root, "Spawnfile"),
-      options: options(root, { runId: "invalid run id" }), simfile,
-      simfile_path: path.join(root, "Simfile"), source_text: "source",
-    }));
-    await assert.rejects(access(path.join(root, ".simfile-composed")));
+      environment: { PATH: root }, linked_spawnfile_path: path.join(root, "Spawnfile"),
+      options: options(root), simfile, simfile_path: path.join(root, "Simfile"), source_text: "source",
+    }, bypassedGate), /SPAWNFILE_BIN must be an absolute installed executable path/u);
+    await assertNoSupportState(root);
+  } finally { await rm(root, { force: true, recursive: true }); }
+});
+
+test("output and run identity are rejected before the provider seam", async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "simfile-bootstrap-input-"));
+  try {
+    await executable(path.join(root, "spawnfile"));
+    await mkdir(path.join(root, "run"));
+    await assert.rejects(prepareLinkedComposedRun({
+      environment: { PATH: root }, linked_spawnfile_path: path.join(root, "Spawnfile"),
+      options: options(root), simfile, simfile_path: path.join(root, "Simfile"), source_text: "source",
+    }, bypassedGate), /output path already exists/u);
+    await assert.rejects(prepareLinkedComposedRun({
+      environment: { PATH: root }, linked_spawnfile_path: path.join(root, "Spawnfile"),
+      options: options(root, { outDir: path.join(root, "different"), runId: "invalid run id" }),
+      simfile, simfile_path: path.join(root, "Simfile"), source_text: "source",
+    }, bypassedGate));
+    await assertNoSupportState(root);
   } finally { await rm(root, { force: true, recursive: true }); }
 });

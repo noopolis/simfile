@@ -3,18 +3,20 @@ title: CLI
 description: Exact commands and flags implemented by the Simfile v0.1 CLI.
 ---
 
-The current command set is `validate`, `run`, `observe`, and `view`.
+The current command set is `validate`, `run`, `observe`, `view`, and `recover`.
 
 ```text
 simfile validate <path> [--json] [--spawnfile-report <path>|<json>]
-simfile run <path> --ticks <n> [--out <dir>] [--seed <seed>]
-  [--run-id <id>] [--acts <path>]
+simfile run <path> [--view] [--out <dir>] [--seed <seed>] [--run-id <id>]
+simfile run <path> --local --ticks <n> [--out <dir>] [--seed <seed>]
+  [--run-id <id>] [--acts <path>] [--clock <iso>]
   [--moltnet-artifact transcript|delivery]
   [--spawnfile-report <path>|<json>]
 simfile observe <run-dir> [--json]
 simfile view --state <path>
 simfile view <run-record-dir>
 simfile view --help
+simfile recover --journal <absolute-path> --run-id <expected> --authority-digest <sha256>
 simfile --help
 ```
 
@@ -44,29 +46,70 @@ Validation performs strict structural checks and semantic checks such as declare
 
 Unknown flags, extra positional arguments, parse failures, or error-level binding diagnostics return exit status `1`.
 
+## `recover`
+
+```bash
+simfile recover --journal <absolute-path> --run-id <expected> --authority-digest <sha256>
+```
+
+`--journal` must be the normalized absolute path to the exact journal file in
+the composed run's support directory (normally
+`<support-root>/journal/phase-journal.json`); it does not accept the support
+directory itself. `--run-id` must match the journal's run ID, and
+`--authority-digest` must be a `sha256:` digest that matches its authority.
+These are the only options, in this exact order; there is no `--json` flag.
+
+Version-2 journals carry a secret-free bootstrap capsule that pins the exact
+Spawnfile executable, capability contract, local context, paths, and public
+project identities. Recovery reconstructs the resolver-backed provider from
+that capsule, reconciles typed target and lifecycle lookups, and resumes only
+after exact identity verification. An unresolved credential-provisioning
+intent is reported as ambiguous and is never retried automatically. Legacy
+journals without the capsule fail closed. Invalid syntax, an
+unavailable or unsafe journal, and an authority mismatch also return `1` and
+write the error to standard error.
+
 ## `run`
 
 ```bash
-simfile run ./Simfile --ticks 144
-simfile run ./Simfile --ticks 144 --run-id office-014 --out runs/office-014
-simfile run ./Simfile --ticks 144 --seed alternate-seed
+simfile run ./Simfile --local --ticks 144
+simfile run ./Simfile --local --ticks 144 --run-id office-014 --out runs/office-014
+simfile run ./Simfile --local --ticks 144 --seed alternate-seed
+simfile run ./Simfile --mode lifecycle-replay-smoke --out runs/composed-smoke
 ```
 
-`--ticks` is required and must be an integer greater than or equal to zero. The command validates first, then executes a bounded deterministic kernel trace without sleeping.
+`--local --ticks` executes a bounded deterministic kernel trace without
+sleeping. Linked `simfile run <linked Simfile>` accepts neither `--ticks` nor
+`--spawnfile-report`, and requires a project binding plus a Spawnfile CLI whose
+generic public surfaces satisfy Simfile's
+`simfile.spawnfile-public-capability-probe.v1`. For source development, install
+and check that CLI with `npm run dev:spawnfile:setup` and `npm run
+dev:spawnfile:check`; see [Spawnfile integration](/guides/spawnfile-integration/).
+The source-checkout aliases are `npm run example:local` and `npm run
+example:composed -- --context <local-docker-context>`.
 
 ### Run flags
 
 | Flag | Required | Meaning |
 | --- | --- | --- |
-| `--ticks <n>` | yes | Number of kernel ticks. |
+| `--ticks <n>` | local only | Number of kernel ticks. |
+| `--mode <mode>` | linked only | `live` (default) or the distinct `lifecycle-replay-smoke` evaluation. |
 | `--out <dir>` | no | Output directory; defaults to `runs/<run-id>`. |
 | `--seed <seed>` | no | Effective seed; defaults to `clock.seed`. |
 | `--run-id <id>` | no | Run ID; defaults to a filesystem-safe form of the effective seed. |
-| `--acts <path>` | no | JSON array of queued `variable:set` world acts. |
-| `--moltnet-artifact <kind>` | no | Add a harness-derived `transcript` or `delivery` artifact. |
-| `--spawnfile-report <value>` | no | Add Spawnfile binding validation from a path or inline JSON. |
+| `--acts <path>` | local only | JSON array of queued `variable:set` world acts. |
+| `--clock <iso>` | local only | Deterministic override for the wall-clock instant used to create the run record. |
+| `--moltnet-artifact <kind>` | local only | Add a harness-derived `transcript` or `delivery` artifact. |
+| `--spawnfile-report <value>` | local only | Add Spawnfile binding validation from a path or inline JSON. |
 
 Every value flag also accepts `--flag=value`.
+
+When the external lifecycle completes, `lifecycle-replay-smoke`
+emits `simfile.composed-lifecycle-replay-smoke-receipt.v1`. It proves a
+completed lifecycle and exact replay while declaring live agent-action
+evidence `not_evaluated`; it never produces the strict live simulation
+verdict. The development runner admits the exact Spawnfile 0.1.17 public
+contract and proves the selected endpoint is local before starting the run.
 
 The output directory contains:
 
@@ -82,9 +125,9 @@ moltnet-delivery.json     optional
 
 The optional Moltnet files are explicitly marked `harness-derived`; they are not evidence captured from a live Moltnet service. Failed marker or probe evaluations are recorded in `report.json` but do not make the command itself fail.
 
-`simfile run` does not start the file referenced by top-level `spawnfile:`.
-Passing `--spawnfile-report` validates bindings only. Agent-backed composition
-belongs to fixture-owned production runners; see
+Local mode only uses `--spawnfile-report` for binding validation. Linked
+composition starts the declared project through Spawnfile's public CLI only
+after Simfile's public capability probe succeeds. See
 [Spawnfile integration](/guides/spawnfile-integration/).
 
 ### Queued world acts
@@ -149,7 +192,7 @@ simfile view --help
 
 With a positional directory, the server selects replay behavior from the directory shape:
 
-- `manifest.json` at `simfile.run-manifest.v1` plus a Moltnet transcript opens the full run-replay application;
+- `manifest.json` at `simfile.run-manifest.v1` opens the full run-replay application; Moltnet transcripts are optional inputs;
 - `manifest.yaml` plus `viewer-trace.json` opens the world replay console.
 
 `--state` opens the live-labeled console over `viewer-trace.json`. That current surface reads a snapshot and serves a synthetic looping tick heartbeat; it is not yet a live tail of ledger or Moltnet events.
@@ -158,4 +201,4 @@ The server runs until interrupted. Read [Viewer](/guides/viewer/) for the exact 
 
 ## Help and exit behavior
 
-`simfile --help` and `simfile -h` return success. Running `simfile` with no command prints usage and returns exit status `1`. Individual `validate`, `run`, and `observe` commands do not implement their own `--help`; `simfile view --help` does.
+`simfile --help` and `simfile -h` return success. Running `simfile` with no command prints usage and returns exit status `1`. The usage overview includes `recover` and its required arguments. Individual `validate`, `run`, `observe`, and `recover` commands do not implement their own `--help`; `simfile view --help` does.

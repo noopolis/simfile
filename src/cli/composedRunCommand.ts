@@ -1,17 +1,10 @@
 import {
   assertComposedDecisionInputs,
   attachComposedViewer,
-  composedCommandExitCode,
   composedRunConfiguration,
-  createComposedCommandReceipt,
-  createComposedJournalSession,
   createComposedLiveViewerProjection,
-  createComposedPhaseJournal,
-  deriveComposedLiveEvidence,
-  replayComposedRunRecord,
   runPreflightedComposedRun,
   serializeComposedReceipt,
-  writeComposedFinalReceipt,
   writeComposedProgress,
   type CompletedComposedRun,
   type ComposedViewerAttachment,
@@ -26,8 +19,15 @@ import {
 } from "../spawnfile/productionViewerProjection.js";
 import { prepareLinkedComposedRun, revokeLinkedComposedSources } from
   "./composedRunBootstrap.js";
-import { createLinkedComposedRecord, sealLinkedComposedRecord } from
+import {
+  runComposedFailureCleanup,
+  throwAfterComposedFailureCleanup,
+} from "./composedFailureCleanup.js";
+import { createLinkedComposedRecord } from
   "./composedRunArtifacts.js";
+import { finalizeLinkedComposedRun } from "./composedRunCompletion.js";
+import { removeComposedSupportRoot } from "./composedSupportRoot.js";
+import { ComposedBootstrapRecoveryError } from "./composedBootstrapRecovery.js";
 import type { ParsedRunOptions } from "./runArguments.js";
 
 export interface LinkedComposedRunInput {
@@ -44,36 +44,31 @@ export type LinkedComposedRunCommand = (
 
 const recoveryExitCode = (signal: "SIGINT" | "SIGTERM" | "failure" | "restart"): number =>
   signal === "SIGINT" ? 130 : signal === "SIGTERM" ? 143 : 1;
-const receiptViewer = (
-  attachment: ComposedViewerAttachment | undefined,
-  projectionError?: string,
-) => {
-  if (attachment === undefined) return { state: "disabled" as const };
-  if (projectionError !== undefined) {
-    return { error: projectionError, state: "unavailable" as const };
-  }
-  if (attachment.state === "attached") {
-    return { state: "attached" as const, url: attachment.url };
-  }
-  return { error: attachment.error, state: "unavailable" as const };
-};
-
 /** Owns the one production route into the generic composed lifecycle. */
 export const runLinkedComposedCommand: LinkedComposedRunCommand = async (input) => {
   assertComposedDecisionInputs({ simfile: input.simfile });
   writeComposedProgress("Preparing linked composed run");
-  const bootstrap = await prepareLinkedComposedRun(input);
+  let bootstrap;
+  try { bootstrap = await prepareLinkedComposedRun(input); }
+  catch (error) {
+    if (!(error instanceof ComposedBootstrapRecoveryError)) throw error;
+    process.stdout.write(serializeComposedReceipt(error.receipt));
+    return recoveryExitCode(error.receipt.signal);
+  }
+  try {
   let record;
   try {
     record = await createLinkedComposedRecord(bootstrap);
   } catch (error) {
-    await revokeLinkedComposedSources(bootstrap);
-    throw error;
+    return throwAfterComposedFailureCleanup(error, [{
+      label: "credential source revocation",
+      run: () => revokeLinkedComposedSources(bootstrap),
+    }, {
+      label: "private support-root removal",
+      run: () => removeComposedSupportRoot(bootstrap.support_root),
+    }]);
   }
-  const initial = createComposedPhaseJournal(
-    bootstrap.request, new Date().toISOString(), bootstrap.execution,
-  );
-  const session = await createComposedJournalSession(bootstrap.journal_path, initial);
+  const session = bootstrap.journal_session;
   let viewer: ComposedViewerAttachment | undefined;
   let projection: ComposedLiveViewerProjection | undefined;
   let projectionObserver: ProductionViewerProjectionObserver | undefined;
@@ -109,6 +104,7 @@ export const runLinkedComposedCommand: LinkedComposedRunCommand = async (input) 
   try {
     const ports = createProductionComposedRunPorts({
       execution: bootstrap.execution, journal_session: session,
+      target_provider: bootstrap.target_provider,
     });
     outcome = await runPreflightedComposedRun({
       configuration: composedRunConfiguration(bootstrap.execution),
@@ -124,11 +120,16 @@ export const runLinkedComposedCommand: LinkedComposedRunCommand = async (input) 
       request: bootstrap.request,
     });
   } catch (error) {
-    await projectionObserver?.close();
-    await record.abort();
-    if (viewer?.state === "attached") await viewer.close();
-    await revokeLinkedComposedSources(bootstrap);
-    throw error;
+    return throwAfterComposedFailureCleanup(error, [
+      ...(projectionObserver === undefined ? [] : [{
+        label: "viewer projection close", run: () => projectionObserver.close(),
+      }]),
+      { label: "staging record abort", run: () => record.abort() },
+      ...(viewer?.state !== "attached" ? [] : [{
+        label: "viewer close", run: () => viewer.close(),
+      }]),
+      { label: "credential source revocation", run: () => revokeLinkedComposedSources(bootstrap) },
+    ]);
   }
   const projectionObservation = await projectionObserver?.close();
   if (projectionObservation !== undefined) {
@@ -140,63 +141,23 @@ export const runLinkedComposedCommand: LinkedComposedRunCommand = async (input) 
     }
   }
   if (outcome.receipt.status === "recovery_required") {
-    await record.abort();
-    if (viewer?.state === "attached") await viewer.close();
+    const cleanupFailures = await runComposedFailureCleanup([
+      { label: "staging record abort", run: () => record.abort() },
+      ...(viewer?.state !== "attached" ? [] : [{
+        label: "viewer close", run: () => viewer.close(),
+      }]),
+    ]);
+    if (cleanupFailures.length > 0) {
+      throw new AggregateError(cleanupFailures,
+        "composed recovery was preserved but local cleanup is incomplete");
+    }
     process.stdout.write(serializeComposedReceipt(outcome.receipt));
     return recoveryExitCode(outcome.receipt.signal);
   }
-  const completed = outcome as CompletedComposedRun;
-  let revocationAttempted = false;
-  try {
-    writeComposedProgress("Reconciling and sealing exported evidence");
-    if (projection !== undefined) {
-      try {
-        const captured = await projection.finalize(record);
-        if (captured.publications === 0) {
-          projectionError ??= "no authenticated viewer projection was captured";
-        }
-      } catch (error) {
-        projectionError = error instanceof Error ? error.message : String(error);
-        writeComposedProgress(`Viewer projection evidence unavailable: ${projectionError}`);
-      }
-    }
-    const sealed = await sealLinkedComposedRecord({ bootstrap,
-      lifecycle: completed, record });
-    if (viewer?.state === "attached") {
-      try {
-        const seal = await viewer.awaitSeal();
-        if (seal.status === "failed") {
-          projectionError ??= seal.error ?? "viewer seal reconciliation failed";
-        }
-      } catch (error) {
-        projectionError ??= error instanceof Error ? error.message : String(error);
-      }
-    }
-    const replay = await replayComposedRunRecord({
-      adapter: bootstrap.preparation.replay_adapter,
-      run_dir: sealed.out_dir,
-    });
-    writeComposedProgress(`Exact replay verified at tick ${replay.terminal_tick}`);
-    const liveEvidence = await deriveComposedLiveEvidence({
-      accepted_actions_path: "actions/accepted.json",
-      principals_path: "identity/principals.json",
-      run_dir: sealed.out_dir,
-    });
-    revocationAttempted = true;
-    await revokeLinkedComposedSources(bootstrap);
-    const receipt = createComposedCommandReceipt({
-      journal: completed.journal, lifecycle_receipt: completed.receipt,
-      live_evidence: liveEvidence,
-      manifest_digest: `sha256:${sealed.manifest_sha256}`,
-      run_path: sealed.out_dir, viewer: receiptViewer(viewer, projectionError),
-    });
-    writeComposedFinalReceipt(receipt);
-    return composedCommandExitCode(receipt);
+  return await finalizeLinkedComposedRun({ bootstrap,
+    completed: outcome as CompletedComposedRun, projection, projection_error: projectionError,
+    record, viewer });
   } finally {
-    try {
-      if (!revocationAttempted) await revokeLinkedComposedSources(bootstrap);
-    } finally {
-      if (viewer?.state === "attached") await viewer.close();
-    }
+    bootstrap.target_provider.close();
   }
 };

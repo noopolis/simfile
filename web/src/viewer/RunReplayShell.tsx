@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   focusAndOpenPortal,
   loadTimeline,
+  setActivePanel,
   setCursor,
   setLoadError,
   useTimelineStore,
@@ -16,6 +17,7 @@ import { ActionFeedPane } from "./ActionFeedPane.js";
 import { AsciiMap } from "./AsciiMap.js";
 import { actionLogUpToTick, buildActionLog, type ActionLog } from "./actionLog.js";
 import { ChatPane, MindsRail } from "./ReplayPanes.js";
+import { ReplayPrimaryPane } from "./ReplayPrimaryPane.js";
 import {
   EngineProvenanceBadge,
   ProvenancePanel,
@@ -32,6 +34,7 @@ import { buildViewerWorld, viewerSkins } from "./worldModel.js";
 import { buildWorldMapRendererFrame } from "./worldMapRendererFrame.js";
 import { worldMapPresentationTick } from "./worldMapRendererCatalog.js";
 import { fetchSealedRunLifecycle } from "./runLifecycle.js";
+import { initialReplayPanel } from "./replayPanel.js";
 import {
   livePendingProvenance,
   liveTimeline,
@@ -62,7 +65,7 @@ const fetchJson = async <T,>(url: string): Promise<T> => {
 const ignoreSelection = (): void => {};
 
 export function RunReplayShell() {
-  const { timeline, cursor, selection, openPortals, loadError } = useTimelineStore();
+  const { timeline, cursor, selection, activePanel, openPortals, loadError } = useTimelineStore();
   const [worldTrace, setWorldTrace] = useState<ViewerContractTrace | null>(null);
   const [worldError, setWorldError] = useState<string | null>(null);
   const [runMeta, setRunMeta] = useState<RunMeta | null>(null);
@@ -174,8 +177,12 @@ export function RunReplayShell() {
     // event id to its *current* `t`.
     if (!timeline || deepLinkApplied.current) return;
     deepLinkApplied.current = true;
-    applyDeepLink(timeline, parseDeepLink(window.location.search));
-  }, [timeline]);
+    const params = parseDeepLink(window.location.search);
+    applyDeepLink(timeline, {
+      ...params,
+      panel: initialReplayPanel(timeline, params.panel, activePanel),
+    });
+  }, [timeline, activePanel]);
 
   const world = useMemo(() => (worldTrace ? buildViewerWorld(worldTrace) : null), [worldTrace]);
   const spatialTickSpan = useMemo<{ firstTick?: number; lastTick?: number }>(() => {
@@ -323,43 +330,46 @@ export function RunReplayShell() {
           <MindsRail cursor={cursor} timeline={timeline} />
         </div>
 
-        <section className="replay-pane replay-map" aria-label="World map">
-          <header className="replay-pane-header">world map</header>
-          {caption ? <p className="replay-caption">{caption}</p> : null}
-          {world && selectedNode ? (
-            <AsciiMap
-              descendableScopes={descendableScopes}
-              glowScopes={glowScopes}
-              nodes={world.nodes}
-              onSelect={(id) => {
-                const node = world.nodes.find((candidate) => candidate.id === id);
-                if (node) focusAndOpenPortal(node.scope);
-              }}
-              renderSettings={defaultRenderSettings}
-              roomPaths={world.roomPaths}
-              rooms={world.roomGeometries}
-              selectedNode={selectedNode}
-              selectedSkin={skin}
-              presenceByAgent={world.presenceByAgent}
-              spatialSamples={world.spatialSamples}
-              tick={presentationTick ?? variableTick}
-              tickDurationMs={world.tickDurationMs}
-              extensionData={world.viewerExtensionData}
-              extensionIdentities={world.viewerExtensionIdentities}
-              cursor={{
-                eventId: timeline.events[cursor]?.eventId,
-                index: cursor,
-                max: Math.max(0, timeline.events.length - 1),
-              }}
-            />
-          ) : (
-            <p className="replay-loading">{worldError ?? "loading world…"}</p>
+        <ReplayPrimaryPane
+          activePanel={activePanel ?? "map"}
+          conversation={<ChatPane cursor={cursor} timeline={timeline} utteredEventIds={uttered} />}
+          map={(
+            <section className="replay-pane replay-map" aria-label="World map">
+              <header className="replay-pane-header">world map</header>
+              {caption ? <p className="replay-caption">{caption}</p> : null}
+              {world && selectedNode ? (
+                <AsciiMap
+                  descendableScopes={descendableScopes}
+                  glowScopes={glowScopes}
+                  nodes={world.nodes}
+                  onSelect={(id) => {
+                    const node = world.nodes.find((candidate) => candidate.id === id);
+                    if (node) focusAndOpenPortal(node.scope);
+                  }}
+                  renderSettings={defaultRenderSettings}
+                  roomPaths={world.roomPaths}
+                  rooms={world.roomGeometries}
+                  selectedNode={selectedNode}
+                  selectedSkin={skin}
+                  presenceByAgent={world.presenceByAgent}
+                  spatialSamples={world.spatialSamples}
+                  tick={presentationTick ?? variableTick}
+                  tickDurationMs={world.tickDurationMs}
+                  extensionData={world.viewerExtensionData}
+                  extensionIdentities={world.viewerExtensionIdentities}
+                  cursor={{
+                    eventId: timeline.events[cursor]?.eventId,
+                    index: cursor,
+                    max: Math.max(0, timeline.events.length - 1),
+                  }}
+                />
+              ) : (
+                <p className="replay-loading">{worldError ?? "loading world…"}</p>
+              )}
+            </section>
           )}
-        </section>
-
-        <div className="replay-secondary-stack replay-right-stack">
-          <ChatPane cursor={cursor} timeline={timeline} utteredEventIds={uttered} />
-        </div>
+          onSelect={setActivePanel}
+        />
       </div>
 
       {openPortals.map((ref, index) => (

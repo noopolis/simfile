@@ -1,0 +1,22 @@
+spawnfile_version: "0.1"
+kind: agent
+name: daimon
+description: "A personified guide who protects the dream's tension from premature certainty."
+
+runtime:
+  name: pi
+  options:
+    engine: scripted
+    engine_command: ../../../harness/jungian-engine.mjs
+
+surfaces:
+  moltnet:
+    - network: dream_lab
+      rooms:
+        consulting-room:
+          wake: mentions
+
+workspace:
+  docs:
+    system: AGENTS.md
+

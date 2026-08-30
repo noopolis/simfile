@@ -6,7 +6,9 @@ on:
     branches: [main]
 
 jobs:
-  check:
+  typecheck-and-audit:
+    name: typecheck + dependency audit
+    timeout-minutes: 15
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -18,12 +20,14 @@ jobs:
       - run: npm audit --omit=dev --audit-level=high
       - run: npm run typecheck
 
-  test:
+  # Split by what the suite actually covers, not by arbitrary file shards.
+  # `src/dynamics` builds npm packages inside hermetic sandboxes: 16% of the
+  # tests but ~55% of the CPU, so it gets its own job. A red job then names the
+  # area that broke, which "test (3)" never could.
+  world-and-runtime:
+    name: world + runtime tests
+    timeout-minutes: 25
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        shard: [1, 2, 3, 4]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -32,11 +36,24 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
-      # The GitHub-hosted runner has 2 cores, so `node --test`'s file-level
-      # parallelism can't spread the CPU-heavy dynamics-build suites — the full
-      # suite runs ~20 min there despite ~2 min on an 18-core dev box. Shard the
-      # files across parallel jobs so wall time is the slowest shard, not the sum.
-      - run: >-
+      - name: Run every suite except the dynamics sandbox builds
+        run: >-
           node scripts/run-tests.mjs
-          --test-shard=${{ matrix.shard }}/4
-          "src/**/*.test.ts" "web/src/**/*.test.ts"
+          $(find src web/src -name '*.test.ts' -not -path 'src/dynamics/*' | sort)
+
+  dynamics-sandbox-builds:
+    name: dynamics sandbox builds
+    timeout-minutes: 25
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Build and load dynamics packages in hermetic sandboxes
+        run: >-
+          node scripts/run-tests.mjs
+          $(find src/dynamics -name '*.test.ts' | sort)

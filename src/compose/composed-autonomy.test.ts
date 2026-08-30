@@ -15,9 +15,11 @@ describe("composed supervision autonomy ratchet", () => {
   });
 
   it("the production port waits only for the world-owned terminal artifact", async () => {
-    const source = await readFile(new URL("../spawnfile/productionPorts.ts", import.meta.url), "utf8");
-    const start = source.indexOf("supervision: {");
-    const end = source.indexOf("world_finalization:", start);
+    const source = await readFile(
+      new URL("../spawnfile/productionFinalizationPorts.ts", import.meta.url), "utf8",
+    );
+    const start = source.indexOf("export const createProductionSupervisionPort");
+    const end = source.indexOf("export const createProductionWorldFinalizationPort", start);
     assert.notEqual(start, -1);
     assert.notEqual(end, -1);
     const supervision = source.slice(start, end);

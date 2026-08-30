@@ -30,7 +30,7 @@ const request = parseComposedRunRequest({
   required_world_capabilities: [],
   run_id: "run-one",
   source_digest: sha("e"),
-  target: { auth_profile: "simfile-live", selector: "gpu-4090" },
+  target: { auth_profile: "test-auth-profile", selector: "local-test-target" },
   version: "simfile.composed-run-request.v1",
   world: {
     artifact_manifest_digest: sha("f"),
@@ -54,7 +54,7 @@ const terminal = () => createComposedTerminalReceipt({
       fingerprint: `sha256:${"8".repeat(32)}`,
       handle: `opaque_${"9".repeat(16)}`,
     },
-    selector: "gpu-4090",
+    selector: "local-test-target",
   },
   topology: {
     activation_receipt_digest: sha("a"),
@@ -77,6 +77,11 @@ test("live request requires the declared Phase 3 decision-claim capability hook"
   assert.doesNotThrow(() => parseComposedRunRequest({
     ...request,
     mode: "live",
+    required_world_capabilities: [WORLD_DECISION_CLAIM_CAPABILITY],
+  }));
+  assert.throws(() => parseComposedRunRequest({
+    ...request,
+    mode: "lifecycle-replay-smoke",
     required_world_capabilities: [WORLD_DECISION_CLAIM_CAPABILITY],
   }));
 });

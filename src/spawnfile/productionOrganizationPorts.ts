@@ -4,6 +4,13 @@ import type { ComposedExecution } from "../compose/execution.js";
 import { composedPhasePayload } from "../compose/phase.js";
 import type { ComposedRunPorts } from "../compose/run.js";
 import { runSpawnfileUp } from "./cli.js";
+import { parseSpawnfileUpReceipt } from "./receipts.js";
+import {
+  resolveSpawnfileLifecycleOutcome,
+  runSpawnfileLifecycleLookup,
+} from "./lifecycleLookup.js";
+import { resolveSpawnfileOrganizationAuthentication } from
+  "./organizationAuthentication.js";
 import {
   createProductionTargetDriver,
   productionRecord as record,
@@ -19,16 +26,23 @@ export const createProductionOrganizationPorts = (
   driver: ProductionTargetDriver,
 ): ComposedRunPorts["organization"] => {
   const provider = execution.provider;
-  const { cli, guard, load, mutation, runTarget } = driver;
+  const { cli, completeTarget, guard, load, mutation, runTarget } = driver;
+  const complete = completeTarget ?? (async (_command: string, _request: Readonly<Record<string, unknown>>,
+    _receipt: Readonly<Record<string, unknown>>): Promise<void> => undefined);
   return {
     startOrganization: async ({ idempotency_key, signal }) => {
       const journal = await load();
       const preparation = record(composedPhasePayload(journal, "prepared").preparation);
       const dataNetwork = record(record(preparation.resources).data_network);
       const networkAttachmentHandle = handle.parse(dataNetwork.result_handle);
+      const authentication = resolveSpawnfileOrganizationAuthentication({
+        configured_auth_profile: journal.request.target.auth_profile,
+        member_engines: execution.configuration.organization_expectation.member_engines,
+      });
       await guard();
-      const up = await runSpawnfileUp(cli, {
-        authProfile: journal.request.target.auth_profile,
+      const upInput = {
+        ...(authentication.kind === "model"
+          ? { authProfile: authentication.spawnfile_up_auth_profile } : {}),
         compiledOutputDirectory: provider.compiled_output_directory,
         containerName: provider.organization_container_name,
         deploymentName: execution.configuration.organization_expectation.deployment_name,
@@ -46,6 +60,16 @@ export const createProductionOrganizationPorts = (
           provider.organization_handoff.selected_target_receipt_file,
         signal,
         worldBindingsFile: provider.organization_handoff.world_bindings_file,
+      } as const;
+      const lifecycleId = provider.lifecycle_invocations.up;
+      const up = await resolveSpawnfileLifecycleOutcome({
+        invocation_id: lifecycleId,
+        invoke: () => runSpawnfileUp(cli, upInput),
+        lookup: () => runSpawnfileLifecycleLookup(cli, {
+          invocation_id: lifecycleId, operation: "up", signal,
+        }),
+        operation: "up",
+        parse: parseSpawnfileUpReceipt,
       });
       const handoff = handle.parse(record(up).organization_handoff_handle);
       const request = mutation(journal, "attach_organization", idempotency_key, 6, {
@@ -59,6 +83,7 @@ export const createProductionOrganizationPorts = (
         resulting_revision: 7,
         run_id: journal.request.run_id,
       });
+      await complete("attach_organization", request, attachment);
       return { ...up, target_attachment: attachment };
     },
     readOrganizationReadiness: async ({ up_receipt }) => up_receipt,

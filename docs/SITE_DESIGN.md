@@ -1,18 +1,18 @@
 # Simfile Documentation Site: Design Spec and Docs IA
 
-Canonical spec for the Simfile public site (`ecosystem/simfile/website/`): the
+Canonical spec for the Simfile public site (`website/`): the
 landing page, the visual language, the navigation, and the full documentation
 information architecture with per-page content outlines.
 
 Sources of truth, in priority order:
 
-1. `../../ECOSYSTEM-DESIGN.md`: the shared Noopolis design system. This spec
-   applies it; it never overrides it.
+1. The shared Noopolis design system: this spec applies its conventions; it
+   never overrides them.
 2. `DESIGN.md` and `VIEW_DESIGN.md`: what the product is. No page may invent
    schema keys, commands, or viewer behavior that these documents do not back.
-3. `../moltnet/website/`: the reference implementation of the site foundation.
-   Simfile's site must read as a first-class sibling: same structure, same
-   polish, same component grammar, different accent and content.
+3. The established Noopolis site foundation: Simfile's site must read as a
+   first-class sibling, with the same structure, polish, and component grammar
+   but a different accent and content.
 
 Brand facts, confirmed (encode, do not revisit):
 
@@ -98,12 +98,12 @@ below, in the proof frame, exactly where Moltnet animates.
   - Left: a short Simfile YAML excerpt (clock + one rule), highlight grammar
     with violet keywords and prompts, gray-1 values, gray-3 hints. One animated
     span: the `seed:` value typewrites as the pills cycle.
-  - Center arrow: `$ simfile run ./Simfile --ticks 144` with the compiling
+  - Center arrow: `$ simfile run ./Simfile --local --ticks 144` with the compiling
     shimmer on cycle.
   - Right: the run-record checklist revealed item by item:
     `✓ ledger.jsonl` · `✓ telemetry.json` · `✓ report.json` ·
     `✓ viewer-trace.json`, then the run line `viewer at :18787`.
-  - Pills under the left pane cycle **fixtures, not runtimes** (Simfile's
+  - Pills under the left pane cycle through **fixture examples** (Simfile's
     variable is the world, Moltnet's was the agent system): `office-world`,
     `repeated-dilemma`, `tiny-world`. Clicking a pill swaps the YAML excerpt
     name/seed and replays the reveal. Every pill must correspond to a fixture
@@ -273,7 +273,7 @@ publish; downgrade any claim the code does not back):
 - **Schema**: v0.1 kernel schema and validator, implemented and stable.
   Domain-noun lint enforced. Lexical shorthands (`range: 0..1`, durations)
   expand in the lexer.
-- **Runtime**: seeded finite runs via `simfile run --ticks N`, implemented.
+- **Runtime**: seeded finite runs via `simfile run --local --ticks N`, implemented.
   Deterministic mechanical stream, sealed run records (`manifest.yaml`,
   `ledger.jsonl`, `telemetry.json`, `report.json`, `viewer-trace.json`).
   Mechanical probes and marker scanning evaluate in the run report;
@@ -356,7 +356,7 @@ path is always current.
 **`quickstart.md`** (rewrite)
 Purpose: first success in five minutes using only implemented commands.
 Sections: `Create a World` (the clock-only `tiny-world`) · `Validate It` ·
-`Run It` (`simfile run ./Simfile --ticks 144 --out runs/first`) · `Open the
+`Run It` (`simfile run ./Simfile --local --ticks 144 --out runs/first`) · `Open the
 Viewer` (`simfile view runs/first`) · `What Just Happened` (the run record
 files, one line each) · `Next Steps` (first-world guide, office guide).
 Status line: every command on this page is implemented; no planned surface
@@ -415,11 +415,12 @@ Sections: `The Boundary` (Simfile never re-parses Spawnfile YAML) · `The
 Resolved Graph Report` (`spawnfile compile --report-json`, then
 `--spawnfile-report` on validate/run) · `Binding Checks` (agents, teams,
 rooms verified against the report) · `The World as a Participant` (`@world`
-credential, no private wake path) · `A Full Local Flow` (compile, up, run,
-view) · `Planned: simfile dev` (badge `planned`, v2; prints its Spawnfile
+credential, no private wake path) · `A Full Composed Flow` (compile, explicit
+operator inputs, linked run, view) · `Planned: simfile dev` (badge `planned`, v2; prints its Spawnfile
 command first).
-Status line: `--spawnfile-report` is implemented on `validate` and `run`;
-`plan` and `dev` are planned.
+Status line: `--spawnfile-report` is implemented on `validate` and local
+`run --local --ticks`; linked composition requires a project binding and
+explicit operator inputs. `plan` and `dev` are planned.
 
 **`guides/viewer.md`** (rewrite of `guides/live-viewer.md`)
 Purpose: teach someone to drive the instrument and read it critically.
@@ -492,10 +493,10 @@ validates against the current validator (CI-checkable).
 **`reference/cli.md`** (rewrite)
 Purpose: every command and flag, statused; the honest-status rule made into a
 table.
-Sections: `Implemented` (`validate` with `--json`/`--spawnfile-report`; `run`
-with `--ticks`/`--out`/`--seed`/`--run-id`/`--moltnet-artifact`/
-`--spawnfile-report`; `view` with `--state`/`--port`/`--no-open` and the
-run-dir form; exact output files listed) · `Exit Codes` · `Planned: v1
+Sections: `Implemented` (`validate` with `--json`/`--spawnfile-report`; local
+`run` with `--local --ticks`/`--out`/`--seed`/`--run-id`/`--moltnet-artifact`/
+`--spawnfile-report`; linked `run`; `recover`; `view` with `--state`/`--port`/
+`--no-open` and the run-dir form; exact output files listed) · `Exit Codes` · `Planned: v1
 Planning` (`plan`, `diff`, `doctor`, `inspect`, `explain`) · `Planned: v2
 World Runtime` (`status`, `clock`, `ledger`, `probes --follow`, `report
 --collect`, `runs`, `dev`) · `Planned: v3 Governance` (`propose`,

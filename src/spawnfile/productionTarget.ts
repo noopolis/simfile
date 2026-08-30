@@ -8,9 +8,12 @@ import {
   parseComposedWorldResourceReceipt,
   parseComposedWorldServiceReceipt,
 } from "../compose/startup-world.js";
-import { runSpawnfileTargetCommand } from "./cli.js";
-import { runSpawnfileConfigProducer } from "./process.js";
+import {
+  unavailableComposedTargetProvider,
+  type ComposedTargetProvider,
+} from "./composedTargetProvider.js";
 import { parseTargetResourceReceipt } from "./targetReceipts.js";
+import { COMPOSED_SPAWNFILE_OPERATION_TIMEOUT_MS } from "./process.js";
 
 const handle = z.string().regex(/^opaque_[a-z0-9]{16,64}$/u);
 export const productionRecord = (value: unknown): Record<string, unknown> =>
@@ -29,15 +32,25 @@ const operationTuple = (raw: unknown) => {
 export const createProductionTargetDriver = (input: Readonly<{
   execution: ComposedExecution;
   journal_session: ComposedJournalSession;
+  target_provider?: ComposedTargetProvider;
 }>) => {
   const provider = input.execution.provider;
   const selectedTarget = input.execution.configuration.topology_expectation.selected_target;
   const environment = provider.process_environment === undefined
     ? process.env
     : { ...process.env, ...provider.process_environment };
-  const cli = { cwd: provider.spawnfile_cwd, env: environment,
-    spawnfileBin: provider.spawnfile_bin };
+  const cli = {
+    bootstrapLocalExecutableIdentity: {
+      path: provider.spawnfile_bin,
+      sha256: provider.spawnfile_executable_sha256 as `sha256:${string}`,
+    },
+    cwd: provider.spawnfile_cwd,
+    env: environment,
+    spawnfileBin: provider.spawnfile_bin,
+    timeoutMs: COMPOSED_SPAWNFILE_OPERATION_TIMEOUT_MS,
+  };
   const guard = () => input.journal_session.assertCurrent();
+  const targetProvider = input.target_provider ?? unavailableComposedTargetProvider();
   const load = async () => {
     await guard();
     return input.journal_session.current();
@@ -48,21 +61,12 @@ export const createProductionTargetDriver = (input: Readonly<{
     signal: AbortSignal,
   ): Promise<unknown> => {
     await guard();
-    const config = await runSpawnfileConfigProducer({
-      args: provider.target_config_producer.args,
-      command: provider.target_config_producer.command,
-      cwd: provider.spawnfile_cwd,
-      env: environment,
-      signal,
-    });
-    try {
-      await guard();
-      return await runSpawnfileTargetCommand(cli, {
-        command, request, signal, targetConfigStdin: config,
-      });
-    } finally {
-      config.fill(0);
-    }
+    return targetProvider.request({ command, journal_session: input.journal_session, request, signal });
+  };
+  const completeTarget = async (command: string, request: Readonly<Record<string, unknown>>,
+    receipt: Readonly<Record<string, unknown>>): Promise<void> => {
+    await input.journal_session.assertCurrent();
+    await targetProvider.complete({ command, journal_session: input.journal_session, receipt, request });
   };
   const mutation = (
     journal: ComposedPhaseJournal,
@@ -111,5 +115,5 @@ export const createProductionTargetDriver = (input: Readonly<{
       },
     } as const;
   };
-  return Object.freeze({ cli, guard, load, mutation, runTarget, selectedTarget, topologyRequest });
+  return Object.freeze({ cli, completeTarget, guard, load, mutation, runTarget, selectedTarget, targetProvider, topologyRequest });
 };

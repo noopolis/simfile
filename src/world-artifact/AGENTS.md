@@ -16,12 +16,14 @@ generic Simfile world service.
   it never starts services or resolves deployment targets.
 - `preparedBundleCache.ts` hashes declared source/config inputs and validates
   every byte of a cached runnable bundle before reuse.
-- The artifact consumes the frozen Tiny Football production descriptor only to
-  assert generic contract identity; it contains no fixture behavior.
+- Artifact contract assertions must use genre-neutral inputs and contain no
+  fixture behavior or unavailable external descriptor.
 - `readiness.ts` owns the strict, secret-free, paused-world projection exposed
   to a public Spawnfile query. It cannot represent organization readiness.
 - `clockObservation.ts` owns the strict post-activation world-clock projection;
   it reports observed progress and action count without advancing the clock.
+- `terminalSignal.ts` owns the public, canonical world terminal signal and its
+  fixed Spawnfile-readable artifact location for composed authoring.
 - `entrypoint.ts` is the thin public composition surface for the runnable
   sidecar entrypoint.
 - `worldServiceConstruction.ts` builds the bound generic world service from a

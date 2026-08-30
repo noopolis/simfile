@@ -44,7 +44,7 @@ describe("truthful composed command receipt", () => {
     assert.deepEqual(parseComposedCommandReceipt(receipt), receipt);
     assert.equal(receipt.world_claim.identity, WORLD_DECISION_CLAIM_CAPABILITY);
     assert.equal(receipt.world_claim.attested, true);
-    assert.equal(receipt.moltnet.capabilities[0], "pi-bridge");
+    assert.equal(receipt.moltnet?.capabilities[0], "pi-bridge");
     assert.equal(receipt.cleanup.remaining_owned_resources.length, 0);
     assert.equal(composedCommandExitCode(receipt), 0);
   });

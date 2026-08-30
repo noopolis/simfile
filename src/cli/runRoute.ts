@@ -38,10 +38,15 @@ export const resolveSimfileRunRoute = (input: Readonly<{
   if (input.options.ticks === undefined) {
     throw new TypeError("Local runs require --ticks");
   }
+  if (input.options.targetContext !== undefined) {
+    throw new TypeError("Local runs reject --context");
+  }
+  if (input.options.composedMode !== undefined) {
+    throw new TypeError("Local runs reject --mode");
+  }
   if (input.options.view) {
     throw new TypeError("Local runs reject --view");
   }
   return Object.freeze({ kind: "local", ...(linked === undefined
     ? {} : { linked_spawnfile_path: linked }) });
 };
-

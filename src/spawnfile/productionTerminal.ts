@@ -1,23 +1,30 @@
-import { z } from "zod";
-
 import type { ComposedPhaseJournal } from "../compose/journal.js";
 import {
   createComposedWorldTerminalReceipt,
   type ComposedRunningReceipt,
 } from "../compose/supervision.js";
 import type { ComposedExecution } from "../compose/execution.js";
-import { readTargetPublicJson } from "./targetReceipts.js";
+import { parseComposedWorldTerminalSignal } from
+  "../world-artifact/terminalSignal.js";
+import {
+  isTargetPublicArtifactNotPresent,
+  readTargetPublicJson,
+} from "./targetReceipts.js";
 
-const terminalSignal = z.object({
-  outcome_digest: z.string().regex(/^sha256:[a-f0-9]{64}$/u),
-  reason: z.enum(["completed", "interrupted"]),
-  run_id: z.string().regex(/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/u),
-  terminal_tick: z.number().int().min(1).max(1_000_000_000),
-  version: z.literal("simfile.composed-world-terminal-signal.v1"),
-}).strict();
-const waitForPoll = (signal: AbortSignal): Promise<void> => new Promise((resolve, reject) => {
+/** Exact retry signal for a terminal artifact that has not been published yet. */
+export class ProductionWorldTerminalNotPresentError extends Error {
+  public constructor() {
+    super("world terminal artifact is not present yet");
+    this.name = "ProductionWorldTerminalNotPresentError";
+  }
+}
+
+const waitForPoll = (
+  signal: AbortSignal,
+  pollIntervalMs: number,
+): Promise<void> => new Promise((resolve, reject) => {
   if (signal.aborted) { reject(signal.reason); return; }
-  const timer = setTimeout(done, 1_000);
+  const timer = setTimeout(done, pollIntervalMs);
   function done(): void { signal.removeEventListener("abort", aborted); resolve(); }
   function aborted(): void {
     clearTimeout(timer); signal.removeEventListener("abort", aborted); reject(signal.reason);
@@ -28,14 +35,20 @@ const waitForPoll = (signal: AbortSignal): Promise<void> => new Promise((resolve
 /** Polls only one world-owned public terminal artifact; participant state is absent. */
 export const waitForProductionWorldTerminal = async (input: Readonly<{
   journal: ComposedPhaseJournal;
-  provider: ComposedExecution["provider"];
+  provider: Pick<ComposedExecution["provider"], "terminal_artifact">;
   run_target(command: string, request: Readonly<Record<string, unknown>>,
     signal: AbortSignal): Promise<unknown>;
   running: ComposedRunningReceipt;
   selected_target: ComposedExecution["configuration"]["topology_expectation"]["selected_target"];
   service_handle: string;
   signal: AbortSignal;
+  /** Internal test seam; production polling remains one second. */
+  poll_interval_ms?: number;
 }>): Promise<unknown> => {
+  const pollIntervalMs = input.poll_interval_ms ?? 1_000;
+  if (!Number.isSafeInteger(pollIntervalMs) || pollIntervalMs < 1 || pollIntervalMs > 60_000) {
+    throw new TypeError("world terminal poll interval is invalid");
+  }
   const artifact = input.provider.terminal_artifact;
   const request = {
     artifact: { ...artifact, media_type: "application/json" },
@@ -49,13 +62,17 @@ export const waitForProductionWorldTerminal = async (input: Readonly<{
   while (true) {
     try {
       raw = await input.run_target("snapshot_public_artifact", request, input.signal);
+      if (isTargetPublicArtifactNotPresent({
+        artifact_id: artifact.id, raw, request,
+      })) throw new ProductionWorldTerminalNotPresentError();
       break;
-    } catch {
+    } catch (error) {
       if (input.signal.aborted) throw input.signal.reason;
-      await waitForPoll(input.signal);
+      if (!(error instanceof ProductionWorldTerminalNotPresentError)) throw error;
+      await waitForPoll(input.signal, pollIntervalMs);
     }
   }
-  const observed = terminalSignal.parse(readTargetPublicJson({
+  const observed = parseComposedWorldTerminalSignal(readTargetPublicJson({
     artifact_id: artifact.id, raw, request,
   }));
   if (observed.run_id !== input.journal.request.run_id) {

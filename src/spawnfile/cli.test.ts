@@ -68,12 +68,14 @@ process.stderr.write(input + " token=password\\n"); process.exitCode = 1;`);
       }),
       (error: Error) => !error.message.includes(secret) && !error.message.includes("password"),
     );
-    const slow = await script(root, "setTimeout(() => {}, 10000);");
+    const slow = await script(root, `process.stdout.write("token=private");
+process.stderr.write("${secret}"); setTimeout(() => {}, 10000);`);
     await assert.rejects(
       runSpawnfileComposedPreparation({ spawnfileBin: slow, timeoutMs: 20 }, {
         request, targetConfigStdin: secret,
       }),
-      /timed out/u,
+      (error: Error) => error.message.includes("timed out")
+        && !error.message.includes("token=private") && !error.message.includes(secret),
     );
     const malformed = await script(root, "process.stdin.resume(); process.stdout.write('token=private');");
     await assert.rejects(
@@ -106,7 +108,7 @@ process.stdout.write(${JSON.stringify(`${JSON.stringify(receipt)}\n`)});`);
       containerName: "organization-unit",
       deploymentName: "organization-unit",
       descriptorDigest: `sha256:${"a".repeat(64)}`,
-      dockerContext: "gpu-4090",
+      dockerContext: "local-test-target",
       envFile: "/private/runtime.env",
       imageTag: "organization-unit:run-one",
       lifecycleInvocationId: invocation,
@@ -124,7 +126,7 @@ process.stdout.write(${JSON.stringify(`${JSON.stringify(receipt)}\n`)});`);
     assert.deepEqual(JSON.parse(await readFile(capture, "utf8")), [
       "up", "/project/Spawnfile", "--detach", "--name", "organization-unit",
       "--deployment", "organization-unit", "--out", "/compiled",
-      "--tag", "organization-unit:run-one", "--context", "gpu-4090",
+      "--tag", "organization-unit:run-one", "--context", "local-test-target",
       "--env-file", "/private/runtime.env",
       "--world-bindings", "/private/world-bindings.json",
       "--organization-handoff-run-id", "run-one",

@@ -1,6 +1,5 @@
-import path from "node:path";
-
 import {
+  appendComposedPhase,
   createComposedPhaseJournal,
   markComposedJournalRecoverable,
   type ComposedPhaseJournal,
@@ -146,8 +145,16 @@ export const runDurableComposedRun = async (
         fault_injector: { afterPhase: boundary },
         now,
         persist: async (journal) => {
-          await loaded.session.replace(latest!, journal);
-          latest = journal;
+          const current = loaded.session.current();
+          const proposed = journal.entries.at(-1);
+          if (proposed === undefined || proposed.phase === current.current_phase) {
+            throw new TypeError("composed phase persistence proposal is invalid");
+          }
+          const merged = appendComposedPhase(
+            current, proposed.phase, proposed.payload, proposed.recorded_at,
+          );
+          await loaded.session.replace(current, merged);
+          latest = merged;
         },
       },
       journal: latest,
@@ -156,6 +163,10 @@ export const runDurableComposedRun = async (
     });
   } catch (error) {
     if (latest === undefined) throw error;
+    if (session !== undefined) {
+      await session.assertCurrent();
+      latest = session.current();
+    }
     if (latest.current_phase === "completed") return completedComposedRunFromJournal(latest);
     const signal = error instanceof ComposedRunInterruption
       ? error.signal
@@ -195,46 +206,4 @@ export const recoverComposedRun = async (
     readonly expected_authority: ComposedJournalAuthorityExpectation;
   },
 ): Promise<ComposedRunOutcome> => runDurableComposedRun(input);
-
-export interface ComposedRecoveryArguments extends ComposedJournalAuthorityExpectation {
-  readonly journal_path: string;
-}
-
-export const parseComposedRecoveryArguments = (
-  argv: readonly string[],
-): ComposedRecoveryArguments => {
-  const [journalFlag, journalPath, runFlag, runId, authorityFlag, authorityDigest, ...extra] = argv;
-  if (journalFlag !== "--journal" || journalPath === undefined
-    || runFlag !== "--run-id" || runId === undefined
-    || authorityFlag !== "--authority-digest" || authorityDigest === undefined
-    || extra.length > 0 || !path.isAbsolute(journalPath) || path.normalize(journalPath) !== journalPath
-    || journalPath === path.parse(journalPath).root
-    || !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/u.test(runId)
-    || !/^sha256:[a-f0-9]{64}$/u.test(authorityDigest)) {
-    throw new TypeError("usage: simfile recover --journal <absolute-path> --run-id <expected> --authority-digest <sha256>");
-  }
-  return { authority_digest: authorityDigest, journal_path: journalPath, run_id: runId };
-};
-
-/** Thin command seam for the exact recovery command emitted by recovery receipts. */
-export const runComposedRecoveryCommand = async (input: Readonly<{
-  argv: readonly string[];
-  configuration: ComposedRunConfiguration;
-  fault_injector?: ComposedRunFaultInjector;
-  now?: () => string;
-  ports: ComposedRunPorts;
-}>): Promise<ComposedRunOutcome> => {
-  const [command, ...args] = input.argv;
-  const parsed = parseComposedRecoveryArguments(command === "recover" ? args : []);
-  return recoverComposedRun({
-    configuration: input.configuration,
-    expected_authority: {
-      authority_digest: parsed.authority_digest,
-      run_id: parsed.run_id,
-    },
-    fault_injector: input.fault_injector,
-    journal_path: parsed.journal_path,
-    now: input.now,
-    ports: input.ports,
-  });
-};
+export * from "./recoveryCommand.js";

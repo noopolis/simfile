@@ -68,16 +68,20 @@ The replacement arm is positive evidence that the harness is responsive to the m
 
 ## Compose and seal a run
 
-There is no packaged `simfile experiment`, `simfile compose`, or generic
-source driver for this orchestration. Reproduction belongs in a fixture-owned
-production runner that:
+There is no packaged `simfile experiment` or `simfile compose` command. The
+generic composition entrypoint is linked `simfile run <Simfile>`: it resolves
+lifecycle to Spawnfile. It requires the project's composed binding, an
+installed Spawnfile CLI, and the admitted Spawnfile 0.1.17 consumer-neutral
+target contract; it is not a zero-config fixture runner. Simfile pins that
+contract and an explicit local endpoint before lifecycle mutation.
 
-1. delegates organization lifecycle to Spawnfile;
-2. reads the seed agent's memory document and records a `seed_declaration`;
-3. advances Simfile world mechanics at a fixed cadence;
-4. accepts independently originated actions without waiting for agent replies;
-5. exports authority artifacts before teardown; and
-6. writes `manifest.json` last, sealing the run.
+For a reproducible experiment, the linked project must also arrange to:
+
+1. read the seed agent's memory document and record a `seed_declaration`;
+2. advance Simfile world mechanics at a fixed cadence;
+3. accept independently originated actions without waiting for agent replies;
+4. export authority artifacts before teardown; and
+5. write `manifest.json` last, sealing the run.
 
 The captured seeded arm uses these fixture inputs:
 
@@ -88,8 +92,9 @@ tokenSet: ["Rosa Delgado"]
 ```
 
 Use a fresh deployment and output directory for every independent repetition.
-The historical captured artifacts remain valid observer examples, but the
-retired generic orchestration path is not a runnable reproduction command.
+This fixture has the `spawnfile:` link but no committed composed project
+binding, so the tree does not establish it as directly runnable through linked
+composition. The historical captured artifacts remain valid observer examples.
 
 ## Observe each sealed run
 

@@ -11,15 +11,24 @@ That distinction makes experiments falsifiable. The world mechanics are determin
 
 ## What has shipped
 
-The package now covers the full instrument loop:
+The package covers the local instrument loop and keeps linked composition
+behind a fail-closed external compatibility gate:
 
 - `simfile validate` checks a world and can bind its agent, team, and room references against a Spawnfile compile report.
-- `simfile run` executes a bounded deterministic kernel trace and writes a replayable run record.
-- fixture-owned production runners compose the organization lifecycle around the Simfile world, export every authority's artifacts, and seal a `simfile.run-manifest.v1` directory;
+- `simfile run --local --ticks <n>` executes a bounded deterministic kernel trace and writes a replayable run record.
+- linked `simfile run <Simfile>` is designed to delegate organization
+  lifecycle through compatible, generic Spawnfile CLI contracts, export every
+  authority's artifacts, and seal a `simfile.run-manifest.v1` directory;
 - `simfile observe` verifies those artifacts and reconciles causal streams without inventing missing links;
 - `simfile view` opens either the world replay or, for a composed run, the run-replay application with one timeline, a map, room chat, minds, storylines, memetic spread, and recursive mind portals.
 
-There is no public `simfile compose` command yet. The distinction matters: CLI `run` is the finite world kernel; agent-backed composition belongs to fixture-owned production runners. The [quickstart](/quickstart/) shows both paths without pretending they are the same command.
+There is no public `simfile compose` command. `--local --ticks` is the finite
+world-kernel path. A linked `simfile run` is the separate composition
+entrypoint. Its Spawnfile 0.1.17 integration pins the exact public capability
+contract, executable identity, and explicit local target context, then uses
+typed target/lifecycle reconciliation for recovery. Older or drifted releases
+stop before mutation. The [quickstart](/quickstart/) shows both the local path
+and the explicit composed compatibility gate.
 
 ## The first result
 
@@ -37,7 +46,7 @@ The stack has three distinct responsibilities:
 - **Moltnet carries the rooms.** World messages and agent messages use the same social transport.
 - **Simfile authors and observes the world.** It supplies deterministic pressure and produces measurements from public artifacts.
 
-Simfile does not compile Docker images, own runtime authentication, or deploy agents. Fixture-owned production runners use Spawnfile's documented lifecycle interface and versioned receipts; the viewer and observer consume sealed machine-readable artifacts rather than importing Spawnfile internals.
+Simfile does not compile Docker images, own runtime authentication, or deploy agents. Linked composition uses Spawnfile's documented lifecycle interface and versioned receipts; the viewer and observer consume sealed machine-readable artifacts rather than importing Spawnfile internals.
 
 ## An instrument, not a screensaver
 

@@ -82,6 +82,12 @@ export interface ComposedProjectPreparation {
   readonly world_members: readonly z.infer<typeof member>[];
 }
 
+/**
+ * Trusted project-code contract: binding module evaluation and
+ * prepareComposedProject execution must not cause lifecycle or Simfile
+ * support-state effects. Preparation may only author and return its declared
+ * project artifact inputs. Simfile does not sandbox arbitrary project JavaScript.
+ */
 export interface ComposedProjectBinding {
   readonly version: typeof COMPOSED_PROJECT_BINDING_VERSION;
   prepareComposedProject(
@@ -89,7 +95,7 @@ export interface ComposedProjectBinding {
   ): Promise<ComposedProjectPreparation>;
 }
 
-const parsePreparation = (
+const validateComposedProjectPreparation = (
   value: ComposedProjectPreparation,
   input: PrepareComposedProjectInput,
 ): ComposedProjectPreparation => {
@@ -142,7 +148,7 @@ export const createComposedProjectBinding = (
     throw new TypeError("composed project binding prepare function is invalid");
   }
   return Object.freeze({
-    prepareComposedProject: async (request: PrepareComposedProjectInput) => parsePreparation(
+    prepareComposedProject: async (request: PrepareComposedProjectInput) => validateComposedProjectPreparation(
       await input.prepareComposedProject(request), request,
     ),
     version: COMPOSED_PROJECT_BINDING_VERSION,

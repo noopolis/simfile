@@ -7,6 +7,7 @@ import type { SeedSpreadComputeResult } from "./seedSpread.js";
 import { worldGrantsFromManifest } from "./worldGrants.js";
 import type { WorldEvidence } from "./worldEvidence.js";
 import type { SocialPlane } from "./socialPlane.js";
+import type { UsageObservation } from "./usageLedger.js";
 
 const FAILURE_TYPES = new Set(["turn.failed", "wake.failed"]);
 const AGENT_PRINCIPAL_PATTERN = /^agent:(.+)$/u;
@@ -107,6 +108,8 @@ export interface BuildObserveReportInput {
   allEvents: readonly CausalEvent[];
   manifest: SimfileRunManifest;
   memoryBanks: readonly MemoryBankCounts[];
+  /** Absent (not empty) when the sealed export carries no usage ledger at all. */
+  usage?: UsageObservation;
   reconciled: ReconcileResult;
   /** Memetics increment (b): present only when `manifest.seed_declaration`
    * exists. `excluded` hits (instrument/operator actors) fold into
@@ -132,6 +135,14 @@ export const buildObserveReport = (input: BuildObserveReportInput): SimfileObser
       memory_write_source: bank.memory_write_source,
       ...(bank.writes_by_agent ? { writes_by_agent: bank.writes_by_agent } : {})
     })),
+    ...(input.usage === undefined ? {} : {
+      usage: input.usage.by_agent.map((agent) => ({ ...agent })),
+      usage_summary: {
+        lower_bound: true as const,
+        unknown_turns: input.usage.unknown_turns,
+        by_engine: input.usage.by_engine.map((engine) => ({ ...engine }))
+      }
+    }),
     failures: [
       ...computeFailures(input.allEvents),
       ...(input.seedSpread?.excluded.map((excluded) => ({ event_id: excluded.event_id, reason: excluded.reason })) ?? [])

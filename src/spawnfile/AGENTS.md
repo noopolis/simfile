@@ -3,29 +3,32 @@
 This folder is Simfile's generic public-neutral boundary for Spawnfile
 lifecycle subprocesses and the documented versioned JSON receipts they emit.
 
-- `cli.ts` shells only the documented high-level composed preparation command,
-  `spawnfile up`, `spawnfile artifacts export`, and `spawnfile down` through
-  Node. Composed preparation supplies private target configuration only on
-  stdin, captures stdout separately from stderr, and removes its temporary
-  secret-free request file. This boundary must never import Spawnfile
-  TypeScript internals or invoke Docker directly.
-- `process.ts` owns bounded subprocess execution, in-flight cancellation, and
-  nonsecret target-config producer argv execution; private bytes remain in memory.
+- `cli.ts` is the CLI barrel; the high-level, lifecycle, evidence, and target
+  command wrappers are split across the adjacent `*Cli.ts` modules. This
+  boundary must never import Spawnfile TypeScript internals or invoke Docker
+  directly. Its legacy stdin helpers are not a composed product path.
+- `process.ts` owns bounded subprocess execution, while `processTree.ts` and
+  `executableIdentity.ts` own quiescence and exact bootstrap executable identity.
 - `receipts.ts` owns additive-tolerant validation of the public JSON wire
   receipts. Keep the SHA-256 validation, strict identity/correlation checks,
   and secret-shape rejection; do not substitute Spawnfile's internal schemas.
 - `preparationReceipt.ts` owns Simfile's independent additive-tolerant parser
   for the documented Spawnfile composed-preparation request/receipt pair.
-- `targetReceipts.ts` independently validates public target-operation, readiness,
-  and bounded public-artifact wire receipts.
+- `targetReceipts.ts` is the receipt barrel; `targetResourceReceipts.ts`,
+  `targetWorldReceipts.ts`, and `targetPublicArtifact.ts` independently validate
+  public target-operation, readiness, and bounded public-artifact receipts.
 - `evidenceInventory.ts` derives B14 only from Spawnfile's byte-derived,
   source-bound public evidence export index and rejects unknown or incomplete inventories.
 - `worldEvidenceArchive.ts` validates that byte-derived index against the private canonical
   target USTAR export and atomically materializes it for sealed-record assembly.
-- `productionTarget.ts` recreates private config in memory for each public target call and
-  gates both producer and Spawnfile subprocesses on the pinned journal session.
-- `productionPorts.ts` maps the composed lifecycle to documented Spawnfile CLI operations;
-  `productionOrganizationPorts.ts` owns the organization-start port slice.
+- `targetBootstrap.ts` consumes the exact resolver/selection/container-bundle
+  receipts under the v2 bootstrap journal. `composedTargetProvider.ts` is the
+  resolver-backed, journal-aware provider; `targetOperationLookup.ts` and
+  `lifecycleLookup.ts` independently parse typed recovery observations.
+- `productionTarget.ts` gates target requests on the pinned journal session and
+  delegates them only through that provider seam. `productionPorts.ts` is the
+  production barrel; the adjacent `production*Ports.ts` modules map the world,
+  topology, organization, finalization, and cleanup boundaries.
 - `productionTerminal.ts` polls only the bounded world-owned public terminal artifact.
 - `productionViewerProjection.ts` polls one declared world-owned public viewer
   artifact through the same verified read-only target operation. Its bound
@@ -37,5 +40,5 @@ lifecycle subprocesses and the documented versioned JSON receipts they emit.
   documented generic lifecycle and receipt API; no domain or provider-client
   surface belongs here.
 
-Keep files below 400 lines, use named exports, and place tests beside the
+Keep changed production files at or below 200 lines, use named exports, and place tests beside the
 boundary they prove.

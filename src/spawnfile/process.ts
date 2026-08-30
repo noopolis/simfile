@@ -1,14 +1,38 @@
-import { spawn, type ChildProcess } from "node:child_process";
+import { spawn } from "node:child_process";
+
+import {
+  assertBootstrapLocalExecutableIdentity,
+  type BootstrapLocalExecutableIdentity,
+} from "./executableIdentity.js";
+import {
+  processGroupIsAlive,
+  processTreeIdentity,
+  signalProcessTree,
+  type ProcessTreeIdentity,
+} from "./processTree.js";
+
+export {
+  assertBootstrapLocalExecutableIdentity,
+  captureBootstrapLocalExecutableIdentity,
+  type BootstrapLocalExecutableIdentity,
+} from "./executableIdentity.js";
 
 const MAX_BUFFER_BYTES = 64 * 1024 * 1024;
+export const COMPOSED_SPAWNFILE_OPERATION_TIMEOUT_MS = 600_000;
 
 export interface SpawnfileCliContext {
   spawnfileBin: string;
+  maxBufferBytes?: number;
   nodeBin?: string;
   cwd?: string;
   env?: NodeJS.ProcessEnv;
   terminationGraceMs?: number;
   timeoutMs?: number;
+}
+
+/** Internal bootstrap context; never expose it through the public Spawnfile barrel. */
+export interface BootstrapSpawnfileCliContext extends SpawnfileCliContext {
+  readonly bootstrapLocalExecutableIdentity: BootstrapLocalExecutableIdentity;
 }
 
 const boundedMilliseconds = (
@@ -22,50 +46,6 @@ const boundedMilliseconds = (
     throw new Error(`spawnfile CLI ${label} is invalid`);
   }
   return parsed;
-};
-
-type ProcessTreeIdentity = Readonly<{ pgid?: number; pid: number }>;
-
-const processTreeIdentity = (child: ChildProcess, isolatedGroup: boolean): ProcessTreeIdentity => {
-  const pid = child.pid;
-  if (!Number.isSafeInteger(pid) || pid === undefined || pid <= 1 || pid === process.pid) {
-    throw new Error("spawnfile CLI child process identity is invalid");
-  }
-  return isolatedGroup ? { pgid: pid, pid } : { pid };
-};
-
-const signalProcessTree = (
-  child: ChildProcess,
-  identity: ProcessTreeIdentity,
-  signal: "SIGKILL" | "SIGTERM",
-): void => {
-  if (identity.pgid !== undefined) {
-    if (!Number.isSafeInteger(identity.pgid) || identity.pgid <= 1
-      || identity.pgid === process.pid || identity.pgid !== identity.pid) {
-      throw new Error("spawnfile CLI child process group is invalid");
-    }
-    try { process.kill(-identity.pgid, signal); } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== "ESRCH") throw error;
-    }
-    return;
-  }
-  if (process.platform === "win32") {
-    const killer = spawn("taskkill", ["/PID", String(identity.pid), "/T",
-      ...(signal === "SIGKILL" ? ["/F"] : [])], { stdio: "ignore", windowsHide: true });
-    killer.unref();
-    return;
-  }
-  throw new Error("spawnfile CLI child process group is unavailable");
-};
-
-const processGroupIsAlive = (identity: ProcessTreeIdentity): boolean => {
-  if (identity.pgid === undefined) return true;
-  try {
-    process.kill(-identity.pgid, 0);
-    return true;
-  } catch (error) {
-    return (error as NodeJS.ErrnoException).code !== "ESRCH";
-  }
 };
 
 const runBoundedProcess = (
@@ -100,12 +80,16 @@ const runBoundedProcess = (
   let stderr = "";
   let settled = false;
   let aborted = false;
+  let outputExceeded = false;
   let timedOut = false;
   let closed = false;
   let closeCode: number | null = null;
   let escalationComplete = false;
   let killTimer: NodeJS.Timeout | undefined;
   const timeoutMs = boundedMilliseconds(context.timeoutMs, 120_000, 600_000, "timeout");
+  const maxBufferBytes = boundedMilliseconds(
+    context.maxBufferBytes, MAX_BUFFER_BYTES, MAX_BUFFER_BYTES, "output limit",
+  );
   const graceMs = boundedMilliseconds(
     context.terminationGraceMs, 1_000, 30_000, "termination grace",
   );
@@ -121,29 +105,51 @@ const runBoundedProcess = (
     if (error) reject(error);
     else if (aborted) reject(new Error("spawnfile CLI operation aborted"));
     else if (timedOut) reject(new Error("spawnfile CLI operation timed out"));
-    else if (code !== 0) reject(new Error(
-      `spawnfile CLI operation failed with exit code ${code ?? "unknown"}`,
-    ));
+    else if (outputExceeded) reject(new Error("spawnfile CLI output exceeded limit"));
+    else if (code !== 0) {
+      const failure = new Error(
+        `spawnfile CLI operation failed with exit code ${code ?? "unknown"}`,
+      );
+      Object.defineProperty(failure, "stderr", { enumerable: false, value: stderr });
+      reject(failure);
+    }
     else resolve({ stdout, stderr });
+  };
+  const awaitQuiescence = (deadline: number, failure: string): void => {
+    const quiesced = identity.pgid === undefined ? closed : !processGroupIsAlive(identity);
+    if (quiesced) {
+      escalationComplete = true;
+      finish(undefined, closeCode);
+      return;
+    }
+    if (Date.now() >= deadline) {
+      escalationComplete = true;
+      finish(new Error(failure));
+      return;
+    }
+    killTimer = setTimeout(() => awaitQuiescence(deadline, failure), 5);
   };
   const terminate = (reason: "abort" | "timeout"): void => {
     if (settled) return;
     aborted = reason === "abort";
     timedOut = reason === "timeout";
-    signalProcessTree(child, identity, "SIGTERM");
+    try { signalProcessTree(child, identity, "SIGTERM"); }
+    catch { finish(new Error("spawnfile CLI termination failed")); return; }
     killTimer ??= setTimeout(() => {
-      signalProcessTree(child, identity, "SIGKILL");
-      escalationComplete = true;
-      if (closed) finish(undefined, closeCode);
+      try { signalProcessTree(child, identity, "SIGKILL"); }
+      catch { finish(new Error("spawnfile CLI termination failed")); return; }
+      awaitQuiescence(Date.now() + graceMs, "spawnfile CLI termination did not quiesce");
     }, graceMs);
-    killTimer.unref();
   };
   const abort = (): void => terminate("abort");
   const collect = (kind: "stdout" | "stderr") => (chunk: Buffer): void => {
     const next = (kind === "stdout" ? stdout : stderr) + chunk.toString("utf8");
-    if (Buffer.byteLength(next, "utf8") > MAX_BUFFER_BYTES) {
-      signalProcessTree(child, identity, "SIGKILL");
-      finish(new Error("spawnfile CLI output exceeded limit"));
+    if (Buffer.byteLength(next, "utf8") > maxBufferBytes) {
+      if (outputExceeded) return;
+      outputExceeded = true;
+      try { signalProcessTree(child, identity, "SIGKILL"); }
+      catch { finish(new Error("spawnfile CLI output termination failed")); return; }
+      awaitQuiescence(Date.now() + graceMs, "spawnfile CLI output termination did not quiesce");
     } else if (kind === "stdout") stdout = next;
     else stderr = next;
   };
@@ -156,7 +162,8 @@ const runBoundedProcess = (
   child.once("close", (code) => {
     closed = true;
     closeCode = code;
-    if ((aborted || timedOut) && !escalationComplete && processGroupIsAlive(identity)) return;
+    if ((aborted || timedOut || outputExceeded)
+      && !escalationComplete && processGroupIsAlive(identity)) return;
     finish(undefined, code);
   });
   child.stdin.once("error", () => undefined);
@@ -164,49 +171,24 @@ const runBoundedProcess = (
 });
 
 export const runSpawnfileProcess = (
-  context: SpawnfileCliContext,
+  context: SpawnfileCliContext | BootstrapSpawnfileCliContext,
   input: Readonly<{
     args: readonly string[];
     signal?: AbortSignal;
     stdin?: Uint8Array;
   }>,
-): Promise<{ stdout: string; stderr: string }> => runBoundedProcess(context, {
+): Promise<{ stdout: string; stderr: string }> => (async () => {
+  if ("bootstrapLocalExecutableIdentity" in context) {
+    if (context.bootstrapLocalExecutableIdentity.path !== context.spawnfileBin) {
+      throw new TypeError("bootstrap Spawnfile executable identity does not match its path");
+    }
+    await assertBootstrapLocalExecutableIdentity(context.bootstrapLocalExecutableIdentity);
+  }
+  return runBoundedProcess(context, {
   ...input,
   // Node recognizes options such as --env-file even after a script path.
   // Keep every Spawnfile flag on the child CLI side of the option boundary.
   args: ["--", context.spawnfileBin, ...input.args],
   executable: context.nodeBin ?? process.execPath,
-});
-
-/** Recreates private target config in memory from one durable nonsecret argv contract. */
-export const runSpawnfileConfigProducer = async (input: Readonly<{
-  args: readonly string[];
-  command: string;
-  cwd?: string;
-  env?: NodeJS.ProcessEnv;
-  signal?: AbortSignal;
-  terminationGraceMs?: number;
-  timeoutMs?: number;
-}>): Promise<Uint8Array> => {
-  if (input.command.length < 1 || input.command.length > 4_096 || input.command.includes("\0")
-    || input.args.length > 32 || input.args.some((value) =>
-      value.length < 1 || value.length > 4_096 || value.includes("\0"))) {
-    throw new Error("spawnfile target config producer argv is invalid");
-  }
-  const { stdout } = await runBoundedProcess({
-    cwd: input.cwd,
-    env: input.env,
-    terminationGraceMs: input.terminationGraceMs,
-    timeoutMs: input.timeoutMs,
-  }, {
-    args: input.args,
-    executable: input.command,
-    signal: input.signal,
   });
-  const bytes = new TextEncoder().encode(stdout);
-  if (bytes.byteLength < 1 || bytes.byteLength > 262_144) {
-    bytes.fill(0);
-    throw new Error("spawnfile target config producer output is invalid");
-  }
-  return bytes;
-};
+})();

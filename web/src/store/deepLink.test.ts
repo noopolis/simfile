@@ -7,6 +7,7 @@ import {
   resetTimelineStoreForTests,
   setCursor,
   setOpenPortals,
+  setActivePanel,
   setSelection,
   timelineStore,
   type RunTimeline,
@@ -37,31 +38,32 @@ describe("deepLink", () => {
     resetTimelineStoreForTests();
   });
 
-  it("parses at/sel/portals from a query string, with or without the leading '?'", () => {
-    const parsed = parseDeepLink("?at=event-2&sel=agent:eleanor&portals=room:net:room,bank:office-recall");
-    assert.deepEqual(parsed, { at: "event-2", sel: "agent:eleanor", portals: ["room:net:room", "bank:office-recall"] });
+  it("parses at/sel/portals/panel from a query string, with or without the leading '?'", () => {
+    const parsed = parseDeepLink("?at=event-2&sel=agent:eleanor&portals=room:net:room,bank:office-recall&panel=conversation");
+    assert.deepEqual(parsed, { at: "event-2", sel: "agent:eleanor", portals: ["room:net:room", "bank:office-recall"], panel: "conversation" });
 
     const withoutLeadingMark = parseDeepLink("at=event-2&sel=agent:eleanor");
     assert.equal(withoutLeadingMark.at, "event-2");
     assert.equal(withoutLeadingMark.sel, "agent:eleanor");
     assert.deepEqual(withoutLeadingMark.portals, []);
+    assert.equal(withoutLeadingMark.panel, undefined);
   });
 
   it("parses an empty search string to all-empty params", () => {
     const parsed = parseDeepLink("");
-    assert.deepEqual(parsed, { at: undefined, sel: undefined, portals: [] });
+    assert.deepEqual(parsed, { at: undefined, sel: undefined, portals: [], panel: undefined });
   });
 
   it("serializeDeepLink omits absent fields and joins portals with commas", () => {
-    assert.equal(serializeDeepLink({ at: undefined, sel: undefined, portals: [] }), "");
+    assert.equal(serializeDeepLink({ at: undefined, sel: undefined, portals: [], panel: undefined }), "");
     assert.equal(
-      serializeDeepLink({ at: "event-2", sel: "agent:eleanor", portals: ["room:net:room", "bank:x"] }),
-      "?at=event-2&sel=agent%3Aeleanor&portals=room%3Anet%3Aroom%2Cbank%3Ax",
+      serializeDeepLink({ at: "event-2", sel: "agent:eleanor", portals: ["room:net:room", "bank:x"], panel: "map" }),
+      "?at=event-2&sel=agent%3Aeleanor&portals=room%3Anet%3Aroom%2Cbank%3Ax&panel=map",
     );
   });
 
   it("round-trips serialize -> parse to the same params", () => {
-    const original = { at: "event-3", sel: "bank:office-recall", portals: ["agent:eleanor", "room:net:room"] };
+    const original = { at: "event-3", sel: "bank:office-recall", portals: ["agent:eleanor", "room:net:room"], panel: "conversation" as const };
     const roundTripped = parseDeepLink(serializeDeepLink(original));
     assert.deepEqual(roundTripped, original);
   });
@@ -71,21 +73,28 @@ describe("deepLink", () => {
     setCursor(2);
     setSelection("room:net:room");
     setOpenPortals(["room:net:room"]);
+    setActivePanel("conversation");
 
     const current = currentDeepLink(timelineStore.getSnapshot());
     assert.equal(current.at, "event-2");
     assert.equal(current.sel, "room:net:room");
     assert.deepEqual(current.portals, ["room:net:room"]);
+    assert.equal(current.panel, "conversation");
   });
 
   it("applyDeepLink resolves 'at' to the resolved event's current t, and restores selection/portals", () => {
     loadTimeline(fixtureTimeline());
-    applyDeepLink(fixtureTimeline(), { at: "event-3", sel: "room:net:room", portals: ["room:net:room"] });
+    applyDeepLink(fixtureTimeline(), { at: "event-3", sel: "room:net:room", portals: ["room:net:room"], panel: "conversation" });
 
     const state = timelineStore.getSnapshot();
     assert.equal(state.cursor, 3);
     assert.equal(state.selection, "room:net:room");
     assert.deepEqual(state.openPortals, ["room:net:room"]);
+    assert.equal(state.activePanel, "conversation");
+  });
+
+  it("fails an invalid explicit panel closed to map", () => {
+    assert.equal(parseDeepLink("?panel=obsolete").panel, "map");
   });
 
   it("applyDeepLink ignores an 'at' event id that isn't in the timeline rather than throwing", () => {
@@ -100,6 +109,7 @@ describe("deepLink", () => {
     setCursor(1);
     setSelection("room:net:room");
     setOpenPortals(["room:net:room"]);
+    setActivePanel("conversation");
 
     const serialized = serializeDeepLink(currentDeepLink(timelineStore.getSnapshot()));
 
@@ -111,5 +121,6 @@ describe("deepLink", () => {
     assert.equal(restored.cursor, 1);
     assert.equal(restored.selection, "room:net:room");
     assert.deepEqual(restored.openPortals, ["room:net:room"]);
+    assert.equal(restored.activePanel, "conversation");
   });
 });

@@ -209,13 +209,21 @@ describe("live dynamics run viewer", () => {
       const countSamplesMonotonically = createMonotonicSampleCounter();
       const before = await waitForReadableSamples(stagingDir, path.join(project.directory, "run"), countSamplesMonotonically);
       const started = Date.now();
-      await new Promise((resolve) => setTimeout(resolve, 2_100));
+      // The property is that the producer keeps advancing with nothing consuming
+      // it — not that it hits a particular rate. Asserting ticks-per-second made
+      // this fail on a contended 2-core CI runner (before=0, during=0) while
+      // passing locally, which measured the hardware rather than the code.
+      let during = before;
+      const advanceDeadline = Date.now() + 30_000;
+      while (during - before <= 10 && Date.now() < advanceDeadline) {
+        await new Promise((resolve) => setTimeout(resolve, 50));
+        during = await countSamplesMonotonically(stagingDir, path.join(project.directory, "run"));
+      }
       const elapsedSeconds = (Date.now() - started) / 1_000;
-      const during = await countSamplesMonotonically(stagingDir, path.join(project.directory, "run"));
       await run;
       const sealed = await readRunFrames(path.join(project.directory, "run"));
       assert.ok(during - before > 10,
-        `producer must advance many ticks without a consumer (before=${before}, during=${during})`);
+        `producer must advance without a consumer within 30s (before=${before}, during=${during})`);
       assert.ok(sealed);
       assert.equal(sealed.samples.length, ticks + 1);
       const noConsumerRate = (during - before) / elapsedSeconds;

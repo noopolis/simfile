@@ -105,3 +105,13 @@ export {
   type WorldReadinessHashes,
   type WorldReadinessIdentity,
 } from "./sidecarReadiness.js";
+export {
+  COMPOSED_WORLD_TERMINAL_ARTIFACT,
+  COMPOSED_WORLD_TERMINAL_SIGNAL_VERSION,
+  composedWorldTerminalSignalSchema,
+  createComposedWorldTerminalSignal,
+  parseComposedWorldTerminalSignal,
+  publishComposedWorldTerminalSignal,
+  serializeComposedWorldTerminalSignal,
+  type ComposedWorldTerminalSignal,
+} from "./terminalSignal.js";

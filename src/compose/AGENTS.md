@@ -18,16 +18,21 @@ never coupled to agent actions.
 - `projectBinding.ts` — host-only fixture declaration seam for a runnable world,
   credentials, evidence mappings, and mechanics-only replay adapter.
 - `receipt.ts` — strict terminal and recovery receipt parsers/builders.
-- `journal.ts` — monotonic phase journal, exact restore, and durable atomic store.
+- `journal.ts` is the journal barrel; `journalSchema.ts`, `journalValidation.ts`,
+  `journalGenesis.ts`, `journalTransitions.ts`, and `journalStore.ts` keep the
+  monotonic schema, exact restore, transitions, and durable store separate.
 - `journalSession.ts` — pinned file identity, safe open, and expected-prior atomic replacement.
 - `startup-world.ts` — prepared-resource to paused world-only readiness sequence.
-- `startup-organization.ts` — organization-second startup and exact binding/readiness proof.
+- `startup-organization.ts` — organization-second startup; its exact
+  binding/readiness receipt lives in `startupOrganizationReceipt.ts`.
 - `activation.ts` — topology attestation and single-use clock release.
-- `supervision.ts` — world/service-only tick and terminal supervision.
+- `supervision.ts` — world/service-only tick and terminal supervision;
+  `supervisionTimeout.ts` owns bounded cancellation and quiescence.
 - `finalize-world.ts` — pause/flush/hash/export of world evidence before cleanup.
 - `finalize-organization.ts` — public Spawnfile artifact export and reconciliation.
 - `cleanup.ts` — evidence-gated, receipt-owned teardown and revocation.
-- `recovery.ts` — signal-safe interruption, durable recovery receipts, and resume.
+- `recovery.ts` — signal-safe interruption, durable recovery receipts, and
+  resume; `recoveryCommand.ts` owns the exact authority-bound CLI arguments.
 - `run.ts` — the one high-level operation that composes these phase functions.
 - `runRecord.ts` — the generic role-complete, exact-hash staging inventory and
   atomic live-to-sealed run-directory promotion; related artifact groups are
@@ -49,7 +54,8 @@ never coupled to agent actions.
   derived frame track and provenance ledger as one artifact group.
 - `index.ts` — named public barrel.
 
-Tests remain beside the boundary they prove. Production files stay below 400
+Tests remain beside the boundary they prove. Changed production files stay at
+or below 200
 lines. All journal and receipt values are secret-free, versioned, correlated to
 one run, and additive only through a new versioned contract.
 

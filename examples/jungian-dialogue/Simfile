@@ -1,0 +1,34 @@
+simfile_version: "0.1"
+name: jungian-dialogue
+
+spawnfile: ./org/Spawnfile
+
+clock:
+  seed: jungian-dialogue-seed
+  tick: 1s
+  sim_per_tick: 1s
+
+dynamics:
+  module: ./world/provider.mjs
+  config:
+    black_door: 1
+    tarnished_mirror: 0.9
+    lost_child: 0.8
+    dread: 0.72
+
+world:
+  id: dream-consulting-room
+  grants:
+    analyst:
+      entity: entity:analyst
+      senses: [sense:dream]
+      affordances: []
+    daimon:
+      entity: entity:daimon
+      senses: [sense:dream]
+      affordances: []
+
+world_sidecar:
+  binding: ./binding.mjs
+  composer: ./world/composer.mjs
+

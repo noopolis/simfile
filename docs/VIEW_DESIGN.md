@@ -1,5 +1,9 @@
 # Simfile Viewer Design
 
+> **Status:** This document includes proposed skin, live-tail, and Moltnet
+> attachment commands. The implemented surface is limited to the flags shown by
+> `simfile view --help`; see the website viewer guide for current behavior.
+
 The viewer is to the run record what the ruler is to length: a cognitive
 tool. Rulers, Cartesian planes, and Feynman diagrams earn their keep by
 converting a class of inference into a class of perception — they are

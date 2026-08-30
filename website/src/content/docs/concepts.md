@@ -5,7 +5,7 @@ description: The mental model behind deterministic worlds, sealed runs, causal o
 
 ## The world is deterministic; the society is not
 
-A Simfile seed fixes the mechanical stream: clock ticks, stochastic draws, generator order, rule evaluation, and world effects. `simfile run` can reproduce that stream byte for byte from the same inputs.
+A Simfile seed fixes the mechanical stream: clock ticks, stochastic draws, generator order, rule evaluation, and world effects. `simfile run --local --ticks <n>` can reproduce that stream byte for byte from the same inputs.
 
 Agents and external systems can still be nondeterministic. Simfile makes their outputs inspectable by sealing them as inputs to replay and observation. “Deterministic” describes the world kernel, not a promise that a model will say the same thing twice.
 
@@ -19,7 +19,10 @@ This is the core authoring rule: hardcode constraints, not conclusions.
 
 ## One social transport
 
-The world is a Moltnet participant. A `moltnet:message`, `moltnet:dm`, or `wake:recommend` action travels through the same room topology the organization already uses. There is no hidden prompt path that lets the experiment inject an answer directly into an agent.
+The world is a Moltnet participant. A `moltnet:message` or `moltnet:dm`
+action travels through the same room topology the organization already uses.
+There is no hidden wake or prompt path that lets the experiment inject an
+answer directly into an agent.
 
 That is especially important for memetics. A kickoff can ask Eleanor to discuss an office rollout, but it must not contain the seeded name. If the name appears, the evidence must come from the agent's recorded utterance or memory, not the instrument's own message.
 
@@ -27,10 +30,15 @@ That is especially important for memetics. A kickoff can ask Eleanor to discuss 
 
 The current package produces two related but distinct artifact shapes:
 
-- a **kernel run** from `simfile run`, with `manifest.yaml`, canonical `ledger.jsonl`, telemetry, a kernel report, and `viewer-trace.json`;
-- a **composed run** from a source driver, with `manifest.json` at `simfile.run-manifest.v1`, exported `raw/**/causal.jsonl` streams, transcripts, memory artifacts, and optional world telemetry.
+- a **kernel run** from `simfile run --local --ticks <n>`, with `manifest.yaml`, canonical `ledger.jsonl`, telemetry, a kernel report, and `viewer-trace.json`;
+- a **composed run** from linked `simfile run <Simfile>`, with `manifest.json` at `simfile.run-manifest.v1`, exported `raw/**/causal.jsonl` streams, transcripts, memory artifacts, and optional world telemetry.
 
-Kernel runs exercise world mechanics. Composed runs contain the cross-authority evidence needed by `simfile observe` and the full run-replay viewer.
+Kernel runs exercise world mechanics. Linked composition delegates
+organization lifecycle through Spawnfile and requires the project's binding
+plus Simfile's `simfile.spawnfile-public-capability-probe.v1`, derived only
+from documented generic Spawnfile CLI surfaces. Composed runs contain the
+cross-authority evidence needed by `simfile observe` and the full run-replay
+viewer.
 
 ## Causal order before wall time
 

@@ -1,0 +1,71 @@
+<section class="band term-section-rule" id="world" aria-labelledby="world-title">
+  <div class="inner">
+    <div class="section-copy">
+      <p class="section-label">01 / World</p>
+      <h2 id="world-title">The whole world in one <span>Simfile</span>.</h2>
+      <p>
+        A single <code>Simfile</code> declares the clock, variables, generators, rules, markers, and falsifiable probes around your agents. The mechanics are deterministic for a seed; the agents still decide what to say, remember, and do. The world can wake an agent or post into a room; it never scripts a thought.
+      </p>
+    </div>
+
+    <div class="world-layout">
+      <div class="code-block term-cmd-frame">
+        <div class="block-label term-cmd-bar"><span>[ Simfile ]</span><span>one authored world</span></div>
+        <pre><code>simfile_version: "0.1"
+name: autonomous-office-world
+spawnfile: ./Spawnfile            # the org of real agents this world wraps
+
+clock:                            # simulated time, deterministic for the seed
+  seed: office-run-014
+  tick: 20s
+
+variables:                        # world state you can drive and measure
+  filing_pressure:
+    scope: room:office-floor:case-warroom
+    initial: 0.4
+    range: 0..1
+
+generators:                       # how variables evolve each tick
+  deadline_ramp:
+    kind: deterministic
+    variable: filing_pressure
+    delta: 0.02
+
+rules:                            # when the world acts on the agents
+  deadline_bites:
+    when:
+      variable: filing_pressure
+      above: 0.85
+    do:
+      - action: moltnet:message   # observable world message, not a hidden prompt
+        to: room:office-floor:case-warroom
+        content: "The filing deadline is now urgent."
+
+markers:                          # tokens to trace as they spread
+  tenant_name:
+    text:
+      - Rosa Delgado
+    mode: containment
+    scopes:
+      - room:office-floor:case-warroom
+
+probes:                           # falsifiable checks over the run
+  deadline_observed:
+    when:
+      event: world.message
+      target: room:office-floor:case-warroom
+    expect:
+      at_least: 1</code></pre>
+      </div>
+
+      <div class="command-block term-cmd-frame" aria-label="Simfile commands">
+        <div class="block-label term-cmd-bar"><span>Run it</span><span>shell</span></div>
+        <pre><code><span class="prompt">$</span> git clone https://github.com/noopolis/simfile.git
+<span class="prompt">$</span> cd simfile
+<span class="prompt">$</span> npm ci
+<span class="prompt">$</span> npm run example:local
+<span class="prompt">$</span> node dist/cli/index.js view &lt;printed-run-directory&gt;</code></pre>
+      </div>
+    </div>
+  </div>
+</section>

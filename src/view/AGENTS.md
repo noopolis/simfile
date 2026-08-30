@@ -3,9 +3,8 @@
 This folder contains the `simfile view` implementation: CLI argument parsing,
 the static/JSON/SSE server for the world (GlyphCSS) replay and live modes, and
 an additive **run-replay mode** for compose-and-observe run directories
-(`manifest.json` @ `simfile.run-manifest.v1` + `raw/moltnet/transcript.json`
-— the shape in `fixtures/observe/office-sim-golden/`, and a real engine run,
-e.g. `runs/real-grok-composed/`). Run-replay mode serves the same React
+(`manifest.json` @ `simfile.run-manifest.v1`; transcripts are optional
+artifacts, not a routing precondition). Run-replay mode serves the same React
 shell as world/live mode (`web/src/viewer/RunReplayShell.tsx`), fed by
 `/api/timeline` and a `viewer.trace.v1`-shaped `/api/world` adapter, so the
 existing time-scrubbable map/portal machinery renders a real run instead of

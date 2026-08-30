@@ -40,6 +40,8 @@ export const participantChatMessages = (
   return eventsUpTo(timeline, cursor).filter((event) =>
     event.viewClass === "message"
     && event.actor !== undefined
+    && typeof event.text === "string"
+    && event.text.trim().length > 0
     && (participantRefs.has(event.actor) || participantRefs.has(`agent:${event.actor}`))
     && (!roomFilter || event.subjects.some((subject) => roomFilter.has(subject))));
 };

@@ -4,6 +4,8 @@ dist/
 coverage/
 !src/coverage/
 .artifacts/
+.simfile-dev/
+.simfile-composed/
 runs/*
 !runs/real-grok-composed/
 !runs/office-world-v0/

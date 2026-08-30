@@ -345,15 +345,15 @@
   "diagnostics": [
     {
       "level": "info",
-      "message": "using local ecosystem/moltnet release (moltnet_linux_arm64.tar.gz) instead of downloading the published Moltnet release"
+      "message": "using a locally supplied Moltnet release (moltnet_linux_arm64.tar.gz) instead of downloading the published release"
     },
     {
       "level": "info",
-      "message": "using local ecosystem/daimon (dist) instead of the pinned npm release for @noopolis/daimon"
+      "message": "using a locally supplied Daimon build instead of the pinned npm release for @noopolis/daimon"
     },
     {
       "level": "info",
-      "message": "using local ecosystem/mneme (dist) instead of the pinned npm release for @noopolis/mneme"
+      "message": "using a locally supplied Mneme build instead of the pinned npm release for @noopolis/mneme"
     }
   ],
   "generated_at": "2026-07-12T07:36:23.291Z",
@@ -462,7 +462,7 @@
       "runtime": null,
       "runtime_ref": null,
       "runtime_status": null,
-      "source": "/Users/apresmoi/Documents/spawnfile/ecosystem/simfile/fixtures/sims/jungian-daimon-org/org/Spawnfile"
+      "source": "fixtures/sims/jungian-daimon-org/org/Spawnfile"
     },
     {
       "capabilities": [
@@ -508,7 +508,7 @@
       "runtime": "pi",
       "runtime_ref": "v0.79.10",
       "runtime_status": "active",
-      "source": "/Users/apresmoi/Documents/spawnfile/ecosystem/simfile/fixtures/sims/jungian-daimon-org/org/teams/luna/agents/animus/Spawnfile",
+      "source": "fixtures/sims/jungian-daimon-org/org/teams/luna/agents/animus/Spawnfile",
       "active_environments": {
         "moltnet": {
           "luna_inner": {
@@ -608,7 +608,7 @@
       "runtime": "pi",
       "runtime_ref": "v0.79.10",
       "runtime_status": "active",
-      "source": "/Users/apresmoi/Documents/spawnfile/ecosystem/simfile/fixtures/sims/jungian-daimon-org/org/teams/luna/agents/representative/Spawnfile",
+      "source": "fixtures/sims/jungian-daimon-org/org/teams/luna/agents/representative/Spawnfile",
       "active_environments": {
         "moltnet": {
           "psyche-floor": {
@@ -734,7 +734,7 @@
       "runtime": "pi",
       "runtime_ref": "v0.79.10",
       "runtime_status": "active",
-      "source": "/Users/apresmoi/Documents/spawnfile/ecosystem/simfile/fixtures/sims/jungian-daimon-org/org/teams/luna/agents/shadow/Spawnfile",
+      "source": "fixtures/sims/jungian-daimon-org/org/teams/luna/agents/shadow/Spawnfile",
       "active_environments": {
         "moltnet": {
           "luna_inner": {
@@ -894,7 +894,7 @@
       "runtime": "pi",
       "runtime_ref": "v0.79.10",
       "runtime_status": "active",
-      "source": "/Users/apresmoi/Documents/spawnfile/ecosystem/simfile/fixtures/sims/jungian-daimon-org/org/teams/luna/Spawnfile"
+      "source": "fixtures/sims/jungian-daimon-org/org/teams/luna/Spawnfile"
     },
     {
       "capabilities": [
@@ -940,7 +940,7 @@
       "runtime": "pi",
       "runtime_ref": "v0.79.10",
       "runtime_status": "active",
-      "source": "/Users/apresmoi/Documents/spawnfile/ecosystem/simfile/fixtures/sims/jungian-daimon-org/org/teams/selene/agents/animus/Spawnfile",
+      "source": "fixtures/sims/jungian-daimon-org/org/teams/selene/agents/animus/Spawnfile",
       "active_environments": {
         "moltnet": {
           "selene_inner": {
@@ -1040,7 +1040,7 @@
       "runtime": "pi",
       "runtime_ref": "v0.79.10",
       "runtime_status": "active",
-      "source": "/Users/apresmoi/Documents/spawnfile/ecosystem/simfile/fixtures/sims/jungian-daimon-org/org/teams/selene/agents/representative/Spawnfile",
+      "source": "fixtures/sims/jungian-daimon-org/org/teams/selene/agents/representative/Spawnfile",
       "active_environments": {
         "moltnet": {
           "psyche-floor": {
@@ -1166,7 +1166,7 @@
       "runtime": "pi",
       "runtime_ref": "v0.79.10",
       "runtime_status": "active",
-      "source": "/Users/apresmoi/Documents/spawnfile/ecosystem/simfile/fixtures/sims/jungian-daimon-org/org/teams/selene/agents/shadow/Spawnfile",
+      "source": "fixtures/sims/jungian-daimon-org/org/teams/selene/agents/shadow/Spawnfile",
       "active_environments": {
         "moltnet": {
           "selene_inner": {
@@ -1326,11 +1326,11 @@
       "runtime": "pi",
       "runtime_ref": "v0.79.10",
       "runtime_status": "active",
-      "source": "/Users/apresmoi/Documents/spawnfile/ecosystem/simfile/fixtures/sims/jungian-daimon-org/org/teams/selene/Spawnfile"
+      "source": "fixtures/sims/jungian-daimon-org/org/teams/selene/Spawnfile"
     }
   ],
-  "output_directory": "/private/tmp/claude-501/-Users-apresmoi-Documents-spawnfile/6cce8caa-2301-440b-b6b1-fe090c6d6968/scratchpad/jung-golden-compiled",
+  "output_directory": "compiled/jungian-daimon-org",
   "project_name": "jungian-daimon-org",
-  "root": "/Users/apresmoi/Documents/spawnfile/ecosystem/simfile/fixtures/sims/jungian-daimon-org/org/Spawnfile",
+  "root": "fixtures/sims/jungian-daimon-org/org/Spawnfile",
   "spawnfile_version": "0.1"
 }

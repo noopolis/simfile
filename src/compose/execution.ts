@@ -44,7 +44,7 @@ export const composedExecutionSchema = z.object({
         asset_sha256: digest,
         release_version: z.string().min(1).max(128),
         source_revision: z.string().regex(/^[a-f0-9]{40}$/u),
-      }).strict(),
+      }).strict().optional(),
       selected_target_receipt_digest: digest,
       unit_id: identifier,
       world_binding_digest: digest,
@@ -76,11 +76,28 @@ export const composedExecutionSchema = z.object({
     process_environment: processEnvironment.optional(),
     spawnfile_bin: absolutePath,
     spawnfile_cwd: absolutePath,
-    target_config_producer: z.object({
-      args: z.array(z.string().min(1).max(4_096)).min(1).max(32),
-      command: z.string().min(1).max(4_096),
-      transport: z.literal("stdout_to_spawnfile_stdin"),
-    }).strict(),
+    spawnfile_capability_contract_digest: digest.optional(),
+    spawnfile_executable_sha256: digest,
+    spawnfile_package_version: z.literal("0.1.17").optional(),
+    target_resolution: z.object({
+      base_image: z.object({
+        config_digest: digest,
+        reference: z.string().min(1).max(512),
+      }).strict(),
+      context: identifier,
+      endpoint_transport: z.enum(["fd", "npipe", "unix"]),
+      platform: z.object({
+        architecture: z.enum(["amd64", "arm64"]),
+        os: z.literal("linux"),
+      }).strict(),
+      prepared_evidence_helper: z.object({
+        digest,
+        handle,
+        version: z.literal("spawnfile.target-evidence-export-helper.prepared.v1"),
+      }).strict(),
+      target_config_digest: digest,
+      version: z.literal("spawnfile.target-config-resolution.v1"),
+    }).strict().optional(),
     terminal_artifact: z.object({
       id: identifier,
       max_bytes: z.number().int().min(1).max(131_072),
@@ -105,9 +122,6 @@ export type ComposedExecution = z.infer<typeof composedExecutionSchema>;
 export const parseComposedExecution = (raw: unknown): ComposedExecution => {
   assertSecretFreeComposedJson(raw);
   const value = composedExecutionSchema.parse(raw);
-  if (value.provider.target_config_producer.args.length !== 1) {
-    throw new TypeError("composed target config producer argv is invalid");
-  }
   return Object.freeze(value);
 };
 

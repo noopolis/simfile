@@ -10,6 +10,12 @@ const atTickOne = () => {
   return { ...lifecyclePhaseContext({ persisted }), journal: tickOneLifecycleJournal() };
 };
 
+const waitUntilAborted = (signal: AbortSignal): Promise<never> =>
+  new Promise((_resolve, reject) => {
+    if (signal.aborted) { reject(signal.reason); return; }
+    signal.addEventListener("abort", () => reject(signal.reason), { once: true });
+  });
+
 describe("service-only composed supervision", () => {
   it("accepts world terminal truth without consulting behavior", async () => {
     const { context, journal } = atTickOne();
@@ -33,7 +39,7 @@ describe("service-only composed supervision", () => {
     const { context, journal, persisted } = atTickOne();
     await assert.rejects(superviseComposedWorld({
       context, expected_terminal_tick: 40, journal, operator_timeout_ms: 5,
-      port: { waitForWorldTerminal: () => new Promise(() => undefined) },
+      port: { waitForWorldTerminal: ({ signal }) => waitUntilAborted(signal) },
     }), /operator timeout/u);
     assert.equal(persisted.at(-1)?.current_phase, "running");
   });
@@ -43,7 +49,7 @@ describe("service-only composed supervision", () => {
     const controller = new AbortController();
     const pending = superviseComposedWorld({
       context, expected_terminal_tick: 40, journal, operator_timeout_ms: 1_000,
-      port: { waitForWorldTerminal: () => new Promise(() => undefined) },
+      port: { waitForWorldTerminal: ({ signal }) => waitUntilAborted(signal) },
       signal: controller.signal,
     });
     controller.abort(new Error("operator interrupted"));

@@ -1,11 +1,13 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
 import { readFile, rename, rm, writeFile } from "node:fs/promises";
+import path from "node:path";
 import { promisify } from "node:util";
 
 import { createComposedPhaseJournal } from "../compose/journal.js";
 import type { ComposedPhaseJournal } from "../compose/journal.js";
 import { parseComposedExecution } from "../compose/execution.js";
+import { digestComposedJson } from "../compose/json.js";
 import type { ComposedRunRequest } from "../compose/request.js";
 
 const execute = promisify(execFile);
@@ -166,4 +168,43 @@ export const expectBuiltRecoveryArgumentRejections = async (input: Readonly<{
     }
   }
   assert.deepEqual(await Promise.all(input.providerLogs.map(optionalBytes)), logsBefore);
+};
+
+export const expectBuiltRecoveryFileRejections = async (input: Readonly<{
+  authorityDigest: string;
+  cliPath: string;
+  cwd: string;
+  journalPath: string;
+  logPath: string;
+  root: string;
+  runId: string;
+}>): Promise<void> => {
+  const callsBefore = (await readFile(input.logPath, "utf8")).trim().split("\n").length;
+  const rejectJournal = async (candidate: string): Promise<void> => {
+    await assert.rejects(execute(process.execPath, [
+      input.cliPath, "recover", "--journal", candidate, "--run-id", input.runId,
+      "--authority-digest", input.authorityDigest,
+    ], { cwd: input.cwd, timeout: 5_000 }), (error: unknown) => {
+      const failure = error as { code?: number; stdout?: string };
+      return failure.code === 1 && failure.stdout === "";
+    });
+  };
+  await rejectJournal(path.join(input.root, "missing.json"));
+  const malformed = path.join(input.root, "malformed.json");
+  await writeFile(malformed, "{\n");
+  await rejectJournal(malformed);
+  const secret = path.join(input.root, "secret.json");
+  await writeFile(secret, '{"token":"token=must-not-load"}\n');
+  await rejectJournal(secret);
+  const crossed = path.join(input.root, "crossed.json");
+  const crossRun = JSON.parse(await readFile(input.journalPath, "utf8")) as Record<string, unknown>;
+  const crossExecution = crossRun.execution as {
+    configuration: { readiness_expectation: { run_id: string } };
+  };
+  crossExecution.configuration.readiness_expectation.run_id = "run-foreign";
+  const { journal_digest: _oldDigest, ...crossBody } = crossRun;
+  crossRun.journal_digest = digestComposedJson("simfile.composed-phase-journal.v1", crossBody);
+  await writeFile(crossed, `${JSON.stringify(crossRun)}\n`);
+  await rejectJournal(crossed);
+  assert.equal((await readFile(input.logPath, "utf8")).trim().split("\n").length, callsBefore);
 };

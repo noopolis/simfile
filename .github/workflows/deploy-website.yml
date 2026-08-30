@@ -19,6 +19,8 @@ concurrency:
 
 jobs:
   build:
+    name: build simfile.org
+    timeout-minutes: 30
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -47,6 +49,8 @@ jobs:
           path: website/dist
 
   deploy:
+    name: deploy simfile.org
+    timeout-minutes: 15
     needs: build
     runs-on: ubuntu-latest
     environment:

@@ -35,7 +35,7 @@ export const composedCommandReceiptSchema = z.object({
   live_agent_evidence: z.object({ state: z.enum(["passed", "failed"]),
     zero_action_principals: z.array(z.string()) }).strict(),
   manifest_digest: digest,
-  moltnet,
+  moltnet: moltnet.nullable(),
   receipt_digest: digest,
   run_id: z.string().min(1),
   run_path: absolute,
@@ -76,7 +76,8 @@ export const createComposedCommandReceipt = (input: Readonly<{
 }>): ComposedCommandReceipt => {
   const journal = parseComposedPhaseJournal(input.journal);
   const lifecycle = parseComposedTerminalReceipt(input.lifecycle_receipt);
-  if (journal.current_phase !== "completed" || lifecycle.run_id !== journal.request.run_id
+  if (journal.request.mode !== "live" || journal.current_phase !== "completed"
+    || lifecycle.run_id !== journal.request.run_id
     || lifecycle.seal.state !== "sealed" || lifecycle.cleanup.state !== "cleaned"
     || lifecycle.verdict.state !== "valid") {
     throw new TypeError("composed command completion proof is invalid");
@@ -96,7 +97,7 @@ export const createComposedCommandReceipt = (input: Readonly<{
     live_agent_evidence: { state: input.live_evidence.state,
       zero_action_principals: input.live_evidence.zero_action_principals },
     manifest_digest: input.manifest_digest,
-    moltnet: moltnet.parse(organization.moltnet_release),
+    moltnet: moltnet.nullable().parse(organization.moltnet_release),
     run_id: lifecycle.run_id,
     run_path: path.resolve(input.run_path),
     simulation_verdict: "valid" as const,
@@ -121,4 +122,3 @@ export const writeComposedProgress = (message: string): void => {
 export const writeComposedFinalReceipt = (receipt: ComposedCommandReceipt): void => {
   process.stdout.write(serializeComposedCommandReceipt(receipt));
 };
-
