@@ -7,6 +7,7 @@ on:
 
 jobs:
   check:
+    timeout-minutes: 15
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -19,6 +20,7 @@ jobs:
       - run: npm run typecheck
 
   test:
+    timeout-minutes: 25
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
