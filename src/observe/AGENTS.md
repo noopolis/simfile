@@ -33,6 +33,21 @@ Spawnfile internals; the only cross-repo dependency is the narrow shared package
   is visibly on the fallback, never silently. `recalls` is unaffected by which
   write source wins: it prefers `events.jsonl`'s own lines, falling back to
   causal `memory.recalled` events.
+- `usageLedger.ts` — `collectUsage`: reads Daimon's per-turn engine usage
+  ledger out of Spawnfile's exported `raw/daimon/usage.jsonl` (plus the rotated
+  `usage.jsonl.1`, which is OLDER and is concatenated FIRST so an agent's engine
+  attribution comes from its earliest turn). Re-declares and re-validates the
+  `noopolis.daimon.turn-usage.v1` record with this repo's own zod parser rather
+  than importing Spawnfile's — a malformed line, a foreign `v`, or a torn final
+  line left by a crash mid-append is dropped, never coerced. Aggregates per
+  agent and per engine onto `usage`/`usage_summary`. Returns `undefined` when
+  the export carries NO ledger at all, so a codex-only organization (never
+  provisioned the volume) and an export taken before the first metered turn stay
+  distinct from an observed zero — the same absence-preserving convention
+  `worldGrants.ts` uses. Every total is a LOWER BOUND: `usage_summary.lower_bound`
+  is a schema literal `true` so no conformant report can present these counts as
+  exact, and `unknown_turns` carries the producing decoder's own
+  all-zero-is-unknown-not-free caveat across the repo hop.
 - `compute.ts` — pure functions building every `simfile.observe.v1` field from
   already-reconciled events: `participants` (from `principal_id`), `agent_turns`
   (ordered by the moltnet message seq that causally triggered each turn — never

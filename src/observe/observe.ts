@@ -9,6 +9,7 @@ import type { CausalStreamSource } from "./causalStreams.js";
 import { collectCausalStreams } from "./causalStreams.js";
 import { buildObserveReport } from "./compute.js";
 import { collectMemoryBankCounts } from "./memoryBanks.js";
+import { collectUsage } from "./usageLedger.js";
 import type { SimfileRunManifest } from "./manifest.js";
 import { parseRunManifest } from "./manifest.js";
 import type { SimfileObserveReport } from "./report.js";
@@ -66,6 +67,7 @@ export const runObserve = async (runDir: string): Promise<ObserveResult> => {
     eventsByBank.set(bank, [...(eventsByBank.get(bank) ?? []), ...stream.events]);
   }
   const memoryBanks = await collectMemoryBankCounts(runDir, eventsByBank);
+  const usage = await collectUsage(runDir);
 
   let seedSpread: ReturnType<typeof computeSeedSpread> | undefined;
   let spreadSelfCheck: SeedSpreadSelfCheck | undefined;
@@ -97,7 +99,7 @@ export const runObserve = async (runDir: string): Promise<ObserveResult> => {
 
   const worldEvidenceResult = await readWorldEvidence(runDir, allEvents);
   const socialPlane = computeSocialPlane(await readSocialTranscript(runDir), allEvents);
-  const report = buildObserveReport({ allEvents, manifest, memoryBanks, reconciled, seedSpread, worldEvidence: worldEvidenceResult.evidence, socialPlane });
+  const report = buildObserveReport({ allEvents, manifest, memoryBanks, reconciled, seedSpread, usage, worldEvidence: worldEvidenceResult.evidence, socialPlane });
 
   return {
     artifactIntegrity,

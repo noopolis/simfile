@@ -77,6 +77,50 @@ const memoryBankEntrySchema = z
   })
   .strict();
 
+/**
+ * Per-turn engine usage, derived from Spawnfile's exported Daimon ledger
+ * (`raw/daimon/usage.jsonl` + the rotated `.1`).
+ *
+ * `lower_bound` is a literal `true` on purpose: it is not a flag that could be
+ * `false`, it is a permanent property of this data, and encoding it in the
+ * schema means no conformant report can present these counts as exact. Neither
+ * metered engine's stream carries a completeness marker — both zero-fill a
+ * bucket they cannot account for — so a partially zero-filled turn sums to a
+ * plausible total and is indistinguishable from a real one. `unknown_turns`
+ * counts the turns the producing decoder itself flagged as unaccounted:
+ * unknown cost, never free. AGY reports no cost field at all, so a zero
+ * `notional_usd` likewise means unknown, not free.
+ *
+ * The whole `usage`/`usage_summary` pair is OMITTED when the export carries no
+ * ledger, which is distinct from a present-but-empty one — the same
+ * absence-preserving convention `world_grants` uses.
+ */
+const usageAgentEntrySchema = z
+  .object({
+    agent: z.string().min(1),
+    engine: z.string().min(1),
+    turns: z.number().int().min(0),
+    tokens: z.number().min(0),
+    notional_usd: z.number().min(0),
+    unknown_turns: z.number().int().min(0)
+  })
+  .strict();
+
+const usageSummarySchema = z
+  .object({
+    lower_bound: z.literal(true),
+    unknown_turns: z.number().int().min(0),
+    by_engine: z.array(z
+      .object({
+        engine: z.string().min(1),
+        turns: z.number().int().min(0),
+        tokens: z.number().min(0),
+        notional_usd: z.number().min(0)
+      })
+      .strict())
+  })
+  .strict();
+
 const failureEntrySchema = z
   .object({
     reason: z.string().min(1),
@@ -172,6 +216,8 @@ export const observeReportSchema = z
       })
       .strict(),
     memory: z.array(memoryBankEntrySchema),
+    usage: z.array(usageAgentEntrySchema).optional(),
+    usage_summary: usageSummarySchema.optional(),
     failures: z.array(failureEntrySchema),
     seed_spread: z.array(seedSpreadSchema).optional(),
     spread_summary: spreadSummarySchema.optional(),
