@@ -2,13 +2,19 @@
 
 import { randomUUID } from "node:crypto";
 import path from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { runBoundedProcess } from "./bounded-process.ts";
+import { isMainModule } from "./entrypoint.ts";
+import { resolvePackageRoot } from "./package-root.ts";
 
-import { runBoundedProcess } from "./bounded-process.mjs";
+const packageRoot = resolvePackageRoot(import.meta.url);
 
-const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+export interface LocalExampleInvocation {
+  args: readonly string[];
+  out: string;
+  run_id: string;
+}
 
-export const createLocalExampleInvocation = (nonce = randomUUID()) => {
+export const createLocalExampleInvocation = (nonce: string = randomUUID()): Readonly<LocalExampleInvocation> => {
   if (!/^[a-f0-9-]{8,64}$/u.test(nonce)) {
     throw new TypeError("Local example nonce is invalid");
   }
@@ -26,7 +32,7 @@ export const createLocalExampleInvocation = (nonce = randomUUID()) => {
   });
 };
 
-export const runLocalExample = async (nonce) => {
+export const runLocalExample = async (nonce?: string): Promise<Readonly<LocalExampleInvocation>> => {
   const invocation = createLocalExampleInvocation(nonce);
   const result = await runBoundedProcess(process.execPath, invocation.args, {
     cwd: packageRoot,
@@ -38,8 +44,7 @@ export const runLocalExample = async (nonce) => {
   return invocation;
 };
 
-if (process.argv[1] !== undefined
-  && import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (isMainModule(import.meta.url)) {
   try { await runLocalExample(); }
   catch (error) {
     process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);

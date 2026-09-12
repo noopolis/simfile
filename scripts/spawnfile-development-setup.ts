@@ -19,20 +19,42 @@ import {
   probeSpawnfileCapabilities,
   run,
   STATE_VERSION,
-} from "./spawnfile-development-context.mjs";
-import { stagePhysicalSpawnfileSource } from "./spawnfile-source-stage.mjs";
+} from "./spawnfile-development-context.ts";
+import { stagePhysicalSpawnfileSource } from "./spawnfile-source-stage.ts";
 import {
   assertInstalledArtifact,
   hash,
+  type InstalledArtifactExpectation,
   packagedTarballAt,
   probeIdentity,
-} from "./spawnfile-install-integrity.mjs";
+} from "./spawnfile-install-integrity.ts";
 
-export const parseSetupArguments = (args) => {
-  let source;
-  let packageSpec;
-  let artifact;
-  let sha256;
+type SetupOptions = Readonly<{
+  artifact?: string;
+  packageSpec?: string;
+  sha256?: string;
+  source?: string;
+}>;
+
+type PackSelection = Readonly<{
+  identity: string;
+  installSpec: string;
+  origin:
+    | Readonly<{ kind: "artifact"; package_version: string; path: string; sha256: string }>
+    | Readonly<{ kind: "registry"; package_version: string; spec: string | undefined }>
+    | Readonly<{ kind: "source"; package_version: string; path: string }>;
+  tarball: string;
+  tarball_sha256: string;
+}>;
+
+const isObject = (value: unknown): value is Record<string, unknown> =>
+  value !== null && typeof value === "object" && !Array.isArray(value);
+
+export const parseSetupArguments = (args: readonly string[]): SetupOptions => {
+  let source: string | undefined;
+  let packageSpec: string | undefined;
+  let artifact: string | undefined;
+  let sha256: string | undefined;
   for (let index = 0; index < args.length; index += 1) {
     const flag = args[index];
     if (!["--artifact", "--package", "--sha256", "--source"].includes(flag)) {
@@ -66,19 +88,19 @@ export const parseSetupArguments = (args) => {
   return { artifact, packageSpec, sha256, source };
 };
 
-const parsePackResult = (stdout) => {
-  let value;
+const parsePackResult = (stdout: string): { filename: string; integrity: string; version: string } => {
+  let value: unknown;
   try { value = JSON.parse(stdout); }
   catch { return fail("npm pack did not return JSON"); }
-  if (!Array.isArray(value) || value.length !== 1
-    || typeof value[0]?.filename !== "string" || typeof value[0]?.integrity !== "string"
-    || typeof value[0]?.version !== "string") {
+  if (!Array.isArray(value) || value.length !== 1 || !isObject(value[0])
+    || typeof value[0].filename !== "string" || typeof value[0].integrity !== "string"
+    || typeof value[0].version !== "string") {
     return fail("npm pack did not report exactly one Spawnfile tarball");
   }
-  return value[0];
+  return { filename: value[0].filename, integrity: value[0].integrity, version: value[0].version };
 };
 
-const installPackage = async (spec, temporaryRoot) => {
+const installPackage = async (spec: string, temporaryRoot: string): Promise<void> => {
   await writeFile(path.join(temporaryRoot, "package.json"), `${JSON.stringify({
     name: "simfile-spawnfile-development-tool", private: true, version: "0.0.0",
   }, null, 2)}\n`, { encoding: "utf8", mode: 0o600 });
@@ -86,26 +108,27 @@ const installPackage = async (spec, temporaryRoot) => {
     "--no-package-lock", "--save-exact", spec], { cwd: temporaryRoot });
 };
 
-const packedSelection = async (input, temporaryRoot) => {
+const packedSelection = async (input: SetupOptions, temporaryRoot: string): Promise<PackSelection> => {
   if (input.artifact !== undefined) {
     const info = await lstat(input.artifact).catch(() => fail("Spawnfile artifact is missing"));
     if (!info.isFile() || info.isSymbolicLink()) fail("Spawnfile artifact must be a regular file");
     const tarballHash = hash(await readFile(input.artifact));
     if (tarballHash !== input.sha256) fail("Spawnfile artifact SHA-256 did not match --sha256");
     const manifestText = (await run("tar", ["-xOf", input.artifact, "package/package.json"])).stdout;
-    let manifest;
-    try { manifest = JSON.parse(manifestText); } catch { fail("Spawnfile artifact package metadata is invalid"); }
-    if (manifest?.name !== "spawnfile" || typeof manifest.version !== "string") {
-      fail("Spawnfile artifact is not a versioned spawnfile package");
+    let manifest: unknown;
+    try { manifest = JSON.parse(manifestText); } catch { return fail("Spawnfile artifact package metadata is invalid"); }
+    if (!isObject(manifest) || manifest.name !== "spawnfile" || typeof manifest.version !== "string") {
+      return fail("Spawnfile artifact is not a versioned spawnfile package");
     }
+    const packageVersion = manifest.version;
     return { identity: `artifact-v1:${tarballHash}`, installSpec: input.artifact,
-      origin: { kind: "artifact", package_version: manifest.version,
+      origin: { kind: "artifact", package_version: packageVersion,
         path: input.artifact, sha256: tarballHash },
       tarball: input.artifact, tarball_sha256: tarballHash };
   }
-  let packCwd;
-  let packSpec;
-  let origin;
+  let packCwd: string | undefined;
+  let packSpec: string | undefined;
+  let origin: PackSelection["origin"] | undefined;
   if (input.source !== undefined) {
     const staged = await stagePhysicalSpawnfileSource(input.source, temporaryRoot);
     await run("npm", ["ci", "--no-audit", "--no-fund"], { cwd: staged.staging });
@@ -114,6 +137,7 @@ const packedSelection = async (input, temporaryRoot) => {
     origin = { kind: "source", package_version: staged.origin.package_version,
       path: staged.origin.path };
   } else {
+    if (input.packageSpec === undefined) return fail("Setup requires exactly one of --source, --package, or --artifact");
     packSpec = input.packageSpec;
   }
   const packRoot = path.join(temporaryRoot, "pack");
@@ -126,18 +150,18 @@ const packedSelection = async (input, temporaryRoot) => {
   const tarballHash = hash(await readFile(tarball));
   return { identity: `${input.source === undefined ? "registry" : "source"}-v2:${tarballHash}`,
     installSpec: tarball,
-    origin: origin ?? { kind: "registry", package_version: packed.version, spec: input.packageSpec },
+    origin: origin ?? { kind: "registry", package_version: packed.version, spec: packSpec },
     tarball, tarball_sha256: tarballHash };
 };
 
-const writeCurrentState = async (state) => {
+const writeCurrentState = async (state: unknown): Promise<void> => {
   await mkdir(developmentRoot, { recursive: true, mode: 0o700 });
   const pending = path.join(developmentRoot, `.current-${randomUUID()}.json`);
   await writeFile(pending, `${JSON.stringify(state, null, 2)}\n`, { encoding: "utf8", mode: 0o600 });
   await rename(pending, currentPath);
 };
 
-export const setupSpawnfileDevelopment = async (args) => {
+export const setupSpawnfileDevelopment = async (args: readonly string[]): Promise<void> => {
   const options = parseSetupArguments(args);
   await mkdir(installsRoot, { recursive: true, mode: 0o700 });
   const temporaryRoot = await mkdtemp(path.join(developmentRoot, ".install-"));
@@ -145,8 +169,8 @@ export const setupSpawnfileDevelopment = async (args) => {
     const selected = await packedSelection(options, temporaryRoot);
     const installRoot = path.join(installsRoot, hash(selected.identity).slice(0, 32));
     try { await lstat(installRoot); }
-    catch (error) {
-      if (error?.code !== "ENOENT") throw error;
+    catch (error: unknown) {
+      if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
       const staged = path.join(temporaryRoot, "installed");
       await mkdir(staged, { mode: 0o700 });
       await installPackage(selected.installSpec, staged);
@@ -158,7 +182,7 @@ export const setupSpawnfileDevelopment = async (args) => {
     const installed = await assertInstalledArtifact(installRoot, {
       package_version: selected.origin.package_version,
       tarball_sha256: selected.tarball_sha256,
-    });
+    } satisfies InstalledArtifactExpectation);
     const probe = await probeSpawnfileCapabilities(installed.executable);
     if (!probe.development.ready) fail("Installed Spawnfile lacks required generic development commands");
     const state = { bin: installed.executable, capability_probe: probeIdentity(probe),

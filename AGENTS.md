@@ -12,6 +12,10 @@ checked out anywhere; never infer a sibling repository or import its source.
 ├── docs/                  # Design and research docs: DESIGN, VIEW_DESIGN,
 │                          # VIEW_STYLEGUIDE, SITE_DESIGN, SYSTEMS_VIEW,
 │                          # RESEARCH, COVERAGE
+├── archive/               # Historical plans and reviews
+├── fixtures/observe/      # Frozen recorded evidence for tests
+├── scripts/               # Maintained TypeScript development tools
+├── tools/                 # Maintained TypeScript package verification tools
 ├── package.json           # npm package metadata and CLI scripts
 ├── tsconfig.json          # Typecheck config
 ├── tsconfig.build.json    # Build-only emit config
@@ -22,7 +26,8 @@ checked out anywhere; never infer a sibling repository or import its source.
 
 - Keep Simfile aligned with `docs/DESIGN.md`.
 - Keep the schema genre-neutral. Domain concepts belong in fixtures, not keys.
-- Named exports only.
+- Named exports only. Maintained repository tooling must be strict TypeScript.
+- Keep historical plans and reviews in `archive/`; recorded test evidence belongs in `fixtures/`, while local runs remain ignored.
 - Add nested `AGENTS.md` files for implementation folders and compatibility `CLAUDE.md` symlinks pointing to them.
 - Keep source files under 400 lines.
 - Keep tests beside the files they cover.

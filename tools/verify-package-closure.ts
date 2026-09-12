@@ -3,8 +3,8 @@ import { createHash } from "node:crypto";
 import { mkdir, mkdtemp, readFile, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 
+import { resolvePackageRoot } from "../scripts/package-root.ts";
 import {
   assertDevelopmentAssets,
   assertPackedManifest,
@@ -12,14 +12,14 @@ import {
   fail,
   parseSinglePack,
   readJson,
-} from "./package-closure-contract.mjs";
+} from "./package-closure-contract.ts";
 import {
   assertInstalledClosure,
   buildPackedExample,
   runPackageClosureProcess,
-} from "./package-closure-install.mjs";
+} from "./package-closure-install.ts";
 
-const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const packageRoot = resolvePackageRoot(import.meta.url);
 
 const main = async () => {
   const manifest = await readJson(path.join(packageRoot, "package.json"));
@@ -51,17 +51,18 @@ const main = async () => {
       fail("packed tarball leaked a fixture, dependency, source checkout, or vendor archive");
     }
     assertDevelopmentAssets(entries);
-    const packedManifest = JSON.parse((await runPackageClosureProcess(
+    const packedManifest: unknown = JSON.parse((await runPackageClosureProcess(
       "tar", ["-xOf", tarballPath, "package/package.json"], packageRoot,
     )).stdout);
-    assertPackedManifest(packedManifest);
-    const installed = await assertInstalledClosure(installRoot, manifest, tarballPath);
+    const packedManifestData = assertPackedManifest(packedManifest);
+    const rootManifest = assertPackedManifest(manifest);
+    const installed = await assertInstalledClosure(installRoot, rootManifest, tarballPath);
     const exampleBundleDigest = await buildPackedExample(temporaryRoot, tarballPath);
     process.stdout.write(`${JSON.stringify({
       bundled: packed.bundled ?? [], entries: packed.entryCount,
       integrity: packed.integrity, package: packed.id, packed_file: packed.filename,
       packed_example_bundle_digest: exampleBundleDigest,
-      runtime_dependencies: packedManifest.dependencies,
+      runtime_dependencies: packedManifestData.dependencies,
       stele_registry_tarball: steleRegistryTarball,
       stele_resolved_inside_install: installed.steleResolved,
     }, null, 2)}\n`);

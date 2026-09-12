@@ -1,23 +1,46 @@
-import { createHash } from "node:crypto";
+import { createHash, type BinaryLike } from "node:crypto";
 import { chmod, lstat, readFile, readdir, readlink, realpath } from "node:fs/promises";
 import path from "node:path";
 
-import { inspectPhysicalSpawnfileSource } from "./spawnfile-source-stage.mjs";
+import { inspectPhysicalSpawnfileSource } from "./spawnfile-source-stage.ts";
 
-const fail = (message) => { throw new Error(message); };
+export type SpawnfileOrigin =
+  | Readonly<{ kind: "artifact"; package_version: string; path: string; sha256: string }>
+  | Readonly<{ kind: "registry"; package_version: string; spec: string }>
+  | Readonly<{ kind: "source"; package_version: string; path: string }>;
 
-export const hash = (value) => createHash("sha256").update(value).digest("hex");
-export const executableAt = (root) => path.join(root, "node_modules", ".bin", "spawnfile");
-export const packagedTarballAt = (root) => path.join(root, "spawnfile.tgz");
-export const probeIdentity = (probe) => Object.freeze({
+export interface InstalledArtifactExpectation {
+  executable_sha256?: string;
+  installed_closure_sha256?: string;
+  package_version?: string;
+  repair_permissions?: boolean;
+  tarball_sha256?: string;
+}
+
+export interface InstalledArtifact {
+  executable: string;
+  executable_sha256: string;
+  installed_closure_sha256: string;
+  package_version: string;
+  tarball_sha256: string;
+}
+
+const fail = (message: string): never => { throw new Error(message); };
+const isObject = (value: unknown): value is Record<string, unknown> =>
+  value !== null && typeof value === "object" && !Array.isArray(value);
+
+export const hash = (value: BinaryLike): string => createHash("sha256").update(value).digest("hex");
+export const executableAt = (root: string): string => path.join(root, "node_modules", ".bin", "spawnfile");
+export const packagedTarballAt = (root: string): string => path.join(root, "spawnfile.tgz");
+export const probeIdentity = (probe: { version: string }): Readonly<{ sha256: string; version: string }> => Object.freeze({
   sha256: hash(JSON.stringify(probe)),
   version: probe.version,
 });
 
-export const installedClosureHash = async (installRoot) => {
+export const installedClosureHash = async (installRoot: string): Promise<string> => {
   const closureRoot = path.join(installRoot, "node_modules");
   const digest = createHash("sha256");
-  const visit = async (directory, relativeRoot = "") => {
+  const visit = async (directory: string, relativeRoot = ""): Promise<void> => {
     const entries = await readdir(directory, { withFileTypes: true });
     entries.sort((left, right) => left.name < right.name ? -1 : left.name > right.name ? 1 : 0);
     for (const entry of entries) {
@@ -40,20 +63,22 @@ export const installedClosureHash = async (installRoot) => {
   return digest.digest("hex");
 };
 
-const installedPackage = async (installRoot) => {
-  let manifest;
+const installedPackage = async (installRoot: string): Promise<{ name: string; version: string }> => {
+  let manifest: unknown;
   try {
     manifest = JSON.parse(await readFile(path.join(installRoot, "node_modules", "spawnfile", "package.json"), "utf8"));
   } catch (error) {
     return fail(`Unable to read installed Spawnfile metadata: ${error instanceof Error ? error.message : String(error)}`);
   }
-  if (manifest?.name !== "spawnfile" || typeof manifest.version !== "string") {
+  if (manifest === null || typeof manifest !== "object" || Array.isArray(manifest)
+    || (manifest as { name?: unknown }).name !== "spawnfile"
+    || typeof (manifest as { version?: unknown }).version !== "string") {
     return fail("Installed Spawnfile package metadata is invalid");
   }
-  return manifest;
+  return manifest as { name: string; version: string };
 };
 
-const installedExecutable = async (installRoot, repairPermissions = false) => {
+const installedExecutable = async (installRoot: string, repairPermissions = false): Promise<Readonly<{ executable: string; target: string }>> => {
   const executable = executableAt(installRoot);
   const target = await realpath(executable).catch(() => fail("Installed Spawnfile executable is missing"));
   const physicalRoot = await realpath(installRoot);
@@ -66,7 +91,10 @@ const installedExecutable = async (installRoot, repairPermissions = false) => {
   return { executable, target };
 };
 
-export const assertInstalledArtifact = async (installRoot, expected) => {
+export const assertInstalledArtifact = async (
+  installRoot: string,
+  expected: InstalledArtifactExpectation
+): Promise<Readonly<InstalledArtifact>> => {
   const tarball = packagedTarballAt(installRoot);
   const tarballInfo = await lstat(tarball).catch(() => fail("Installed Spawnfile tarball is missing"));
   if (!tarballInfo.isFile() || tarballInfo.isSymbolicLink()) {
@@ -99,20 +127,23 @@ export const assertInstalledArtifact = async (installRoot, expected) => {
   });
 };
 
-export const assertOrigin = async (origin) => {
-  if (origin?.kind === "artifact" && typeof origin.path === "string"
+export const assertOrigin = async (origin: unknown): Promise<void> => {
+  if (!isObject(origin)) {
+    return fail("Spawnfile development origin is invalid; rerun dev:spawnfile:setup");
+  }
+  if (origin.kind === "artifact" && typeof origin.path === "string"
     && path.isAbsolute(origin.path) && path.normalize(origin.path) === origin.path
-    && /^[0-9a-f]{64}$/u.test(origin.sha256 ?? "")
+    && typeof origin.sha256 === "string" && /^[0-9a-f]{64}$/u.test(origin.sha256)
     && typeof origin.package_version === "string") {
     const info = await lstat(origin.path).catch(() => fail("Spawnfile artifact origin is missing"));
     if (!info.isFile() || info.isSymbolicLink()) return fail("Spawnfile artifact origin is invalid");
     if (hash(await readFile(origin.path)) === origin.sha256) return;
     return fail("Spawnfile artifact origin digest changed; rerun dev:spawnfile:setup");
   }
-  if (origin?.kind === "registry" && typeof origin.spec === "string"
+  if (origin.kind === "registry" && typeof origin.spec === "string"
     && /^spawnfile@[0-9]+\.[0-9]+\.[0-9]+(?:[-+][0-9A-Za-z.-]+)?$/u.test(origin.spec)
     && typeof origin.package_version === "string") return;
-  if (origin?.kind === "source" && typeof origin.path === "string"
+  if (origin.kind === "source" && typeof origin.path === "string"
     && typeof origin.package_version === "string") {
     const current = await inspectPhysicalSpawnfileSource(origin.path);
     if (current.package_version === origin.package_version) return;

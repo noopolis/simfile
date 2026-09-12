@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { parseSpawnfileLocalEndpointProof } from "./spawnfile-local-endpoint.mjs";
+import { parseSpawnfileLocalEndpointProof } from "./spawnfile-local-endpoint.ts";
 
 const receipt = {
   base_image: { config_digest: `sha256:${"1".repeat(64)}`, reference: "node:22" },

@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
 
-import { assertInstalledArtifact, hash } from "./spawnfile-install-integrity.mjs";
+import { assertInstalledArtifact, hash } from "./spawnfile-install-integrity.ts";
 
 test("installed Spawnfile artifact verification rejects a tampered tarball", async () => {
   const root = await mkdtemp(path.join(tmpdir(), "simfile-install-integrity-"));
@@ -27,9 +27,9 @@ test("installed Spawnfile artifact verification rejects a tampered tarball", asy
   try {
     const installed = await assertInstalledArtifact(root, expected);
     const pinned = { ...expected, installed_closure_sha256: installed.installed_closure_sha256 };
-    await writeFile(path.join(root, "node_modules", "spawnfile", "runtime.mjs"), "export {};\n");
+    await writeFile(path.join(root, "node_modules", "spawnfile", "runtime.ts"), "export {};\n");
     await assert.rejects(assertInstalledArtifact(root, pinned), /module closure drifted/u);
-    await rm(path.join(root, "node_modules", "spawnfile", "runtime.mjs"));
+    await rm(path.join(root, "node_modules", "spawnfile", "runtime.ts"));
     await writeFile(tarball, "tampered tarball\n");
     await assert.rejects(assertInstalledArtifact(root, pinned), /tarball digest drifted/u);
   } finally {

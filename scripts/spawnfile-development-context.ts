@@ -1,18 +1,18 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 
 import { createSpawnfileCapabilityProbe, PROBE_VERSION } from
-  "./spawnfile-capability-probe.mjs";
-import { runBoundedProcess } from "./bounded-process.mjs";
+  "./spawnfile-capability-probe.ts";
+import { runBoundedProcess, type BoundedProcessResult } from "./bounded-process.ts";
+import { resolvePackageRoot } from "./package-root.ts";
 import {
   assertInstalledArtifact,
   assertOrigin,
   executableAt,
   probeIdentity,
-} from "./spawnfile-install-integrity.mjs";
+} from "./spawnfile-install-integrity.ts";
 
-export const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+export const packageRoot = resolvePackageRoot(import.meta.url);
 export const developmentRoot = path.join(packageRoot, ".simfile-dev", "spawnfile");
 export const installsRoot = path.join(developmentRoot, "installs");
 export const currentPath = path.join(developmentRoot, "current.json");
@@ -22,21 +22,71 @@ export const linkedExample = path.join(
 export const STATE_VERSION = "simfile.spawnfile-development-state.v3";
 export const CHECK_VERSION = "simfile.spawnfile-development-check.v1";
 
-export const fail = (message) => { throw new Error(message); };
-export const run = (command, args, options = {}) => runBoundedProcess(command, args, {
+type RunCommand = (
+  command: string,
+  args: readonly string[],
+  options?: { cwd?: string; env?: NodeJS.ProcessEnv; maxOutputBytes?: number; timeoutMs?: number }
+) => Promise<BoundedProcessResult>;
+type JsonObject = Record<string, unknown>;
+
+export interface DevelopmentImplementationIdentity {
+  executable_sha256: string;
+  installed_closure_sha256: string;
+  package_version: string;
+  tarball_sha256: string;
+}
+
+export interface DevelopmentState {
+  bin: string;
+  capability_probe: Readonly<{ sha256: string; version: string }>;
+  implementation: DevelopmentImplementationIdentity;
+  install_root: string;
+  origin: unknown;
+  version: typeof STATE_VERSION;
+}
+
+const isObject = (value: unknown): value is JsonObject =>
+  value !== null && typeof value === "object" && !Array.isArray(value);
+
+const isDevelopmentState = (value: unknown): value is DevelopmentState => {
+  if (!isObject(value) || value.version !== STATE_VERSION
+    || typeof value.bin !== "string"
+    || typeof value.install_root !== "string"
+    || !path.isAbsolute(value.install_root)
+    || !value.install_root.startsWith(`${installsRoot}${path.sep}`)
+    || value.bin !== executableAt(value.install_root)
+    || !isObject(value.implementation)
+    || typeof value.implementation.package_version !== "string"
+    || !/^[0-9a-f]{64}$/u.test(String(value.implementation.tarball_sha256 ?? ""))
+    || !/^[0-9a-f]{64}$/u.test(String(value.implementation.executable_sha256 ?? ""))
+    || !/^[0-9a-f]{64}$/u.test(String(value.implementation.installed_closure_sha256 ?? ""))
+    || !isObject(value.capability_probe)
+    || value.capability_probe.version !== PROBE_VERSION
+    || !/^[0-9a-f]{64}$/u.test(String(value.capability_probe.sha256 ?? ""))) {
+    return false;
+  }
+  return true;
+};
+
+export const fail = (message: string): never => { throw new Error(message); };
+export const run = (
+  command: string,
+  args: readonly string[],
+  options: { cwd?: string; env?: NodeJS.ProcessEnv; maxOutputBytes?: number; timeoutMs?: number } = {}
+) => runBoundedProcess(command, args, {
   ...options,
   cwd: options.cwd ?? packageRoot,
   env: options.env ?? process.env,
 });
 
-const readJson = async (filePath) => {
+const readJson = async (filePath: string): Promise<unknown> => {
   try { return JSON.parse(await readFile(filePath, "utf8")); }
   catch (error) {
     return fail(`Unable to read ${filePath}: ${error instanceof Error ? error.message : String(error)}`);
   }
 };
 
-export const probeSpawnfileCapabilities = async (bin, runCommand = run) => {
+export const probeSpawnfileCapabilities = async (bin: string, runCommand: RunCommand = run) => {
   const [version, capabilities] = await Promise.all([
     runCommand(bin, ["--version"]),
     runCommand(bin, ["capabilities", "--json"]).then(({ stdout }) => stdout)
@@ -58,16 +108,7 @@ export const probeSpawnfileCapabilities = async (bin, runCommand = run) => {
 
 export const readCurrentState = async () => {
   const value = await readJson(currentPath);
-  if (value?.version !== STATE_VERSION || typeof value.bin !== "string"
-    || typeof value.install_root !== "string" || !path.isAbsolute(value.install_root)
-    || !value.install_root.startsWith(`${installsRoot}${path.sep}`)
-    || value.bin !== executableAt(value.install_root)
-    || typeof value.implementation?.package_version !== "string"
-    || !/^[0-9a-f]{64}$/u.test(value.implementation?.tarball_sha256 ?? "")
-    || !/^[0-9a-f]{64}$/u.test(value.implementation?.executable_sha256 ?? "")
-    || !/^[0-9a-f]{64}$/u.test(value.implementation?.installed_closure_sha256 ?? "")
-    || value.capability_probe?.version !== PROBE_VERSION
-    || !/^[0-9a-f]{64}$/u.test(value.capability_probe?.sha256 ?? "")) {
+  if (!isDevelopmentState(value)) {
     return fail("Spawnfile development state is invalid; rerun dev:spawnfile:setup");
   }
   await assertOrigin(value.origin);

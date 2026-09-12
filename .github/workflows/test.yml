@@ -38,8 +38,8 @@ jobs:
       - run: npm run build
       - name: Run every suite except the dynamics sandbox builds
         run: >-
-          node scripts/run-tests.mjs
-          $(find src web/src -name '*.test.ts' -not -path 'src/dynamics/*' | sort)
+          node dist/scripts/run-tests.js
+          $(find src web/src scripts -name '*.test.ts' -not -path 'src/dynamics/*' | sort)
 
   dynamics-sandbox-builds:
     name: dynamics sandbox builds
@@ -55,5 +55,5 @@ jobs:
       - run: npm run build
       - name: Build and load dynamics packages in hermetic sandboxes
         run: >-
-          node scripts/run-tests.mjs
+          node dist/scripts/run-tests.js
           $(find src/dynamics -name '*.test.ts' | sort)

@@ -7,8 +7,6 @@ coverage/
 .simfile-dev/
 .simfile-composed/
 runs/*
-!runs/real-grok-composed/
-!runs/office-world-v0/
 here.txt
 .env
 .DS_Store

@@ -4,7 +4,7 @@ import test from "node:test";
 import {
   createComposedSmokeInvocation,
   parseSmokeRunArguments,
-} from "./spawnfile-composed-smoke.mjs";
+} from "./spawnfile-composed-smoke.ts";
 
 test("composed smoke runner requires one explicit portable local target", () => {
   assert.deepEqual(parseSmokeRunArguments([

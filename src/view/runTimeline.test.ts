@@ -16,7 +16,7 @@ const REAL_RUN_DIR = path.resolve(
   here,
   "..",
   "..",
-  "runs",
+  "fixtures", "observe",
   "real-grok-composed",
   "run-b7ef07f0fd2c4779894c2bb746140972",
 );

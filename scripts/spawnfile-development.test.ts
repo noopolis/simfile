@@ -5,19 +5,24 @@ import path from "node:path";
 import test from "node:test";
 import { setTimeout as delay } from "node:timers/promises";
 
+import type { BoundedProcessResult } from "./bounded-process.ts";
+
 import {
   createSpawnfileCapabilityProbe,
   parseSetupArguments,
   probeSpawnfileCapabilities,
   run,
-} from "./spawnfile-development.mjs";
+} from "./spawnfile-development.ts";
 
-const assertProcessGroupStopped = (pid) => {
+const assertProcessGroupStopped = (pid: number): void => {
   assert.throws(
     () => process.kill(-pid, 0),
-    (error) => error?.code === "ESRCH",
+    (error: unknown) => (error as NodeJS.ErrnoException).code === "ESRCH",
   );
 };
+
+type ProbeCall = readonly [string, readonly string[]];
+const successfulProbeResult = (stdout: string): BoundedProcessResult => ({ code: 0, stderr: "", stdout });
 
 test("spawnfile development setup requires one explicit standalone source", () => {
   assert.deepEqual(parseSetupArguments(["--source", "/tmp/spawnfile-source"]), {
@@ -90,7 +95,7 @@ test("generic help discovery ignores presentation indentation", () => {
 });
 
 test("capability probing uses generic JSON discovery before its legacy help fallback", async () => {
-  const calls = [];
+  const calls: ProbeCall[] = [];
   const output = new Map([
     ["--version", "0.1.14\n"],
     ["--help", "  compile [options] [path]\n  target [options]\n  validate [path]\n"],
@@ -100,7 +105,7 @@ test("capability probing uses generic JSON discovery before its legacy help fall
   const probe = await probeSpawnfileCapabilities("/isolated/spawnfile", async (bin, args) => {
     calls.push([bin, args]);
     if (args.join(" ") === "capabilities --json") throw new Error("unsupported");
-    return { stderr: "", stdout: output.get(args.join(" ")) ?? "" };
+    return successfulProbeResult(output.get(args.join(" ")) ?? "");
   });
   assert.deepEqual(calls, [
     ["/isolated/spawnfile", ["--version"]],
@@ -114,7 +119,7 @@ test("capability probing uses generic JSON discovery before its legacy help fall
 });
 
 test("capability probing rejects a structurally valid but unpinned JSON contract", async () => {
-  const row = (index) => ({
+  const row = (index: number) => ({
     argv: [`command-${index}`],
     invocation_versions: [],
     pending_versions: [],
@@ -152,12 +157,12 @@ test("capability probing rejects a structurally valid but unpinned JSON contract
     implementation: { cli: "spawnfile", package: "spawnfile", version: "0.1.17" },
     version: "spawnfile.capabilities.v1",
   };
-  const calls = [];
+  const calls: Array<readonly string[]> = [];
   await assert.rejects(probeSpawnfileCapabilities("/isolated/spawnfile", async (_bin, args) => {
     calls.push(args);
-    if (args.join(" ") === "--version") return { stderr: "", stdout: "0.1.17\n" };
+    if (args.join(" ") === "--version") return successfulProbeResult("0.1.17\n");
     if (args.join(" ") === "capabilities --json") {
-      return { stderr: "", stdout: JSON.stringify(report) };
+      return successfulProbeResult(JSON.stringify(report));
     }
     throw new Error("help must not be queried after a valid JSON contract");
   }), /command contract drifted/u);
@@ -166,12 +171,9 @@ test("capability probing rejects a structurally valid but unpinned JSON contract
 
 test("missing nested generic help remains a structured fail-closed result", async () => {
   const probe = await probeSpawnfileCapabilities("/isolated/spawnfile", async (_bin, args) => {
-    if (args.join(" ") === "--version") return { stderr: "", stdout: "0.1.14\n" };
+    if (args.join(" ") === "--version") return successfulProbeResult("0.1.14\n");
     if (args.join(" ") === "--help") {
-      return {
-        stderr: "",
-        stdout: "  compile [options] [path]\n  target [options]\n  validate [path]\n",
-      };
+      return successfulProbeResult("  compile [options] [path]\n  target [options]\n  validate [path]\n");
     }
     throw new Error("unsupported generic discovery command");
   });

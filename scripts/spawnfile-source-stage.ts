@@ -15,33 +15,48 @@ const omittedDirectories = new Set([
   "runs",
 ]);
 
-const fail = (message) => { throw new Error(message); };
+interface SpawnfileSourceInspection {
+  package_version: string;
+  path: string;
+}
 
-export const isOmittedSourcePath = (sourceRoot, candidate) => {
+interface StagedSpawnfileSource {
+  origin: Readonly<SpawnfileSourceInspection>;
+  staging: string;
+}
+
+const fail = (message: string): never => { throw new Error(message); };
+
+export const isOmittedSourcePath = (sourceRoot: string, candidate: string): boolean => {
   const relative = path.relative(sourceRoot, candidate);
   return relative !== "" && relative.split(path.sep).some((part) => omittedDirectories.has(part));
 };
 
-export const inspectPhysicalSpawnfileSource = async (source) => {
+export const inspectPhysicalSpawnfileSource = async (source: string): Promise<Readonly<SpawnfileSourceInspection>> => {
   const sourceInfo = await lstat(source).catch(() => fail("--source checkout is unavailable"));
   if (!sourceInfo.isDirectory() || sourceInfo.isSymbolicLink()) {
     return fail("--source must be a physical Spawnfile checkout directory");
   }
   const physicalPath = await realpath(source);
-  let manifest;
+  let manifest: unknown;
   try {
     manifest = JSON.parse(await readFile(path.join(source, "package.json"), "utf8"));
   } catch (error) {
     return fail(`Unable to read ${path.join(source, "package.json")}: ${error instanceof Error ? error.message : String(error)}`);
   }
-  if (manifest?.name !== "spawnfile" || typeof manifest.version !== "string") {
+  if (manifest === null || typeof manifest !== "object" || Array.isArray(manifest)
+    || (manifest as { name?: unknown }).name !== "spawnfile"
+    || typeof (manifest as { version?: unknown }).version !== "string") {
     return fail("--source does not identify a Spawnfile package checkout");
   }
-  return Object.freeze({ package_version: manifest.version, path: physicalPath });
+  return Object.freeze({ package_version: (manifest as { version: string }).version, path: physicalPath });
 };
 
 /** Copies source into a private build staging area without changing the checkout. */
-export const stagePhysicalSpawnfileSource = async (source, temporaryRoot) => {
+export const stagePhysicalSpawnfileSource = async (
+  source: string,
+  temporaryRoot: string
+): Promise<Readonly<StagedSpawnfileSource>> => {
   const origin = await inspectPhysicalSpawnfileSource(source);
   const staging = path.join(temporaryRoot, "source-stage");
   await mkdir(staging, { mode: 0o700 });
