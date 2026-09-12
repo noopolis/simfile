@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.scripts.json",
+  "compilerOptions": {
+    "allowImportingTsExtensions": true,
+    "declaration": false,
+    "declarationMap": false,
+    "noEmit": false,
+    "outDir": "dist",
+    "rootDir": ".",
+    "rewriteRelativeImportExtensions": true,
+    "sourceMap": false
+  },
+  "exclude": ["scripts/**/*.test.ts", "scripts/render-coverage.ts"]
+}

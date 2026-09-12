@@ -1,12 +1,30 @@
-import { spawn } from "node:child_process";
+import { spawn, type ChildProcessByStdio } from "node:child_process";
 import path from "node:path";
+import type { Readable } from "node:stream";
 
 const MAX_PROCESS_OUTPUT_BYTES = 64 * 1024 * 1024;
 const TERMINATION_GRACE_MS = 1_000;
 const QUIESCENCE_TIMEOUT_MS = 1_000;
 const QUIESCENCE_POLL_MS = 25;
 
-const signalProcessGroup = (child, signal) => {
+export interface BoundedProcessResult {
+  code: number;
+  stderr: string;
+  stdout: string;
+}
+
+export interface BoundedProcessOptions {
+  allowNonzero?: boolean;
+  cwd?: string;
+  env?: NodeJS.ProcessEnv;
+  maxOutputBytes?: number;
+  timeoutMs?: number;
+}
+
+type BoundedChild = ChildProcessByStdio<null, Readable, Readable>;
+type TerminationReason = "output" | "timeout";
+
+const signalProcessGroup = (child: BoundedChild, signal: NodeJS.Signals): boolean => {
   try {
     if (process.platform !== "win32" && child.pid !== undefined) {
       process.kill(-child.pid, signal);
@@ -14,23 +32,24 @@ const signalProcessGroup = (child, signal) => {
     }
     child.kill(signal);
     return true;
-  } catch (error) {
-    if (error?.code === "ESRCH") return false;
+  } catch (error: unknown) {
+    if ((error as NodeJS.ErrnoException).code === "ESRCH") return false;
     throw error;
   }
 };
 
-const processTreeIsAlive = (child) => {
+const processTreeIsAlive = (child: BoundedChild): boolean => {
   if (process.platform === "win32") return child.exitCode === null && child.signalCode === null;
-  if (!Number.isSafeInteger(child.pid) || child.pid <= 1 || child.pid === process.pid) {
+  const pid = child.pid;
+  if (pid === undefined || !Number.isSafeInteger(pid) || pid <= 1 || pid === process.pid) {
     throw new Error("Development subprocess group identity is invalid");
   }
   try {
-    process.kill(-child.pid, 0);
+    process.kill(-pid, 0);
     return true;
-  } catch (error) {
-    if (error?.code === "ESRCH") return false;
-    if (error?.code === "EPERM") return true;
+  } catch (error: unknown) {
+    if ((error as NodeJS.ErrnoException).code === "ESRCH") return false;
+    if ((error as NodeJS.ErrnoException).code === "EPERM") return true;
     throw error;
   }
 };
@@ -39,7 +58,11 @@ const processTreeIsAlive = (child) => {
  * Runs a bounded subprocess. On a timeout or bounded-output failure, the
  * entire detached POSIX process group is reaped before the promise settles.
  */
-export const runBoundedProcess = (command, args, options = {}) => new Promise((resolve, reject) => {
+export const runBoundedProcess = (
+  command: string,
+  args: readonly string[],
+  options: BoundedProcessOptions = {}
+): Promise<BoundedProcessResult> => new Promise((resolve, reject) => {
   const timeoutMs = options.timeoutMs ?? 10 * 60 * 1000;
   if (!Number.isSafeInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 30 * 60 * 1000) {
     reject(new TypeError("Development subprocess timeout is invalid"));
@@ -60,10 +83,10 @@ export const runBoundedProcess = (command, args, options = {}) => new Promise((r
   let stdout = "";
   let stderr = "";
   let settled = false;
-  let termination;
-  let timeoutTimer;
-  let forceTimer;
-  let quiescenceTimer;
+  let termination: { reason: TerminationReason } | undefined;
+  let timeoutTimer: NodeJS.Timeout | undefined;
+  let forceTimer: NodeJS.Timeout | undefined;
+  let quiescenceTimer: NodeJS.Timeout | undefined;
   let forceSent = false;
   let quiescenceDeadline = 0;
 
@@ -72,20 +95,20 @@ export const runBoundedProcess = (command, args, options = {}) => new Promise((r
     if (forceTimer !== undefined) clearTimeout(forceTimer);
     if (quiescenceTimer !== undefined) clearTimeout(quiescenceTimer);
   };
-  const settle = (outcome) => {
+  const settle = (outcome: () => void): void => {
     if (settled) return;
     settled = true;
     clearTimers();
     outcome();
   };
-  const terminationError = () => termination.reason === "timeout"
+  const terminationError = (): Error => termination?.reason === "timeout"
     ? new Error(`${path.basename(command)} exceeded its ${timeoutMs}ms timeout`)
     : new Error(`${path.basename(command)} exceeded the bounded output limit`);
-  const awaitQuiescence = () => {
+  const awaitQuiescence = (): void => {
     quiescenceTimer = undefined;
     let alive;
     try { alive = processTreeIsAlive(child); }
-    catch (error) { settle(() => reject(error)); return; }
+    catch (error: unknown) { settle(() => reject(error)); return; }
     if (!alive) {
       settle(() => reject(terminationError()));
       return;
@@ -98,7 +121,7 @@ export const runBoundedProcess = (command, args, options = {}) => new Promise((r
     }
     quiescenceTimer = setTimeout(awaitQuiescence, QUIESCENCE_POLL_MS);
   };
-  const terminate = (reason) => {
+  const terminate = (reason: TerminationReason): void => {
     if (termination !== undefined) return;
     termination = { reason };
     try {
@@ -108,16 +131,16 @@ export const runBoundedProcess = (command, args, options = {}) => new Promise((r
           forceSent = true;
           quiescenceDeadline = Date.now() + QUIESCENCE_TIMEOUT_MS;
           signalProcessGroup(child, "SIGKILL");
-        } catch (error) {
+        } catch (error: unknown) {
           settle(() => reject(error));
         }
       }, TERMINATION_GRACE_MS);
       awaitQuiescence();
-    } catch (error) {
+    } catch (error: unknown) {
       settle(() => reject(error));
     }
   };
-  const retain = (current, chunk) => {
+  const retain = (current: string, chunk: string): string => {
     if (Buffer.byteLength(current, "utf8") + Buffer.byteLength(chunk, "utf8")
       > maxOutputBytes) {
       terminate("output");

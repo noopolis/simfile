@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import path from "node:path";
 import test from "node:test";
 
-import { createLocalExampleInvocation } from "./simfile-local-example.mjs";
+import { createLocalExampleInvocation } from "./simfile-local-example.ts";
 
 test("local example uses the canonical project and a unique bounded output", () => {
   const first = createLocalExampleInvocation("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");

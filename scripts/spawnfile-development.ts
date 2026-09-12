@@ -1,8 +1,6 @@
 #!/usr/bin/env node
 import { mkdtemp, rm } from "node:fs/promises";
 import path from "node:path";
-import { pathToFileURL } from "node:url";
-
 import {
   CHECK_VERSION,
   PROBE_VERSION,
@@ -15,11 +13,12 @@ import {
   probeSpawnfileCapabilities,
   readCurrentState,
   run,
-} from "./spawnfile-development-context.mjs";
+} from "./spawnfile-development-context.ts";
+import { isMainModule } from "./entrypoint.ts";
 import { parseSetupArguments, setupSpawnfileDevelopment } from
-  "./spawnfile-development-setup.mjs";
+  "./spawnfile-development-setup.ts";
 
-const check = async () => {
+const check = async (): Promise<void> => {
   const state = await readCurrentState();
   const probe = state.capability_probe;
   if (!probe.development.ready) fail("Installed Spawnfile lacks required generic development commands");
@@ -39,7 +38,7 @@ const check = async () => {
   }, null, 2)}\n`);
 };
 
-const main = async (args) => {
+export const runSpawnfileDevelopmentCommand = async (args: readonly string[]): Promise<void> => {
   const [command, ...rest] = args;
   if (command === "setup") return setupSpawnfileDevelopment(rest);
   if (command === "check" && rest.length === 0) return check();
@@ -48,7 +47,7 @@ const main = async (args) => {
     process.stdout.write(`${JSON.stringify(state, null, 2)}\n`);
     return;
   }
-  fail("Usage: spawnfile-development.mjs <setup|check|status>");
+  fail("Usage: spawnfile-development <setup|check|status>");
 };
 
 export {
@@ -62,9 +61,8 @@ export {
   run,
 };
 
-if (process.argv[1] !== undefined
-  && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  try { await main(process.argv.slice(2)); }
+if (isMainModule(import.meta.url)) {
+  try { await runSpawnfileDevelopmentCommand(process.argv.slice(2)); }
   catch (error) {
     process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);
     process.exitCode = 1;

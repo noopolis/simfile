@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
 
-import { stagePhysicalSpawnfileSource } from "./spawnfile-source-stage.mjs";
+import { stagePhysicalSpawnfileSource } from "./spawnfile-source-stage.ts";
 
 test("source staging copies a physical checkout without its dependency or runtime state", async () => {
   const root = await mkdtemp(path.join(tmpdir(), "simfile-source-stage-"));

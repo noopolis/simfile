@@ -194,7 +194,7 @@ describe("buildRunViewModel — engine provenance for a real-grok run", () => {
     path.dirname(fileURLToPath(import.meta.url)),
     "..",
     "..",
-    "runs",
+    "fixtures", "observe",
     "real-grok-composed",
     "run-b7ef07f0fd2c4779894c2bb746140972"
   );

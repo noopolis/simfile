@@ -343,7 +343,7 @@ describe("createViewerServer", () => {
   });
 
   it("serves viewer traces from the shipped office fixture run", async () => {
-    const fixturePath = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "runs", "office-world-v0");
+    const fixturePath = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "fixtures", "observe", "office-world-v0-golden");
     const handle = await createViewerServer({
       mode: "replay",
       port: 0,

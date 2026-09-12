@@ -241,3 +241,10 @@ Full documentation at [**simfile.org**](https://simfile.org). Design and researc
 ## License
 
 MIT
+
+## Repository maintenance
+
+- [Archived plans and reviews](archive/): historical implementation notes.
+- [Observer test recordings](fixtures/observe/): frozen evidence used by tests.
+- `runs/`: ignored local execution output.
+- `scripts/` and `tools/`: maintained development and package-verification tooling.

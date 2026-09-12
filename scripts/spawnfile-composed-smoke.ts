@@ -2,23 +2,43 @@
 
 import { randomUUID } from "node:crypto";
 import path from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
-
 import {
   probeSpawnfileCapabilities,
   readCurrentState,
-} from "./spawnfile-development.mjs";
-import { runBoundedProcess } from "./bounded-process.mjs";
-import { proveSpawnfileLocalEndpoint } from "./spawnfile-local-endpoint.mjs";
+} from "./spawnfile-development.ts";
+import { runBoundedProcess } from "./bounded-process.ts";
+import { isMainModule } from "./entrypoint.ts";
+import { resolvePackageRoot } from "./package-root.ts";
+import { proveSpawnfileLocalEndpoint } from "./spawnfile-local-endpoint.ts";
 
-const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const packageRoot = resolvePackageRoot(import.meta.url);
 const builtCli = path.join(packageRoot, "dist", "cli", "index.js");
 const composedExample = path.join(packageRoot, "examples", "jungian-dialogue", "Simfile");
 const internalSmokeExample = path.join(
   packageRoot, "examples", "composed-development", "Simfile",
 );
-const fail = (message) => { throw new Error(message); };
-const takeValue = (argv, index, flag) => {
+type OwnFlagKey = "baseImage" | "context" | "dockerCommand";
+
+export interface SmokeRunArguments {
+  baseImage?: string;
+  context: string;
+  dockerCommand?: string;
+  internalLifecycleSmoke: boolean;
+  simfileArgs: readonly string[];
+}
+
+export interface ComposedSmokeInvocation extends SmokeRunArguments {
+  command: string;
+  command_args: readonly string[];
+  example: string;
+  mode: "lifecycle-replay-smoke";
+  out: string;
+  run_id: string;
+  simfileArgs: readonly string[];
+}
+
+const fail = (message: string): never => { throw new Error(message); };
+const takeValue = (argv: readonly string[], index: number, flag: string): { consumed: number; value: string } | undefined => {
   const arg = argv[index];
   if (arg === flag) {
     const value = argv[index + 1];
@@ -33,15 +53,15 @@ const takeValue = (argv, index, flag) => {
   return undefined;
 };
 
-export const parseSmokeRunArguments = (argv) => {
-  let context;
-  let baseImage;
-  let dockerCommand;
+export const parseSmokeRunArguments = (argv: readonly string[]): SmokeRunArguments => {
+  let context: string | undefined;
+  let baseImage: string | undefined;
+  let dockerCommand: string | undefined;
   let internalLifecycleSmoke = false;
-  const simfileArgs = [];
+  const simfileArgs: string[] = [];
   const values = ["--out", "--run-id", "--seed"];
   for (let index = 0; index < argv.length;) {
-    const ownFlags = [
+    const ownFlags: Array<readonly [string, OwnFlagKey]> = [
       ["--context", "context"],
       ["--base-image", "baseImage"],
       ["--docker-command", "dockerCommand"],
@@ -50,8 +70,8 @@ export const parseSmokeRunArguments = (argv) => {
     for (const [flag, key] of ownFlags) {
       const parsed = takeValue(argv, index, flag);
       if (parsed === undefined) continue;
-      if ({ context, baseImage, dockerCommand }[key]
-        !== undefined) return fail(`Duplicate ${flag}`);
+      const existing: Record<OwnFlagKey, string | undefined> = { context, baseImage, dockerCommand };
+      if (existing[key] !== undefined) return fail(`Duplicate ${flag}`);
       if (key === "context") context = parsed.value;
       if (key === "baseImage") baseImage = parsed.value;
       if (key === "dockerCommand") dockerCommand = parsed.value;
@@ -91,13 +111,16 @@ export const parseSmokeRunArguments = (argv) => {
   return { baseImage, context, dockerCommand, internalLifecycleSmoke, simfileArgs };
 };
 
-const argumentValue = (args, flag) => {
+const argumentValue = (args: readonly string[], flag: string): string | undefined => {
   const index = args.findIndex((value) => value === flag || value.startsWith(`${flag}=`));
   if (index === -1) return undefined;
   return args[index].startsWith(`${flag}=`) ? args[index].slice(flag.length + 1) : args[index + 1];
 };
 
-export const createComposedSmokeInvocation = (argv, nonce = randomUUID()) => {
+export const createComposedSmokeInvocation = (
+  argv: readonly string[],
+  nonce: string = randomUUID()
+): Readonly<ComposedSmokeInvocation> => {
   if (!/^[a-f0-9-]{8,64}$/u.test(nonce)) return fail("Composed example nonce is invalid");
   const parsed = parseSmokeRunArguments(argv);
   const example = parsed.internalLifecycleSmoke ? internalSmokeExample : composedExample;
@@ -124,7 +147,7 @@ export const createComposedSmokeInvocation = (argv, nonce = randomUUID()) => {
   });
 };
 
-export const runComposedDevelopmentSmoke = async (argv) => {
+export const runComposedDevelopmentSmoke = async (argv: readonly string[]): Promise<number> => {
   const invocation = createComposedSmokeInvocation(argv);
   const state = await readCurrentState();
   const probe = await probeSpawnfileCapabilities(state.bin);
@@ -169,8 +192,7 @@ export const runComposedDevelopmentSmoke = async (argv) => {
   return result.code;
 };
 
-if (process.argv[1] !== undefined
-  && import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (isMainModule(import.meta.url)) {
   try { process.exitCode = await runComposedDevelopmentSmoke(process.argv.slice(2)); }
   catch (error) {
     process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);

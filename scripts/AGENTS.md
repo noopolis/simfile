@@ -14,8 +14,11 @@ credentials.
 - Prefer versioned JSON receipts so tests and documentation can make exact
   claims about what a setup proves.
 - Every loop, poll, and subprocess wait must have a finite end condition.
-- `spawnfile-development.mjs` dispatches setup/check/status; its context and
-  install transaction live in `spawnfile-development-context.mjs` and
-  `spawnfile-development-setup.mjs`.
-- `spawnfile-composed-smoke.mjs` must prove the selected endpoint is local via
-  `spawnfile-local-endpoint.mjs` before it starts the built Simfile CLI.
+- Maintained scripts are strict TypeScript sources. Local source-only tools may
+  run with Node's native `--experimental-strip-types`; package scripts and
+  installed-package checks must use emitted JavaScript under `dist/scripts/`.
+- `spawnfile-development.ts` dispatches setup/check/status; its context and
+  install transaction live in `spawnfile-development-context.ts` and
+  `spawnfile-development-setup.ts`.
+- `spawnfile-composed-smoke.ts` must prove the selected endpoint is local via
+  `spawnfile-local-endpoint.ts` before it starts the built Simfile CLI.
