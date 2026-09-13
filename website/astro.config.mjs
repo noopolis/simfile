@@ -2,14 +2,30 @@
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 import sitemap from '@astrojs/sitemap';
+import { googleAnalyticsInlineScript, googleAnalyticsScriptSrc } from './site.config.mjs';
 
 export default defineConfig({
   site: 'https://simfile.org',
   integrations: [
-    sitemap(),
+    sitemap({
+      filter: (page) => !page.endsWith('/city-lab/'),
+    }),
     starlight({
       title: 'Simfile',
       description: 'Deterministic simulation worlds for agentic organizations.',
+      head: [
+        {
+          tag: 'script',
+          attrs: {
+            async: true,
+            src: googleAnalyticsScriptSrc(),
+          },
+        },
+        {
+          tag: 'script',
+          content: googleAnalyticsInlineScript(),
+        },
+      ],
       components: {
         Header: './src/components/DocsHeader.astro',
         ThemeSelect: './src/components/EmptyThemeSelect.astro',

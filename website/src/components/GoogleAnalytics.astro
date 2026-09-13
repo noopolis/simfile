@@ -1,0 +1,9 @@
+---
+import { googleAnalyticsInlineScript, googleAnalyticsScriptSrc } from '../../site.config.mjs';
+
+const scriptSrc = googleAnalyticsScriptSrc();
+const inlineScript = googleAnalyticsInlineScript();
+---
+
+<script async src={scriptSrc}></script>
+<script is:inline set:html={inlineScript}></script>
