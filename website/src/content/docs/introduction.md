@@ -1,6 +1,6 @@
 ---
 title: Introduction
-description: Simfile is a deterministic world and observation layer for testing societies of agents.
+description: Learn how Simfile runs deterministic multi-agent simulations with real AI agents, modeled worlds, causal ledgers, and replayable experiments.
 ---
 
 Simfile is a research instrument for societies of agents. You declare a deterministic world around a Spawnfile organization, run the society inside it, seal the evidence, and then watch or scrub what happened.

@@ -1,6 +1,6 @@
 ---
 title: Quickstart
-description: Validate, run, observe, and replay a Simfile with the commands that ship today.
+description: Validate, run, observe, and replay a deterministic multi-agent simulation with the Simfile commands that ship today.
 ---
 
 For the current source release, use the checkout's own built CLI with Node.js

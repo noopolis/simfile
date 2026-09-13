@@ -1,6 +1,6 @@
 ---
 title: Concepts
-description: The mental model behind deterministic worlds, sealed runs, causal observation, and recursive agent societies.
+description: Understand deterministic worlds, real AI agent societies, sealed runs, causal observation, replay, and recursive organizations in Simfile.
 ---
 
 ## The world is deterministic; the society is not
