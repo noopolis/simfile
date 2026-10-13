@@ -29,9 +29,9 @@ const EARLIER_HOOK_SOURCE = '.githooks/commit-msg';
 const OPT_IN_HOOKS_PATH = '.github/hooks', EARLIER_HOOKS_PATH = '.githooks';
 const HOOK_MARKER = 'commit-policy-commit-message-hook';
 
-/** The message as Git stores it: comment lines and trailing blank lines removed (the default `strip` cleanup). */
+/** Normalize line endings and surrounding blank lines; stored hash-prefixed lines are message content. */
 export function cleanMessage(raw: string): string[] {
-  const lines = raw.replace(/\r\n?/gu, '\n').split('\n').filter(line => !line.startsWith('#'));
+  const lines = raw.replace(/\r\n?/gu, '\n').split('\n');
   while (lines.length && !lines[lines.length - 1]!.trim()) lines.pop();
   while (lines.length && !lines[0]!.trim()) lines.shift();
   return lines;
@@ -178,7 +178,9 @@ async function main(args: readonly string[]): Promise<number> {
   }
   if (args.length === 1 && args[0] && !args[0].startsWith('--')) {
     const problem = authorProblem(await currentAuthorEmail(root)) ??
-      messageProblem(await readFile(args[0], 'utf8'));
+      // The hook sees an editor proposal; only this entry point tolerates editor comments.
+      // CI validates stored messages through rangeProblems without deleting any hash-prefixed content.
+      messageProblem(cleanMessage(await readFile(args[0], 'utf8')).filter(line => !line.startsWith('#')).join('\n'));
     if (!problem) return 0;
     console.error(`commit-msg: ${problem}\nSee CONTRIBUTING.md#commits. Skip once with git commit --no-verify; CI still checks.`);
     return 1;
