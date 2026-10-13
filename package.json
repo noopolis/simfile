@@ -101,7 +101,7 @@
     "clean": "rm -rf dist web/dist",
     "prepack": "npm run build",
     "prepublishOnly": "npm run typecheck && npm test",
-    "typecheck": "tsc --project tsconfig.json --noEmit && tsc --project tsconfig.web.json --noEmit && tsc --project tsconfig.scripts.json",
+    "typecheck": "tsc --project tsconfig.json --noEmit && tsc --project tsconfig.web.json --noEmit && tsc --project tsconfig.scripts.json && tsc --project .github/scripts/ci/tsconfig.json",
     "pretest": "npm run build",
     "test": "node dist/scripts/run-tests.js",
     "coverage:render": "node --experimental-strip-types scripts/render-coverage.ts",
@@ -119,7 +119,7 @@
     "node": ">=22.19.0"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "1.29.0",
+    "@modelcontextprotocol/sdk": "1.32.0",
     "@noopolis/stele": "0.0.2",
     "@types/node": "24.12.4",
     "esbuild": "0.28.1",
